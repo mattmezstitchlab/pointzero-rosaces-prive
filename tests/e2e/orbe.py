@@ -182,6 +182,50 @@ def cadre(b, largeur, hauteur, nom):
     ok(dims().startswith('33 × 99'), f'{nom} : un marque-page de 6 × 18 cm fait 33 × 99 points sur Aida 14')
     ctx.close()
 
+def rosace(b, largeur, hauteur, nom):
+    """Composer une rosace : cinq gestes → une signature → un vrai patron dans le Cadre ; le lien partagé ; le clavier seul."""
+    ctx = b.new_context(viewport={'width': largeur, 'height': hauteur})
+    pg = ctx.new_page(); pg.on('pageerror', lambda e: erreurs.append(str(e))); pg.set_default_timeout(8000)
+    pg.add_init_script("localStorage.setItem('pointzero:visite-docks:v1','vue')")
+    pg.goto(B + '/atelier'); pg.wait_for_timeout(900)
+    bas = [x for x in pg.evaluate("() => [...document.querySelectorAll('.pzs-bottom button:not(.pzs-cercle)')].map(b => (b.innerText.trim() || b.getAttribute('aria-label') || '').split(' :')[0])") if x]
+    ok(bas == ['Picto', 'À plat', 'Patron', 'Réaliste', 'Tout voir', 'Loupe'], f'{nom} : le dock du bas est réduit à Picto, À plat, Patron, Réaliste, Tout voir, Loupe {bas}')
+    pg.get_by_role('button', name='Composer une rosace').first.click(); pg.wait_for_selector('#cr-titre')
+    ok(pg.locator('#cr-titre').inner_text() == 'Quelle forme ?' and pg.locator('[role="radio"]').count() == 4, f'{nom} : Composer une rosace ouvre la première question, quatre images')
+    capture(pg, f'rosace-{nom}-question')
+    petites = pg.evaluate("() => [...document.querySelectorAll('.cr button')].filter(b => { const r = b.getBoundingClientRect(); return r.width && (r.width < 44 || r.height < 28); }).length")
+    ok(petites == 0, f'{nom} : aucune cible trop petite dans le parcours ({petites})')
+    for rep in ['Rosace', 'Courbe', 'Aérée', 'Fin', 'Vive']:
+        pg.get_by_role('radio', name=rep, exact=True).click(); pg.wait_for_timeout(250)
+    ok(pg.locator('.cr .sceau svg').first.get_attribute('aria-label') == 'Sceau 5D-13133, graine 1 : rosace, courbe, aérée, fin, vive', f'{nom} : cinq gestes donnent la signature 5D-13133 et son sceau')
+    capture(pg, f'rosace-{nom}-motif')
+    pg.get_by_role('button', name='Broder ce motif').click(); pg.wait_for_timeout(800)
+    tete = pg.locator('.cadre-nom').text_content() + ' ' + pg.locator('.cadre-dims').inner_text()
+    ok('Rosace 5D-13133' in tete and '61 × 61' in tete, f'{nom} : le motif s’ouvre dans le Cadre, avec ses 61 × 61 points')
+    pg.locator('.cadre-se').focus(); pg.keyboard.press('ArrowRight'); pg.wait_for_timeout(300)
+    ok('67 × 67' in pg.locator('.cadre-dims').inner_text(), f'{nom} : un coin recalcule la rosace à la nouvelle taille')
+    # le lien partagé : la recette seule, en lecture, sans compte ; même empreinte que dans Node (version v0.1)
+    pg.goto(B + '/atelier?rosace=5D-13133.g59.v0.1'); pg.wait_for_selector('.cr-fin')
+    ok(pg.locator('#cr-titre').inner_text() == 'Kaléidoscope' and pg.locator('.cr-fin').get_attribute('data-empreinte') == '508323518', f'{nom} : le lien partagé ouvre « Kaléidoscope », identique au point près à la référence')
+    ok(pg.get_by_role('button', name='Recommencer').count() == 0 and 'une recette partagée' in pg.locator('.cr').inner_text().lower(), f'{nom} : le lien partagé est en lecture seule')
+    pg.get_by_role('button', name='Broder ce motif').click(); pg.wait_for_timeout(600)
+    ok('rosace=' not in pg.url and 'Kaléidoscope' in pg.locator('.cadre-nom').text_content(), f'{nom} : « Broder ce motif » en fait un ouvrage à soi, et l’adresse redevient celle de l’atelier')
+    ctx.close()
+
+def rosace_clavier(b):
+    ctx = b.new_context(viewport={'width': 1440, 'height': 900})
+    pg = ctx.new_page(); pg.add_init_script("localStorage.setItem('pointzero:visite-docks:v1','vue')")
+    pg.goto(B + '/atelier'); pg.wait_for_timeout(900)
+    pg.get_by_role('button', name='Composer une rosace').first.focus(); pg.keyboard.press('Enter'); pg.wait_for_selector('#cr-titre'); pg.wait_for_timeout(200)
+    for fleches in (1, 0, 3, 1, 2):
+        for _ in range(fleches): pg.keyboard.press('ArrowRight')
+        pg.keyboard.press('Enter'); pg.wait_for_timeout(250)
+    lbl = pg.locator('.cr .sceau svg').first.get_attribute('aria-label')
+    ok(lbl == 'Sceau 5D-21423, graine 1 : anneaux, droit, totale, moyen, vive', f'ordinateur : les cinq gestes au clavier seul ({lbl})')
+    pg.keyboard.press('Enter'); pg.wait_for_timeout(600)
+    ok(pg.locator('.cr').count() == 0 and 'Rosace 5D-21423' in pg.locator('.cadre-nom').text_content(), 'ordinateur : Entrée sur « Broder ce motif » ouvre le motif dans le Cadre')
+    ctx.close()
+
 with sync_playwright() as p:
     b = p.chromium.launch()
     depuis_accueil(b)
@@ -192,6 +236,9 @@ with sync_playwright() as p:
     mouvement(b)
     cadre(b, 1440, 900, 'ordinateur')
     cadre(b, 390, 844, 'telephone')
+    rosace(b, 1440, 900, 'ordinateur')
+    rosace(b, 390, 844, 'telephone')
+    rosace_clavier(b)
     b.close()
 ok(not erreurs, 'aucune erreur dans la page ' + str(erreurs[:3]))
 sys.exit(0 if all(resultats) else 1)

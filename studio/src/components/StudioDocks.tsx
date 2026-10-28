@@ -84,7 +84,7 @@ const DRAW: [Tool, string][] = [["hand", "Main"], ["cross", "Croix"], ["erase", 
 const DRAW_MORE: [Tool, string][] = [["half", "Demi-point"], ["quarter", "Quart"], ["threeQuarter", "Trois quarts"], ["petite", "Petite croix"], ["bead", "Perle"], ["back", "Point arrière"], ["knot", "Nœud"], ["long", "Point lancé"], ["line", "Ligne"], ["rect", "Rectangle"], ["ellipse", "Ellipse"], ["lasso", "Lasso"], ["move", "Déplacer"]];
 const STITCH: [Tool, string][] = [["hand", "Main"], ["mark", "Marquer"], ["block", "Bloc 10 × 10"], ["row", "Ligne"], ["pick", "Pipette"], ["details", "Détails"], ["park", "Parking"], ["unpick", "À défaire"], ["note", "Note"]];
 const BEGINNER = new Set<Tool>(["hand", "cross", "erase", "pick", "mark"]);
-const VIEWS: [ViewMode, string][] = [["real", "Réaliste"], ["flat", "À plat"], ["pattern", "Patron"]];
+const VIEWS: [ViewMode, string][] = [["flat", "À plat"], ["pattern", "Patron"], ["real", "Réaliste"]];
 const LABELS: Record<Exclude<DockPath, null>, string> = { dessiner: "Dessiner", fils: "Fils", broder: "Broder", partager: "Partager", visibilite: "Visibilité" };
 const PARENT: Partial<Record<Exclude<DockPath, null>, DockPath>> = { visibilite: "partager" };
 /* la ligne courte de Broder : les gestes les plus fréquents ; tout le reste est dans la grille */
@@ -308,17 +308,14 @@ export default function StudioDocks(p: Props) {
         : modeBas === "fils" ? (p.fils ?? null)
         : modeBas === "progression" ? <Progression progression={p.progression} onCouleur={p.onCouleur} />
         : <>
-      <span className="pzs-place" data-guide="ouvrage" title={p.patternName}><VisibilityOrb value={p.visibility} size={18} dark /><span className="sr-only">{VISIBILITY[p.visibility].label} · </span>{p.patternName}</span>
-      <span className="pzs-sep" aria-hidden="true" />
+      {/* le dock du bas, réduit à l'essentiel : le nom de l'ouvrage est dans l'étiquette du Cadre ; le zoom à la molette, aux touches + et −, ou à deux doigts */}
+      <button type="button" data-guide="symboles" className="pzs-btm" aria-pressed={p.symbols} aria-label="Picto : les symboles par-dessus les couleurs" onClick={p.onSymbols}>Picto</button>
       <div className="pzs-seg" data-guide="lectures" role="group" aria-label="Affichage de la grille">
         {VIEWS.map(([id, name]) => <button key={id} type="button" aria-pressed={p.view === id} onClick={() => p.onView(id)}>{name}</button>)}
       </div>
-      <button type="button" data-guide="symboles" className="pzs-btm" aria-pressed={p.symbols} onClick={p.onSymbols}>Symboles</button>
       <span className="pzs-sep" aria-hidden="true" />
-      <button type="button" data-guide="loupe" className="pzs-btm pzs-loupe-btn" aria-pressed={loupe} aria-label="Loupe : la grille agrandie sous le pointeur" title="Loupe" onClick={() => setLoupe(v => !v)}><Search size={17} aria-hidden="true" /><span className="pzs-loupe-txt">Loupe</span></button>
-      <button type="button" data-guide="zoom" className="pzs-btm pzs-sq" aria-label="Dézoomer" onClick={p.zoom.zoomOut}>−</button>
-      <button type="button" data-guide="zoom" className="pzs-btm pzs-sq" aria-label="Zoomer" onClick={p.zoom.zoomIn}>+</button>
       <button type="button" data-guide="tout-voir" className="pzs-btm pzs-light" onClick={p.zoom.fit}>Tout voir</button>
+      <button type="button" data-guide="loupe" className="pzs-btm pzs-loupe-btn" aria-pressed={loupe} aria-label="Loupe : la grille agrandie sous le pointeur" title="Loupe" onClick={() => setLoupe(v => !v)}><Search size={17} aria-hidden="true" /><span className="pzs-loupe-txt">Loupe</span></button>
         </>}
     </nav>
   </>;

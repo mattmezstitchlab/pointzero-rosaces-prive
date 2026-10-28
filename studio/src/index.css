@@ -2507,3 +2507,70 @@ html[data-pz-motion="reduce"] .pz-guided-lens { transition: none; }
 .cadre-tete > * { flex-shrink: 0; }
 .cadre-tete > .cadre-surprise, .cadre-tete > .cadre-nom { flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 720px) { .cadre-nom { display: none; } .cadre-tete { min-width: 0; width: min(max(var(--fw), 220px), calc(100vw - 16px)); } }
+
+/* ---------------------------------------------------------------- Composer une rosace */
+.cr { position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; align-items: center; overflow: auto; padding: 18px 16px 28px; box-sizing: border-box;
+  background-color: #ecebe7; background-image: radial-gradient(circle, rgba(28,28,32,.2) 1.1px, transparent 1.4px); background-size: 16px 16px; color: #0b0b0c; }
+.cr-tete { width: min(820px, 100%); display: flex; align-items: center; gap: 12px; }
+.cr-titres { flex: 1; text-align: center; }
+.cr-sur { margin: 0; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #6b6b70; }
+.cr-tete h2 { margin: 2px 0 0; font-size: clamp(24px, 4vw, 34px); font-weight: 700; letter-spacing: -.02em; }
+.cr-btn { min-height: 44px; min-width: 44px; border-radius: 12px; border: 1px solid #d6d5cf; background: #fff; color: #0b0b0c; font: inherit; font-size: 15px; padding: 0 16px; cursor: pointer; }
+.cr-btn:hover { border-color: #0b0b0c; }
+.cr-retour, .cr-fermer { font-size: 20px; padding: 0; }
+.cr :is(button):focus-visible { outline: 2px solid #0a6cff; outline-offset: 3px; }
+.cr-cadran { position: relative; margin-top: 18px; display: grid; place-items: center; width: min(760px, 100%); }
+.cr-reponses { display: grid; grid-template-columns: repeat(2, auto); gap: 230px 240px; }
+.cr-petit .cr-reponses { gap: 150px 18px; }
+.cr-vignette { display: grid; justify-items: center; gap: 8px; padding: 10px; border-radius: 16px; border: 1px solid transparent; background: rgba(255,255,255,.72); cursor: pointer; transition: transform .45s cubic-bezier(.2,.7,.2,1), border-color .3s, box-shadow .3s; }
+.cr-vignette:hover { transform: translateY(-2px); border-color: #0b0b0c; }
+.cr-vignette[aria-checked="true"] { border-color: #a0172e; box-shadow: 0 0 0 2px #a0172e inset; }
+.cr-nom { font-size: 15px; font-weight: 600; }
+/* l'ordre visuel suit le sens des aiguilles d'une montre : haut gauche, haut droite, bas droite, bas gauche */
+.cr-nw { order: 1; } .cr-ne { order: 2; } .cr-se { order: 4; } .cr-sw { order: 3; }
+.cr-motif { display: block; border-radius: 6px; }
+.cr-centre { position: absolute; left: 50%; top: 50%; translate: -50% -50%; display: grid; justify-items: center; gap: 8px; touch-action: none; cursor: grab; }
+.cr-anneaux { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; max-width: 220px; }
+.cr-anneau { border: 0; background: rgba(160,23,46,.08); color: #6d1020; border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer; min-height: 28px; }
+.cr-pied { margin-top: 18px; }
+.cr-lien { border: 0; background: none; color: #0b0b0c; text-decoration: underline; text-underline-offset: 3px; font: inherit; font-size: 15px; cursor: pointer; min-height: 44px; }
+.cr-mur { width: min(860px, 100%); margin-top: 18px; text-align: center; }
+.cr-mur ul { list-style: none; margin: 0 0 12px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.cr-mur li button { width: 100%; display: grid; justify-items: center; gap: 4px; padding: 12px 8px; border-radius: 14px; border: 1px solid transparent; background: rgba(255,255,255,.8); cursor: pointer; font: inherit; }
+.cr-mur li button:hover { border-color: #0b0b0c; }
+.cr-mur-nom { font-weight: 600; font-size: 14px; }
+.cr-mur small { color: #6b6b70; font-size: 11.5px; }
+.sceau { margin: 0; display: grid; justify-items: center; gap: 4px; }
+.sceau svg { display: block; overflow: visible; }
+.sceau-code { font: 600 12px ui-monospace, "SF Mono", Menlo, monospace; color: #a0172e; }
+.sceau-anneau { animation: sceau-entre .6s ease-out both; }
+.sceau-onde { animation: sceau-onde 1.1s ease-out forwards; transform-origin: 90px 90px; }
+@keyframes sceau-entre { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sceau-onde { from { opacity: .7; transform: scale(1); } to { opacity: 0; transform: scale(7); } }
+.cr-fin { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; align-items: flex-start; width: min(980px, 100%); }
+.cr-apercu { padding: 14px; background: #fff; border-radius: 18px; box-shadow: 0 18px 50px rgba(11,11,12,.10); }
+.cr-infos { display: grid; justify-items: center; gap: 12px; max-width: 340px; text-align: center; }
+.cr-mesures { margin: 0; font-size: 14.5px; line-height: 1.5; }
+.cr-surprise { color: #8c1d3f; font-weight: 600; }
+.cr-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.cr-broder { background: #0b0b0c; color: #fff; border-color: #0b0b0c; font-weight: 600; }
+.cr-broder:hover { background: #2a2a28; }
+.cr-graines { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+.cr-graines button { min-height: 32px; border-radius: 999px; border: 1px solid #d6d5cf; background: #fff; padding: 0 10px; font: 12px ui-monospace, Menlo, monospace; cursor: pointer; }
+.cr-graines button[aria-pressed="true"] { background: #0b0b0c; color: #fff; border-color: #0b0b0c; }
+.cr-partage { margin: 0; font-size: 12.5px; color: #55555c; overflow-wrap: anywhere; }
+.cr-partage code { font-size: 11.5px; }
+.cr-note { margin: 0; font-size: 12px; color: #6b6b70; }
+.pz-point-zero-composer { pointer-events: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px 0 8px; border-radius: 999px; border: 1px solid #d6d5cf; background: #fff; color: #0b0b0c; font: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer; }
+.pz-point-zero-composer:hover { border-color: #a0172e; }
+.pz-point-zero-composer:focus-visible { outline: 2px solid #0b0b0c; outline-offset: 3px; }
+@media (max-width: 720px) {
+  .cr-tete h2 { font-size: 22px; }
+  .cr-centre { gap: 4px; }
+  .cr-anneaux { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cr-vignette { transition: none; }
+  .sceau-anneau, .sceau-onde { animation: none; }
+  .sceau-onde { display: none; }
+}

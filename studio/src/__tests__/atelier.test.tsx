@@ -238,10 +238,8 @@ describe("POINTZERO : atelier unique sans assistant", () => {
     expect(container?.querySelector(".pzs-loupe-dock")?.textContent).toContain("X 13 · Y 8");
     await click(button("Fermer la loupe"));
     expect(container?.querySelector(".pzs-loupe-dock")).toBeNull();
-    await click(inBottom("Zoomer"));
-    expect(send).toHaveBeenCalledWith(expect.objectContaining({detail:{action:"zoomIn"}}));
-    await click(inBottom("Dézoomer"));
-    expect(send).toHaveBeenCalledWith(expect.objectContaining({detail:{action:"zoomOut"}}));
+    // plus de − et + dans le dock : le zoom se fait à la molette, aux touches + et −, ou à deux doigts
+    expect(inBottom("Zoomer")).toBeFalsy();
     await click(inBottom("Tout voir"));
     await click(category("Partager"));
     await click(category("Exporter"));
@@ -344,7 +342,9 @@ describe("POINTZERO : atelier unique sans assistant", () => {
     await click(category("Restreint"));
     expect(category("Restreint")?.getAttribute("aria-pressed")).toBe("true");
     expect(JSON.stringify(JSON.parse(localStorage.getItem("pointzero:visibilite") ?? "{}"))).toContain("restreint");
-    expect(bottom()?.textContent).toContain("Restreint");
+    // le dock du bas est réduit à l'essentiel : la visibilité se lit dans Partager, en haut
+    expect(bottom()?.textContent).not.toContain("Restreint");
+    expect([...(bottom()?.querySelectorAll("button") ?? [])].map(b => b.textContent?.trim()).filter(Boolean)).toEqual(["Picto", "À plat", "Patron", "Réaliste", "Tout voir", "Loupe"]);
   });
   it("réutilise un seul panneau pour Fils, Suivi et Réglages, sans feuilles superposées", async () => {
     await mount();

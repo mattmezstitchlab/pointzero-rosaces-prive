@@ -41,7 +41,7 @@ afterEach(async () => { await act(async () => root?.unmount()); root = null; con
 describe("L'orbe qui guide", () => {
   it("chaque étape vise un outil qui existe dans les docks", () => {
     const cibles = new Set(ETAPES.map(e => e.cible));
-    expect([...cibles].sort()).toEqual(["broder", "cercle", "chercher", "dessiner", "fils", "historique", "lectures", "loupe", "orbe", "outil-back", "outil-cross", "outil-fill", "outil-half", "outils", "ouvrage", "partager", "point-zero", "profil", "symboles", "tout-voir", "zoom"].sort());
+    expect([...cibles].sort()).toEqual(["broder", "cercle", "chercher", "dessiner", "fils", "historique", "lectures", "loupe", "orbe", "outil-back", "outil-cross", "outil-fill", "outil-half", "outils", "partager", "point-zero", "profil", "symboles", "tout-voir"].sort());
     expect(ETAPES[0].dock).toBe("haut");
     expect(ETAPES[ETAPES.length - 1].dock).toBe("bas");
     expect(ETAPES.findIndex(e => e.dock === "bas")).toBe(ETAPES.filter(e => e.dock !== "bas").length); // tout le haut, puis tout le bas

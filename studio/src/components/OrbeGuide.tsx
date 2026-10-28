@@ -54,12 +54,10 @@ export const ETAPES: Etape[] = [
   { dock: "haut", cible: "chercher", titre: "Chercher", texte: "Un fil, un outil, une fonction : tapez quelques lettres, choisissez, c’est fait." },
   { dock: "haut", cible: "profil", titre: "Mes ouvrages", texte: "Tous vos ouvrages sont rangés ici : rouvrez-en un, déposez un fichier (image, PDF, patron), invitez quelqu’un à rejoindre la grille." },
   { dock: "bas", cible: "cercle", titre: "Le cercle", texte: "Son anneau suit votre avancement. Un clic change le dock du bas : Repères, Fils (vos pastilles DMC, avec le stock) ou Progression (la timeline du patron, fil par fil)." },
-  { dock: "bas", cible: "ouvrage", titre: "L’ouvrage en cours", texte: "Son nom et sa visibilité : pour vous seule, pour vos proches, ou pour tout le monde." },
-  { dock: "bas", cible: "lectures", titre: "Trois lectures de la grille", texte: "Réaliste : comme une fois brodé. À plat : les couleurs franches. Patron : la grille à suivre, case par case." },
-  { dock: "bas", cible: "symboles", titre: "Symboles", texte: "Les symboles par-dessus les couleurs, comme sur un patron papier : utile pour les teintes proches." },
+  { dock: "bas", cible: "symboles", titre: "Picto", texte: "Les symboles par-dessus les couleurs, comme sur un patron papier : utile pour les teintes proches." },
+  { dock: "bas", cible: "lectures", titre: "Trois lectures de la grille", texte: "À plat : les couleurs franches. Patron : la grille à suivre, case par case. Réaliste : comme une fois brodé." },
   { dock: "bas", cible: "loupe", titre: "La loupe", texte: "Un clic, et un dock se déplie au-dessus : la grille agrandie case par case, là où vous survolez ou touchez. Elle ne modifie rien." },
-  { dock: "bas", cible: "zoom", titre: "Zoomer", texte: "− et + règlent le zoom ; sur tablette, pincez la grille." },
-  { dock: "bas", cible: "tout-voir", titre: "Tout voir", texte: "Le patron entier revient à l’écran. C’est tout : bonne broderie ! Vous me retrouverez dans le menu de l’orbe : « Revoir la visite avec Le Point »." },
+  { dock: "bas", cible: "tout-voir", titre: "Tout voir", texte: "Le patron entier revient à l’écran. Pour zoomer : la molette, les touches + et −, ou deux doigts sur tablette. C’est tout : bonne broderie ! Vous me retrouverez dans le menu de l’orbe : « Revoir la visite avec Le Point »." },
 ];
 
 type Boite = { x: number; y: number; w: number; h: number };

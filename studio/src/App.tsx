@@ -38,6 +38,12 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import PeerShare from "./components/PeerShare";
 import OrbeGuide, { VISITE_CLE, visiteVue } from "./components/OrbeGuide";
 import Cadre, { TracerCadre } from "./components/Cadre";
+import ComposerRosace from "./components/ComposerRosace";
+import Sceau from "./components/Sceau";
+import { lireCode } from "./lib/motif5d/code";
+
+/** Après avoir ouvert une recette partagée, l'adresse redevient celle de l'atelier. */
+const retirerParametreRosace = () => { try { const u = new URL(window.location.href); if (u.searchParams.has("rosace")) { u.searchParams.delete("rosace"); window.history.replaceState(window.history.state, "", u.pathname + u.search + u.hash); } } catch { /* rien */ } };
 
 type Panel = "palette" | "library" | "share" | "export" | null;
 type RightSection = "properties" | "motifs" | "edit" | "prepare" | "follow" | "settings";
@@ -120,6 +126,10 @@ export default function App() {
   const [symbols, setSymbols] = useState(false), [panel, setPanel] = useState<Panel>(null), [file, setFile] = useState<File | null>(null), [pdfFile, setPdfFile] = useState<File | null>(null), [promptOpen, setPromptOpen] = useState(false), [selection, setSelection] = useState<Selection | null>(null), [clipboard, setClipboard] = useState<Pattern | null>(null);
   const [prefs, setPrefs] = useState(initialPreferences), [inventory, setInventory] = useState(readInventory), [saving, setSaving] = useState("Sauvegarde locale"), [toast, setToast] = useState("");
   const [tracer, setTracer] = useState(false);
+  /** Composer une rosace : ouvert depuis le point zéro, le + du Cadre, ou un lien ?rosace= (lecture seule, sans compte) */
+  const [composer, setComposer] = useState<{ depart?: string | null; lecture?: boolean } | null>(() => {
+    try { const c = new URLSearchParams(window.location.search).get("rosace"); return c && lireCode(c) ? { depart: c, lecture: true } : null; } catch { return null; }
+  });
   const [fitKey, setFitKey] = useState(0), wide = useMedia("(min-width: 1280px)");
   const ready = useRef(true), prevTool = useRef<Tool>("cross"), lastViews = useRef<{ create: ViewMode; stitch: ViewMode }>({ create: "real", stitch: "pattern" });
   const snapshot = useRef({ P, remote, prefs, workspace, store }); snapshot.current = { P, remote, prefs, workspace, store };
@@ -366,7 +376,7 @@ export default function App() {
   const atelierLibre = studioMode === "embroidery" && !pdfFile && !promptOpen && !compositionInput && !file && !autoImage;
   /* l'orbe qui guide : à la première ouverture de l'atelier, elle présente les deux docks, outil par outil */
   const [visite, setVisite] = useState(false);
-  useEffect(() => { if (atelierLibre && !panel && !showWelcome && !visiteVue()) setVisite(true); }, [atelierLibre, panel, showWelcome]);
+  useEffect(() => { if (atelierLibre && !panel && !showWelcome && !composer && !visiteVue()) setVisite(true); }, [atelierLibre, panel, showWelcome, composer]);
   useEffect(() => {
     if (!atelierLibre) return;
     const utile = (e: DragEvent) => { const t = Array.from(e.dataTransfer?.types ?? []); return t.includes(OUVRAGE_DRAG_TYPE) || t.includes("Files"); };
@@ -484,7 +494,7 @@ export default function App() {
       setWorkspace("create"); setView("flat"); setTool("hand");
       setActiveCategory("compose"); setRightSection("properties");
       setAutoImage(null); if (!keepGenerator) setPromptOpen(false); setPdfFile(null);
-      notify(p.photo ? "Motif ouvert dans son cadre. Tirez un coin : la photo est recomptée ; le + règle la lumière et la palette." : "Motif ouvert dans son cadre. Tirez un coin pour l’agrandir.");
+      notify(p.recette ? "Votre rosace est dans son cadre. Tirez un coin : le motif se recalcule à la nouvelle taille." : p.photo ? "Motif ouvert dans son cadre. Tirez un coin : la photo est recomptée ; le + règle la lumière et la palette." : "Motif ouvert dans son cadre. Tirez un coin pour l’agrandir.");
       return true;
     } catch { return false; }
   };
@@ -539,7 +549,7 @@ export default function App() {
       onMotifDrop={(id,x,y) => { const preset = getMotifPreset(id); if (preset) addStitchedPattern(preset,{x,y}); }} />
     {!tracer && <Cadre pattern={P} readOnly={!!remote} onSet={p => setPattern(p)} onNotify={notify}
       onBegin={() => { if (!remote) dispatch({ type: "begin" }); }} onLive={(p) => { if (!remote) dispatch({ type: "live", pattern: p }); }} onEnd={(changed) => { if (!remote) dispatch({ type: "end", changed }); }}
-      plus={[["Nouveau cadre", () => setTracer(true)], ["Motifs à glisser", () => openRightPanel("motifs")], ["Texte en croix, symétrie", () => { setActiveCategory("compose"); openRightPanel("edit"); }],
+      plus={[["Composer une rosace", () => setComposer({})], ["Nouveau cadre", () => setTracer(true)], ["Motifs à glisser", () => openRightPanel("motifs")], ["Texte en croix, symétrie", () => { setActiveCategory("compose"); openRightPanel("edit"); }],
         ["Calques", () => openRightPanel("properties")], ["Générer d’après une description", panelActions.prompt], ["Exporter le patron", () => setPanel("export" as Panel)], ["Télécharger le projet", panelActions.save]]} />}
     {tracer && <TracerCadre count={P.count} over={P.fabric?.over ?? 1} onAnnuler={() => setTracer(false)}
       onTrace={(w, h, nom) => { setTracer(false); panelActions.new(w, h, nom ?? "Nouveau motif"); notify(`Nouveau cadre : ${w} × ${h} points. Tirez ses coins pour l’agrandir.`); }} />}
@@ -552,7 +562,10 @@ export default function App() {
         </button>
         <p><b>Importer</b><span>une image, un patron PDF, un projet — ou glissez-le ici</span></p>
         <p className="pz-point-zero-ou">ou choisissez Dessiner, en haut, et commencez</p>
+        <button type="button" className="pz-point-zero-composer" data-guide="composer" onClick={() => setComposer({})}><Sceau signature={{ structure: 0, trace: 2, densite: 1, echelle: 1, palette: 1 }} faits={4} taille={30} />Composer une rosace</button>
       </div>}
+    {composer && <ComposerRosace depart={composer.depart} lecture={composer.lecture} onFermer={() => { setComposer(null); retirerParametreRosace(); }}
+      onBroder={(p) => { void useImportedPattern(p).then(ok => { if (ok) { setComposer(null); retirerParametreRosace(); } }); }} />}
     {!pdfFile && !promptOpen && !compositionInput && !file && !autoImage && <StudioDocks
       patternName={P.name} saving={saving} workspace={workspace}
       onWorkspace={mode => { chooseWorkspace(mode); setActiveCategory(mode === "stitch" ? "stitch" : "compose"); setShowWelcome(false); }}
@@ -599,7 +612,7 @@ export default function App() {
       progression={progression} onCouleur={pickColor} pattern={P} couleur={color} blocDemande={blocDemande}
       ouvrages={{ courant: P.id, ouvrir: id => { void ouvrirOuvrage(id); }, importer: importAnyFile }}
       fils={<FlossRail dock pattern={P} active={color} onActive={pickColor} onPattern={(p) => setPattern(p)} onSupply={updateSupply} onBrowse={() => ouvrirNuancier()} stitching={workspace === "stitch"} hidden={showWelcome || !!file} />} />}
-    {atelierLibre && <OrbeGuide ouverte={visite} onFermer={() => setVisite(false)} onChemin={c => {
+    {atelierLibre && <OrbeGuide ouverte={visite && !composer} onFermer={() => setVisite(false)} onChemin={c => {
       /* « dessiner:grille » : Le Point ouvre aussi la grille des points, pour y imiter les gestes */
       const [chemin, grille] = (c ?? "").split(":");
       setDockPath((chemin || null) as DockPath);

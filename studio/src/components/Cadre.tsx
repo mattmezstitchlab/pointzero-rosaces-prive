@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent a
 import { VUE_CADRE, type VueCadre } from "./Canvas";
 import { changerToile, cm, decaler, duree, etendre, FORMATS, mesures, mesuresAEchelle, nomToile, PALETTES, pointsPourCm, reechantillonner, retouche, TOILES, type Mesures, type ReglagesPhoto } from "../lib/cadre";
 import { convertirPhoto } from "../lib/cadrePhoto";
+import { regenerer, retoucheRecette } from "../lib/motif5d/generer";
 import type { Pattern } from "../lib/pattern";
 
 /**
@@ -72,7 +73,7 @@ export default function Cadre({ pattern: P, readOnly, plus, onSet, onBegin, onLi
       const w = Math.max(4, Math.min(1000, Math.round(pw * f))), h = Math.max(4, Math.min(1000, Math.round(ph * f)));
       const x0 = g.p.includes("w") ? pw - w : 0, y0 = g.p.includes("n") ? ph - h : 0;
       g.res = { w, h, ax: x0, ay: y0 };
-      g.fant = { x0, y0, x1: x0 + w, y1: y0 + h, m: mesuresAEchelle(g.m, w / pw), mot: base.photo && !retouche(base) ? "La photo sera recomptée" : "Points mis à l’échelle" };
+      g.fant = { x0, y0, x1: x0 + w, y1: y0 + h, m: mesuresAEchelle(g.m, w / pw), mot: base.recette && !retoucheRecette(base) ? "Le motif sera recalculé" : base.photo && !retouche(base) ? "La photo sera recomptée" : "Points mis à l’échelle" };
     } else {
       const cotes = { gauche: 0, haut: 0, droite: 0, bas: 0 };
       if (g.p === "e") cotes.droite = Math.max(1 - pw, Math.round(c.x - pw));
@@ -91,6 +92,10 @@ export default function Cadre({ pattern: P, readOnly, plus, onSet, onBegin, onLi
     const { base } = g;
     if (r.w === base.w && r.h === base.h && !r.ax && !r.ay) return;
     if (r.cotes) { ancrer(r.ax, r.ay); onSet(etendre(base, r.cotes)); onNotify(`Toile : ${r.w} × ${r.h} points. Les points n’ont pas bougé.`); return; }
+    if (base.recette && !retoucheRecette(base)) {
+      const p = regenerer(base, r.w, r.h);
+      if (p) { ancrer(r.ax, r.ay); onSet(p); onNotify(`${r.w} × ${r.h} points : le motif est recalculé à cette taille, depuis sa recette.`); return; }
+    }
     if (base.photo && !retouche(base)) {
       setOccupe("La photo est recomptée…");
       try { const p = await convertirPhoto(base, base.photo.src, base.photo.reglages, r.w, r.h); ancrer(r.ax, r.ay); onSet(p); onNotify(`${r.w} × ${r.h} points, recomptés depuis la photo.`); }
@@ -98,7 +103,7 @@ export default function Cadre({ pattern: P, readOnly, plus, onSet, onBegin, onLi
       finally { setOccupe(""); }
     } else {
       ancrer(r.ax, r.ay); onSet(reechantillonner(base, r.w, r.h));
-      onNotify(base.photo ? `${r.w} × ${r.h} points. Vos retouches sont gardées : les points sont mis à l’échelle.` : `${r.w} × ${r.h} points, mis à l’échelle.`);
+      onNotify(base.photo || base.recette ? `${r.w} × ${r.h} points. Vos retouches sont gardées : les points sont mis à l’échelle.` : `${r.w} × ${r.h} points, mis à l’échelle.`);
     }
   };
   const debut = (p: Poignee | "motif") => (e: PE<HTMLElement>) => {
@@ -161,6 +166,7 @@ export default function Cadre({ pattern: P, readOnly, plus, onSet, onBegin, onLi
     </div>}
     {menu === "plus" && <div className="cadre-menu" role="menu" aria-label="Plus de fonctions">
       {P.photo && <button role="menuitem" type="button" onClick={() => setMenu("photo")}>La photo<small>lumière, contraste, palette</small></button>}
+      {P.recette && retoucheRecette(P) && <button role="menuitem" type="button" onClick={() => { const p = regenerer(P, P.w, P.h); setMenu(null); if (p) { onSet(p); onNotify("Le motif d’origine est revenu. Annuler retrouve vos retouches."); } }}>Revenir à la recette<small>{P.recette.code.replace(/\.(?=[gv])/g, " · ")}</small></button>}
       {plus.map(([nom, faire]) => <button key={nom} role="menuitem" type="button" onClick={() => { setMenu(null); faire(); }}>{nom}</button>)}
     </div>}
     {menu === "photo" && P.photo && <ReglagesPhotoVue pattern={P} onSet={onSet} onFermer={() => setMenu(null)} onNotify={onNotify} />}
