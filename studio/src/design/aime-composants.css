@@ -23,7 +23,7 @@
 .aime-puce .aime-point { width: 20px; height: 20px; }
 
 /* — Boutons : la pilule pleine, la pilule de verre, le contour, et leurs états — */
-.aime-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; padding: 0 20px; border: 0; border-radius: var(--aime-pilule);
+.aime-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; padding: 0 20px; border: 0; border-radius: var(--aime-btn-r, var(--aime-pilule));
   font: inherit; font-size: 14.5px; font-weight: 550; letter-spacing: -.005em; text-decoration: none; cursor: pointer; white-space: nowrap;
   transition: background var(--aime-duree) var(--aime-courbe), color var(--aime-duree), box-shadow var(--aime-duree), transform var(--aime-duree) var(--aime-courbe); }
 .aime-btn:active { transform: scale(.98); }
@@ -35,7 +35,7 @@
 .aime-btn--droit { border-radius: var(--aime-r-petit); }                /* la variante rectangulaire (référence « Lumière ») */
 .aime-btn--petit { min-height: 36px; padding: 0 14px; font-size: 13.5px; }
 .aime-btn[disabled], .aime-btn[aria-disabled="true"] { background: var(--aime-desactive-fond); color: var(--aime-desactive); box-shadow: none; cursor: not-allowed; transform: none; }
-.aime-btn-fleche { display: inline-grid; place-items: center; width: 26px; height: 26px; margin-right: -10px; border-radius: 50%; background: var(--aime-primaire-texte); color: var(--aime-primaire); font-size: 14px; }
+.aime-btn-fleche { display: inline-grid; place-items: center; width: 26px; height: 26px; margin-right: -10px; border-radius: calc(var(--aime-btn-r, 999px) - 4px); background: var(--aime-primaire-texte); color: var(--aime-primaire); font-size: 14px; }
 .aime-btn--danger { background: var(--aime-erreur-fond); color: var(--aime-erreur); box-shadow: inset 0 0 0 1px var(--aime-erreur); }
 
 /* — La navigation : une pilule de verre, l'élément courant en relief (référence « Consulting ») — */
@@ -232,3 +232,97 @@ html[data-pz-motion="reduce"] .aime-bande-piste, html[data-pz-motion="reduce"] .
 .aime-nav, .aime-onglets, .aime-segment { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .aime-nav::-webkit-scrollbar, .aime-onglets::-webkit-scrollbar, .aime-segment::-webkit-scrollbar { display: none; }
 .aime-nav > *, .aime-onglets > *, .aime-segment > * { flex: none; white-space: nowrap; }
+
+/* ═════════ Troisième série (9 h 55) ═════════ */
+
+/* — Dans une carte, un panneau, une tuile : les boutons sont moins arrondis (la pilule reste pour la page) — */
+.aime-carte, .aime-verre, .aime-tuile, .aime-calendrier, .aime-outil, .aime-menu-panneau, .aime-menu-mobile { --aime-btn-r: 10px; }
+
+/* — La grande phrase : deux tons, beaucoup d'air (la seconde ligne décalée, en gris) — */
+.aime-phrase { margin: 0; font-size: clamp(56px, 10vw, 152px); font-weight: 600; line-height: .9; letter-spacing: -.055em; color: var(--aime-texte); }
+.aime-phrase > span { display: block; }
+.aime-phrase > span + span { padding-left: .9em; color: var(--aime-titre-fondu); }
+
+/* — Le méga-menu : une barre sombre, des choix à déplier, un panneau riche (cartes, liste, aperçu) — */
+.aime-menu { position: relative; display: inline-grid; justify-items: center; color: #f4f4f2; }
+.aime-menu-barre { display: inline-flex; align-items: center; gap: 4px; padding: 6px; border-radius: 22px; background: rgba(28, 28, 31, .82);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 18px 50px rgba(0,0,0,.4); backdrop-filter: blur(var(--aime-flou)); -webkit-backdrop-filter: blur(var(--aime-flou)); }
+.aime-menu-barre > button, .aime-menu-barre > a { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 16px; border: 0; border-radius: 16px; background: transparent;
+  color: #b9b9b5; font: inherit; font-size: 14.5px; font-weight: 500; text-decoration: none; cursor: pointer; transition: background var(--aime-duree), color var(--aime-duree); }
+.aime-menu-barre > button:hover, .aime-menu-barre > button[aria-expanded="true"] { background: rgba(255,255,255,.08); color: #fff; }
+.aime-menu-barre > button svg { transition: transform var(--aime-duree) var(--aime-courbe); }
+.aime-menu-barre > button[aria-expanded="true"] svg { transform: rotate(180deg); }
+.aime-menu-barre > .aime-menu-contact { background: #f4f4f2; color: #0e0e10; font-weight: 600; }
+.aime-menu-panneau { position: absolute; top: calc(100% + 10px); z-index: 40; width: min(92vw, 760px); padding: 18px; border-radius: 28px; background: rgba(30, 30, 33, .94);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 30px 80px rgba(0,0,0,.5); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); color: #f4f4f2; text-align: left;
+  animation: aime-apparait 220ms var(--aime-courbe); }
+@keyframes aime-apparait { from { opacity: 0; transform: translateY(-6px) scale(.985); } }
+.aime-menu-cartes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.aime-menu-cartes a { position: relative; display: block; aspect-ratio: 3 / 4; overflow: hidden; border-radius: 18px; color: #fff; text-decoration: none; isolation: isolate; }
+.aime-menu-cartes img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; transition: transform 500ms var(--aime-courbe); }
+.aime-menu-cartes a::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, transparent 45%, rgba(0,0,0,.72)); }
+.aime-menu-cartes a:hover img { transform: scale(1.04); }
+.aime-menu-cartes b, .aime-menu-cartes small { position: absolute; left: 14px; right: 10px; }
+.aime-menu-cartes b { bottom: 32px; font-size: 15px; font-weight: 600; }
+.aime-menu-cartes small { bottom: 13px; font-size: 12px; color: rgba(255,255,255,.85); }
+.aime-menu-tete { display: flex; justify-content: space-between; align-items: center; margin: 2px 6px 12px; }
+.aime-menu-tete p { margin: 0; font-size: 11px; font-weight: 650; letter-spacing: .16em; text-transform: uppercase; color: #9a9a96; }
+.aime-menu-tete a { color: #e6e6e3; font-size: 13px; text-decoration: none; }
+.aime-menu-liste { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.aime-menu-liste a { display: grid; grid-template-columns: 54px 1fr; gap: 14px; align-items: center; padding: 8px; border-radius: 14px; color: #f4f4f2; text-decoration: none; }
+.aime-menu-liste a:hover { background: rgba(255,255,255,.06); }
+.aime-menu-liste img { width: 54px; height: 54px; border-radius: 10px; object-fit: cover; }
+.aime-menu-liste b { display: block; font-size: 15px; font-weight: 550; }
+.aime-menu-liste small { font-size: 13px; color: #a5a5a1; }
+.aime-menu-projets { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 16px; }
+.aime-menu-projets ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; align-content: start; }
+.aime-menu-projets button { width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 12px; padding: 16px 18px; border: 0; border-radius: 18px; background: transparent;
+  color: #8f8f8b; font: inherit; text-align: left; cursor: pointer; transition: background var(--aime-duree), color var(--aime-duree); }
+.aime-menu-projets button b { font-size: 19px; font-weight: 550; color: #c9c9c5; }
+.aime-menu-projets button small { grid-column: 1; font-size: 14px; }
+.aime-menu-projets button svg { grid-row: 1 / 3; grid-column: 2; opacity: 0; transition: opacity var(--aime-duree), transform var(--aime-duree) var(--aime-courbe); }
+.aime-menu-projets button[aria-current="true"] { background: rgba(255,255,255,.07); color: #b5b5b1; }
+.aime-menu-projets button[aria-current="true"] b { color: #fff; }
+.aime-menu-projets button[aria-current="true"] svg { opacity: 1; transform: translateX(-2px); }
+.aime-menu-apercu { position: relative; min-height: 300px; overflow: hidden; border-radius: 22px; }
+.aime-menu-apercu img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.aime-compteur { position: absolute; left: 14px; bottom: 14px; padding: 7px 14px; border-radius: 999px; background: rgba(20,20,22,.72); color: #fff; font-size: 13.5px; font-weight: 600; letter-spacing: .06em; font-variant-numeric: tabular-nums; backdrop-filter: blur(10px); }
+.aime-rond-fleche { position: absolute; right: 14px; top: 14px; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: rgba(20,20,22,.72); color: #fff; backdrop-filter: blur(10px); }
+
+/* — Le panneau d'outil : un aperçu, des réglages alignés (libellé, valeur, glissière), une action — */
+.aime-outil { width: min(100%, 380px); display: grid; gap: 14px; padding: 18px; border-radius: 26px; background: var(--aime-surface); box-shadow: inset 0 0 0 1px var(--aime-bordure-forte), var(--aime-ombre); }
+.aime-outil-tete { display: flex; align-items: center; gap: 12px; }
+.aime-outil-tete h3 { margin: 0; flex: 1; font-size: 16px; font-weight: 600; }
+.aime-outil-icone { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: var(--aime-surface-2); }
+.aime-outil-apercu { aspect-ratio: 1; overflow: hidden; border-radius: 18px; background: #050506; }
+.aime-outil-apercu canvas { display: block; width: 100%; height: 100%; }
+.aime-reglage { display: grid; grid-template-columns: 112px 1fr; gap: 10px; align-items: center; font-size: 14px; color: var(--aime-texte-2); }
+.aime-reglage-valeur { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; }
+.aime-reglage select, .aime-reglage input[type="number"] { width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid transparent; border-radius: 10px; background: var(--aime-surface-2);
+  color: var(--aime-texte); font: inherit; font-size: 14px; box-shadow: inset 0 0 0 1px var(--aime-bordure); }
+.aime-reglage select { appearance: none; padding-right: 32px; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 17px) 52%, calc(100% - 12px) 52%; background-size: 5px 5px; background-repeat: no-repeat; }
+.aime-reglage :is(select, input):focus-visible { outline: 2px solid var(--aime-focus); outline-offset: 1px; }
+.aime-reglage input[type="range"] { width: 100%; accent-color: var(--aime-texte); }
+.aime-btn--plein { width: 100%; background: var(--aime-surface-2); color: var(--aime-texte); box-shadow: inset 0 0 0 1px var(--aime-bordure); }
+.aime-btn--plein:hover { box-shadow: inset 0 0 0 1px var(--aime-texte-3); }
+
+/* — Le menu mobile : une barre inversée (Fermer, thème, heure), de grands liens, des rubriques — */
+.aime-menu-mobile { width: min(100%, 360px); padding: 8px 8px 26px; border-radius: 30px; background: var(--aime-fond-2); color: var(--aime-texte); box-shadow: inset 0 0 0 1px var(--aime-bordure), var(--aime-ombre); }
+.aime-menu-mobile-barre { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 16px; border-radius: 24px; background: var(--aime-texte); color: var(--aime-fond); }
+.aime-menu-mobile-barre button { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; border: 0; background: none; color: inherit; font: inherit; font-size: 16px; cursor: pointer; }
+.aime-menu-mobile-barre .aime-rond { width: 42px; height: 42px; justify-content: center; margin-left: auto; border-radius: 50%; box-shadow: inset 0 0 0 1px currentColor; }
+.aime-menu-mobile-barre time { font-size: 16px; font-variant-numeric: tabular-nums; opacity: .7; }
+.aime-menu-mobile nav { display: grid; gap: 4px; padding: 22px 22px 0; }
+.aime-menu-mobile nav p { margin: 14px 0 4px; font-size: 13px; color: var(--aime-texte-3); }
+.aime-menu-mobile nav a { color: var(--aime-texte); text-decoration: none; font-size: 15px; padding: 4px 0; }
+.aime-menu-mobile nav .aime-grand { font-size: 28px; font-weight: 500; letter-spacing: -.02em; padding: 2px 0; }
+.aime-menu-mobile hr { margin: 18px 0 2px; border: 0; border-top: 1px solid var(--aime-bordure-forte); }
+
+@media (prefers-reduced-motion: reduce) { .aime-menu-panneau { animation: none; } .aime-menu-cartes img { transition: none; } }
+@media (max-width: 640px) {
+  .aime-menu-cartes { grid-template-columns: 1fr 1fr; } .aime-menu-cartes a:last-child { display: none; }
+  .aime-menu-projets { grid-template-columns: 1fr; } .aime-menu-apercu { min-height: 200px; }
+  .aime-menu-barre > button, .aime-menu-barre > a { padding: 0 10px; font-size: 13.5px; }
+}
+.aime-carte .aime-nav a, .aime-carte .aime-onglets button { padding: 0 11px; }

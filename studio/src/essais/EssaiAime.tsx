@@ -6,12 +6,13 @@
  * Tout est construit avec design/aime.css et design/aime-composants.css ; les couleurs vives n'appartiennent qu'au contenu d'un univers.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Compass, FileUp, FolderOpen, Monitor, Palette, PenLine, Scissors, SunMoon, Smartphone } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ChevronDown, Compass, FileUp, FolderOpen, Grid3x3, Monitor, Moon, Palette, PenLine, Scissors, Sun, SunMoon, Smartphone, X } from "lucide-react";
 import "../design/aime-composants.css";
 import "./EssaiAime.css";
 import { CHOIX_THEMES, useTheme, type Theme } from "../design/theme";
 import { Disque } from "../components/edition/Edition";
 import type { ModePoint } from "../lib/point/modes";
+import { chargerImage, tramer, type ModeTrame, type OptionsTrame } from "../design/trame";
 
 const IMG = import.meta.env.BASE_URL + "images/";
 const TOKENS: [string, string][] = [
@@ -149,21 +150,118 @@ function Colonne({ theme }: { theme: Theme }) {
   </section>;
 }
 
+/* ——— le méga-menu : trois choix qui se déplient (cartes, journal, projets avec aperçu) ——— */
+const PROJETS = [
+  { nom: "Point Zéro", sous: "Broderie et patrons", img: "hero-ipad-broderie.jpg" },
+  { nom: "L’histoire", sous: "Le textile, de l’Inde à nous", img: "histoire/reconstitution-port.webp" },
+  { nom: "Le nuancier", sous: "489 fils DMC, un seul geste", img: "landing/ecran-nuancier.webp" },
+  { nom: "Le Bureau", sous: "Les contenus du site", img: "ecrans/atelier-ordinateur.webp" },
+];
+function MegaMenu() {
+  const [ouvert, setOuvert] = useState<string | null>(null), [projet, setProjet] = useState(0), hote = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!ouvert) return;
+    const clavier = (e: KeyboardEvent) => { if (e.key === "Escape") { setOuvert(null); hote.current?.querySelector<HTMLButtonElement>(`[data-menu="${ouvert}"]`)?.focus(); } };
+    const dehors = (e: PointerEvent) => { if (!hote.current?.contains(e.target as Node)) setOuvert(null); };
+    document.addEventListener("keydown", clavier); document.addEventListener("pointerdown", dehors);
+    return () => { document.removeEventListener("keydown", clavier); document.removeEventListener("pointerdown", dehors); };
+  }, [ouvert]);
+  const choix = (id: string, nom: string) => <button type="button" data-menu={id} aria-expanded={ouvert === id} aria-controls={`ea-menu-${id}`} onClick={() => setOuvert(o => o === id ? null : id)}>{nom}<ChevronDown size={15} aria-hidden="true" /></button>;
+  return <div className="aime-menu" ref={hote}>
+    <nav className="aime-menu-barre" aria-label="Navigation principale (exemple)">{choix("projets", "Projets")}{choix("univers", "Univers")}{choix("journal", "Journal")}<a className="aime-menu-contact" href="#cote">Contact</a></nav>
+    {ouvert === "univers" && <div className="aime-menu-panneau" id="ea-menu-univers"><div className="aime-menu-cartes">
+      <a href="#univers"><img src={IMG + "histoire/met-palampore-2010-337.webp"} alt="" /><b>Broderie</b><small>Les fils et les patrons</small></a>
+      <a href="#univers"><img src={IMG + "histoire/reconstitution-atelier.webp"} alt="" /><b>Savoir-faire</b><small>Les gestes de l’atelier</small></a>
+      <a href="#univers"><img src={IMG + "histoire/met-reserve-bleue-40-128.webp"} alt="" /><b>Culture</b><small>Les pièces des musées</small></a></div></div>}
+    {ouvert === "journal" && <div className="aime-menu-panneau ea-menu-etroit" id="ea-menu-journal">
+      <div className="aime-menu-tete"><p>Dernières entrées</p><a href="#point">Tout le journal <ArrowUpRight size={13} aria-hidden="true" /></a></div>
+      <ul className="aime-menu-liste">{[["histoire/met-palampore-2010-337.webp", "Le palampore", "Un jardin peint pour Ceylan"], ["histoire/met-reserve-bleue-40-128.webp", "La réserve bleue", "L’indigo qui protège le dessin"], ["histoire/reconstitution-pigments.webp", "Les pigments", "Garance, indigo et gaude"]].map(([i, t, d]) =>
+        <li key={t}><a href="#point"><img src={IMG + i} alt="" /><span><b>{t}</b><small>{d}</small></span></a></li>)}</ul></div>}
+    {ouvert === "projets" && <div className="aime-menu-panneau ea-menu-large" id="ea-menu-projets"><div className="aime-menu-projets">
+      <ul>{PROJETS.map((p, i) => <li key={p.nom}><button type="button" aria-current={projet === i} onClick={() => setProjet(i)} onPointerEnter={() => setProjet(i)} onFocus={() => setProjet(i)}><b>{p.nom}</b><small>{p.sous}</small><ArrowRight size={18} aria-hidden="true" /></button></li>)}</ul>
+      <div className="aime-menu-apercu"><img src={IMG + PROJETS[projet].img} alt={`Aperçu : ${PROJETS[projet].nom}`} /><span className="aime-rond-fleche" aria-hidden="true"><ArrowUpRight size={18} /></span>
+        <span className="aime-compteur" aria-live="polite">{String(projet + 1).padStart(2, "0")} / {String(PROJETS.length).padStart(2, "0")}</span></div></div></div>}
+  </div>;
+}
+
+/* ——— la une : un grand visuel sobre, la trame qui gagne les bords, un grand titre blanc, de l'air ——— */
+function LaUne({ themeChoix }: { themeChoix: React.ReactNode }) {
+  const toile = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    let image: HTMLImageElement | null = null, vivant = true;
+    const dessiner = () => { if (image && toile.current) tramer(image, toile.current, { mode: "bayer", pas: 6, luminosite: 8, niveaux: 3 }); };
+    chargerImage(IMG + "landing/peinture-roses.webp").then(i => { if (vivant) { image = i; dessiner(); } }).catch(() => {});
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(dessiner) : null; if (toile.current) ro?.observe(toile.current);
+    return () => { vivant = false; ro?.disconnect(); };
+  }, []);
+  return <section className="ea-une" data-aime="nuit" aria-labelledby="ea-une-titre">
+    <img className="ea-une-image" src={IMG + "landing/peinture-roses.webp"} alt="" />
+    <canvas ref={toile} className="ea-une-trame" aria-hidden="true" />
+    <div className="ea-une-haut">
+      <p className="ea-marque ea-marque-photo"><span className="aime-point" aria-hidden="true" />AIME<sup>®</sup></p>
+      <MegaMenu />
+      {themeChoix}
+    </div>
+    <div className="ea-une-bas">
+      <h1 id="ea-une-titre" className="ea-une-titre">Un socle,<br />tous les univers.</h1>
+      <div className="ea-une-cote">
+        <p>Une interface sobre, en Jour et en Nuit. Les images, les matières et les couleurs appartiennent à chaque univers.</p>
+        <div className="ea-ligne"><a className="aime-btn ea-blanc" href="#point">Commencer <span aria-hidden="true">→</span></a><a className="aime-btn aime-btn--contour ea-contour-photo" href="#composants">Les composants</a></div>
+      </div>
+    </div>
+    <p className="ea-une-legende">Peinture de roses, visuel de la landing Point Zéro · trame calculée dans la page</p>
+  </section>;
+}
+
+/* ——— le panneau Trame : un vrai outil, local (l'image choisie ne quitte pas l'appareil) ——— */
+function OutilTrame() {
+  const toile = useRef<HTMLCanvasElement>(null), fichier = useRef<HTMLInputElement>(null);
+  const [o, setO] = useState<OptionsTrame>({ mode: "croix", pas: 6, luminosite: 20, niveaux: 7 }), [image, setImage] = useState<HTMLImageElement | null>(null);
+  useEffect(() => { chargerImage(IMG + "landing/peinture-roses.webp").then(setImage).catch(() => {}); }, []);
+  useEffect(() => { if (image && toile.current) tramer(image, toile.current, o); }, [image, o]);
+  const nombre = (k: "pas" | "luminosite" | "niveaux", nom: string, min: number, max: number) => <div className="aime-reglage">
+    <label htmlFor={`ea-t-${k}`}>{nom}</label>
+    <div className="aime-reglage-valeur"><input id={`ea-t-${k}`} type="number" min={min} max={max} value={o[k]} onChange={e => setO({ ...o, [k]: Math.min(max, Math.max(min, Number(e.target.value) || min)) })} />
+      <input type="range" min={min} max={max} value={o[k]} aria-label={nom} onChange={e => setO({ ...o, [k]: Number(e.target.value) })} /></div></div>;
+  const ouvrir = (f?: File) => { if (!f) return; const u = URL.createObjectURL(f); chargerImage(u).then(i => { setImage(i); URL.revokeObjectURL(u); }).catch(() => URL.revokeObjectURL(u)); };
+  return <section className="aime-outil" aria-labelledby="ea-trame-titre">
+    <div className="aime-outil-tete"><span className="aime-outil-icone" aria-hidden="true"><Grid3x3 size={17} /></span><h3 id="ea-trame-titre">Trame</h3></div>
+    <div className="aime-outil-apercu"><canvas ref={toile} role="img" aria-label="Aperçu de l’image tramée" /></div>
+    <div className="aime-reglage"><label htmlFor="ea-t-mode">Mode</label><select id="ea-t-mode" value={o.mode} onChange={e => setO({ ...o, mode: e.target.value as ModeTrame })}>
+      <option value="croix">Point de croix</option><option value="bayer">Bayer 4×4</option><option value="points">Demi-teinte</option></select></div>
+    {nombre("pas", "Taille du point", 3, 24)}{nombre("luminosite", "Luminosité", -60, 60)}{nombre("niveaux", "Niveaux", 2, 8)}
+    <input ref={fichier} type="file" accept="image/*" hidden onChange={e => ouvrir(e.target.files?.[0])} />
+    <button type="button" className="aime-btn aime-btn--plein" onClick={() => fichier.current?.click()}>Ajouter une image</button>
+    <p className="ea-note">L’image reste sur votre appareil.</p>
+  </section>;
+}
+
+/* ——— le menu mobile, en Jour et en Nuit : Fermer, le thème, l'heure ——— */
+function MenuMobile({ theme, basculer }: { theme: Theme; basculer: () => void }) {
+  const [heure, setHeure] = useState(() => new Date());
+  useEffect(() => { const t = setInterval(() => setHeure(new Date()), 15000); return () => clearInterval(t); }, []);
+  const h = heure.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  return <div data-aime={theme} className="aime-menu-mobile">
+    <div className="aime-menu-mobile-barre"><button type="button"><X size={18} aria-hidden="true" />Fermer</button>
+      <button type="button" className="aime-rond" onClick={basculer} aria-label={theme === "nuit" ? "Passer en Jour" : "Passer en Nuit"}>{theme === "nuit" ? <Moon size={18} /> : <Sun size={18} />}</button>
+      <time dateTime={heure.toISOString()}>{h}</time></div>
+    <nav aria-label={`Menu mobile, ${theme === "nuit" ? "Nuit" : "Jour"} (exemple)`}>
+      <p>Menu</p>{["L’atelier", "Les univers", "Le journal", "Le Bureau"].map(l => <a key={l} className="aime-grand" href="#socle">{l}</a>)}
+      <hr /><p>Mentions</p><a href="#socle">Confidentialité</a><a href="#socle">Conditions d’utilisation</a>
+      <p>Réseaux</p><a href="#socle">Instagram · YouTube</a>
+    </nav>
+  </div>;
+}
+
 export default function EssaiAime() {
   const { choix, theme, choisir } = useTheme();
   useEffect(() => { document.title = "Essai · socle visuel AIME"; }, []);
   return <div data-aime={theme} className="ea aime-scene">
     <span className="aime-perle ea-perle ea-perle-1" aria-hidden="true" /><span className="aime-perle ea-perle ea-perle-2" aria-hidden="true" /><span className="aime-perle ea-perle ea-perle-3" aria-hidden="true" />
-    <header className="ea-entete">
-      <p className="ea-marque"><span className="aime-point" aria-hidden="true" />AIME<sup>®</sup> <span>Socle visuel</span></p>
-      <nav className="aime-nav" aria-label="Sections">
-        <a href="#socle" aria-current="page">Socle</a><a href="#point">Le Point</a><a href="#composants">Composants</a><a href="#univers">Univers</a><a href="#cote">Jour et Nuit</a>
-      </nav>
-      <div className="aime-segment ea-theme" role="group" aria-label="Thème">{CHOIX_THEMES.map(c => <button key={c.id} type="button" aria-pressed={choix === c.id} onClick={() => choisir(c.id)}>{c.nom}</button>)}</div>
-    </header>
+    <LaUne themeChoix={<div className="aime-segment ea-theme" role="group" aria-label="Thème">{CHOIX_THEMES.map(c => <button key={c.id} type="button" aria-pressed={choix === c.id} onClick={() => choisir(c.id)}>{c.nom}</button>)}</div>} />
 
     {/* 1 · le cadre : la photographie dans un bord blanc arrondi, sur un fond flouté */}
-    <section id="socle" className="ea-hero">
+    <section id="socle" className="ea-hero" aria-label="Le cadre">
       <div className="aime-scene-flou" aria-hidden="true"><img src={IMG + "histoire/met-palampore-2010-337.webp"} alt="" /></div>
       <div className="aime-cadre ea-hero-cadre">
         <div className="aime-cadre-media ea-hero-media">
@@ -172,7 +270,7 @@ export default function EssaiAime() {
             <div className="ea-hero-haut"><p className="ea-marque ea-marque-photo"><span className="aime-point" aria-hidden="true" />AIME<sup>®</sup></p>
               <nav className="aime-nav aime-nav--blanche" aria-label="Exemple sur photographie"><a href="#composants">Studio</a><a href="#univers">Univers</a><a href="#bento">Bureau</a><a href="#socle">Contact</a></nav></div>
             <div className="ea-hero-texte">
-              <h1 className="aime-titre aime-titre--capitales">Un socle,<br />tous les univers.</h1>
+              <h2 className="aime-titre aime-titre--capitales">Le cadre,<br />pour un média.</h2>
               <p className="aime-chapo">Une interface neutre, en Jour et en Nuit. Les couleurs, les textures et les photographies appartiennent au contenu de chaque univers.</p>
               <div className="ea-ligne"><a className="aime-btn ea-blanc" href="#composants">Voir les composants <span aria-hidden="true">→</span></a><a className="aime-btn aime-btn--contour ea-contour-photo" href="#cote">Jour et Nuit</a></div>
             </div>
@@ -197,6 +295,11 @@ export default function EssaiAime() {
         <div className="aime-cadre aime-cadre--sombre aime-ecran-incline"><div className="aime-cadre-media ea-ecran"><img src={IMG + "ecrans/atelier-ordinateur.webp"} alt="L’atelier Point Zéro sur ordinateur (capture)" /></div></div>
         <span className="aime-perle ea-perle-ecran" aria-hidden="true" />
       </div>
+    </section>
+
+    <section className="ea-section ea-phrase-section" aria-label="Sobre par nature">
+      <p className="aime-phrase"><span>Sobre.</span><span>Par nature.</span></p>
+      <p className="aime-chapo">Pensé pour l’atelier : de grandes zones à toucher, des choix lisibles de loin, rien qui ne serve pas.</p>
     </section>
 
     {/* 3 · la bande défilante */}
@@ -249,6 +352,14 @@ export default function EssaiAime() {
           <article data-aime-univers="art" className="aime-tuile aime-tuile--eclat ea-t-phrase"><p className="aime-tuile-titre">Une phrase de deux lignes pour une fonction clé.</p></article>
           <article className="aime-tuile ea-t-citation"><span className="aime-etoiles" aria-label="Cinq étoiles sur cinq">★★★★★</span><p className="aime-citation">Gabarit de témoignage : le texte réel d’un client viendra ici.</p><p className="aime-tuile-sur">Nom, rôle · exemple</p></article>
         </div>
+      </div>
+    </section>
+
+    <section id="panneaux" className="ea-section">
+      <EnteteSection sur="Panneaux et menus" titre={<>Des outils posés,<br /><span className="aime-fondu">des menus qui respirent.</span></>} chapo="Le panneau Trame est un vrai outil : choisissez une image, elle se redessine en points, sans quitter votre appareil." />
+      <div className="ea-panneaux">
+        <div className="ea-panneaux-trame" data-aime="nuit"><OutilTrame /></div>
+        <div className="ea-panneaux-menus">{(["nuit", "jour"] as Theme[]).map(t => <MenuMobile key={t} theme={t} basculer={() => choisir(theme === "nuit" ? "jour" : "nuit")} />)}</div>
       </div>
     </section>
 
