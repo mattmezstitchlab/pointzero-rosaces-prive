@@ -25,7 +25,7 @@ def eloigner(pg):
     pg.mouse.move(5, 300); pg.wait_for_timeout(1700)
 def page(b, l=1440, h=900, offerte=True, mobile=False, motion='reduce', theme=''):
     ctx = b.new_context(viewport={'width': l, 'height': h}, has_touch=mobile, is_mobile=mobile, reduced_motion=motion, accept_downloads=True)
-    ctx.add_init_script("localStorage.setItem('pointzero:visite-docks:v1', 'vue'); localStorage.setItem('pointzero:essai:cadre-tambour', '1')")
+    ctx.add_init_script("localStorage.setItem('pointzero:visite-docks:v1', 'vue'); localStorage.setItem('pointzero:essai:cadre-tambour', '1'); localStorage.setItem('pointzero:disque:presentation', 'disque')")
     pg = ctx.new_page(); pg.set_default_timeout(8000); pg.on('pageerror', lambda e: erreurs.append(str(e)))
     pg.goto(B + '/atelier' + ('?offerte=5D-12342.g21.v0.1' if offerte else '') + (('&' if offerte else '?') + 'aime=' + theme if theme else ''))
     pg.wait_for_selector('.cadre[data-pret]', timeout=20000); pg.wait_for_timeout(5200 if offerte else 1500)   # la notification d'accueil passe

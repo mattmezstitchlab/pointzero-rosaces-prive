@@ -95,3 +95,6 @@ html.pz-dock-accroche:not(.pz-tambour-ouvert) .toast-in { top: auto !important; 
 .pzt-cartouche .lp-indic { position: relative; display: inline-block; left: auto; bottom: auto; margin: 0 8px 1px 0; vertical-align: middle; }
 .pzt-cartouche[data-etat="action"], .pzt-cartouche[data-etat="erreur"] { box-shadow: 0 8px 20px rgba(0,0,0,.25), inset 0 0 0 1px rgba(255,143,115,.45); }
 .pzt-cartouche b + span { display: block; }
+/* Navigation intégrale .0 (essai) : la rangée du dock du haut s'efface ; ses panneaux (Mes ouvrages, Chercher…) restent, ouverts depuis le disque */
+html.pz-nav0 .pzs-ligne { display: none; }
+html.pz-nav0 .pzs-top:not(:has(#pzs-bloc)) { display: none; }

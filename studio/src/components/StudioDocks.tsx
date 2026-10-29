@@ -16,7 +16,7 @@ import Point, { ouvrirConfort } from "./point/Point";
 import PointDuBloc from "./point/PointDuBloc";
 import "./blocs/broderie";
 import type { ContexteBroderie } from "./blocs/broderie";
-import { ecrireEssaiBloc, lireEssaiBloc } from "../lib/point/registre";
+import { commandesDuBloc, ecrireEssaiBloc, lireEssaiBloc } from "../lib/point/registre";
 import TambourAtelier, { ecrireCadreTambour, lireCadreTambour } from "./TambourAtelier";
 import { aVoir, Indicateurs, trier, type Indicateur } from "../lib/point/indicateurs";
 import { suggestion } from "./blocs/guideBroderie";
@@ -182,6 +182,11 @@ export default function StudioDocks(p: Props) {
   /* essai : le Cadre-Tambour (le dock du bas accroché sous le format ; le tambour, cercle d'outils posé sur l'ouvrage) */
   const [cadreTambour, setCadreTambour] = useState(() => lireCadreTambour() && !lireEssaiBloc());
   const [tambourOuvert, setTambourOuvert] = useState(false);
+  /* essai « Navigation intégrale .0 » : le dock du haut s'efface, le disque devient la navigation (retour possible par Réglages) */
+  const [nav0, setNav0] = useState(() => { try { return localStorage.getItem("pointzero:essai:navigation-0") === "1"; } catch { return false; } });
+  const changerNav0 = (v: boolean) => { setNav0(v); try { if (v) localStorage.setItem("pointzero:essai:navigation-0", "1"); else localStorage.removeItem("pointzero:essai:navigation-0"); } catch { /* rien */ }
+    if (v) { ecrireCadreTambour(true); setCadreTambour(true); ecrireEssaiBloc(false); setEssaiBloc(false); } setBloc(null); };
+  useLayoutEffect(() => { document.documentElement.classList.toggle("pz-nav0", nav0 && cadreTambour); return () => document.documentElement.classList.remove("pz-nav0"); }, [nav0, cadreTambour]);
   const tambourBouton = useRef<HTMLButtonElement>(null);
   /* les points lumineux : un seul tableau d'indicateurs pour l'atelier (le disque, le bouton du dock) ; des événements réels seulement */
   const indicateurs = useMemo(() => new Indicateurs(), []);
@@ -311,7 +316,7 @@ export default function StudioDocks(p: Props) {
       indicateurs.publier({ id: "remplacement", commande: "remplacer-confirmer", contexte: "broderie", etat: "action", libelle: `Aperçu : DMC ${FLOSS[de]?.code} remplacé par DMC ${FLOSS[vers]?.code}. Confirmez ou annulez.` });
     },
     confirmer: () => {
-      if (!attente) return; setAttente(null); indicateurs.retirer("remplacement");
+      if (!attente) return; setAttente(null); setFilChoisi(true); indicateurs.retirer("remplacement");
       indicateurs.publier({ id: "remplacement-fin", commande: "fils", contexte: "broderie", etat: "reussite", libelle: `Remplacement confirmé : DMC ${FLOSS[attente.vers]?.code}.`, duree: 5000 });
     },
     annuler: () => {
@@ -333,6 +338,16 @@ export default function StudioDocks(p: Props) {
       catch (e) { indicateurs.publier({ id: "export", commande: "exp-projet", contexte: "broderie", etat: "erreur", libelle: "L’export n’a pas abouti" + (e instanceof Error && e.message ? " : " + e.message : ".") }); }
     }, 60);
   };
+  /* — la sauvegarde, telle qu'elle est vraiment (jamais « dans votre compte » si seule une copie locale existe) — */
+  useEffect(() => {
+    const s = p.saving || "", pub = (etat: Indicateur["etat"], libelle: string, duree?: number, priorite?: number) => indicateurs.publier({ id: "sauvegarde", commande: "imp-ouvrages", contexte: "broderie", etat, libelle, duree, priorite, annonce: etat === "erreur" });
+    if (/en cours/i.test(s)) pub("encours", "Sauvegarde en cours…");
+    else if (/indisponible/i.test(s)) pub("erreur", "Sauvegarde indisponible sur cet appareil : téléchargez le projet (Exporter).");
+    else if (/injoignable/i.test(s)) pub("info", "Sauvegardé sur cet appareil seulement : votre espace AIME est injoignable pour l’instant.");
+    else if (/espace AIME/i.test(s)) pub("reussite", "Rangé dans votre espace AIME.", 4000);
+    /* la sauvegarde ordinaire, confirmée : une information discrète, qui ne recouvre jamais l'issue d'une décision de la personne */
+    else if (/Sauvegardé sur cet appareil|Copie locale/i.test(s)) pub("info", s + ".", 3000, -1);
+  }, [p.saving, indicateurs]);
   const basculerSuggestions = () => { const v = !suggestions; setSuggestions(v); try { localStorage.setItem("pointzero:disque:suggestions", v ? "1" : "0"); } catch { /* rien */ } };
 
   /* les outils de l'ouvrage, pour le Point posé sur le bloc (essai) comme pour l'anneau du tambour */
@@ -348,10 +363,42 @@ export default function StudioDocks(p: Props) {
       importer: genre => p.onImporter?.(genre), ouvrages: () => setBloc("inviter"), composer: p.onComposer,
       exporter: p.actions.exportPanel, enregistrer: exporterProjet, partager: p.actions.share, remplacement,
       suggestions: { actives: suggestions, basculer: basculerSuggestions },
+      avancee: (p.progression?.couleurs ?? []).map(c => ({ idx: c.idx, code: c.code, cells: c.cells, done: c.done })),
       filsEtToile: p.actions.threadsSettings, suivi: p.actions.follow,
       aide: p.actions.settings, chercher: () => setBloc("chercher"),
       guide: p.actions.visite,
       dockClassique: () => { ecrireEssaiBloc(false); setEssaiBloc(false); requestAnimationFrame(() => cercleRef.current?.focus()); },
+  };
+  /* la racine .0 : les mêmes commandes réelles (le registre « broderie »), rangées pour naviguer sans le dock du haut */
+  const racine0 = (): ModePoint[] => {
+    const b = commandesDuBloc<ContexteBroderie>("broderie", { ...contexteBroderie, dockClassique: undefined }), pris = (id: string) => b.find(m => m.id === id);
+    const points = pris("points"), exporter = pris("exporter");
+    return [
+      { id: "bureau", nom: "Bureau", icone: <Folder aria-hidden="true" />, aide: "vos ouvrages : les retrouver, en créer un, chercher", groupe: "socle", ouvrir: () => {},
+        enfants: () => [
+          { id: "imp-ouvrages", nom: "Mes ouvrages", icone: <Folder aria-hidden="true" />, aide: "la liste de vos ouvrages, pour en rouvrir un", groupe: "socle", ouvrir: () => setBloc("inviter") },
+          { id: "bureau-nouveau", nom: "Nouvel ouvrage", icone: <Square aria-hidden="true" />, aide: "une grille vierge", groupe: "socle", ouvrir: p.actions.nouveau },
+          { id: "bureau-chercher", nom: "Chercher", icone: <Search aria-hidden="true" />, aide: "un fil, un outil, une fonction", groupe: "socle", ouvrir: () => setBloc("chercher") },
+        ] },
+      { id: "creer", nom: "Créer", icone: <Pencil aria-hidden="true" />, aide: "les points et les outils de dessin, une rosace, annuler et rétablir", groupe: "metier", ouvrir: () => {},
+        enfants: () => [
+          ...(points?.enfants?.() ?? []),
+          ...(p.onComposer ? [{ id: "creer-rosace", nom: "Composer une rosace", icone: <Sparkles aria-hidden="true" />, aide: "le compositeur de rosaces 5D", groupe: "creation", ouvrir: p.onComposer } satisfies ModePoint] : []),
+          { id: "annuler", nom: "Annuler", icone: <Undo2 aria-hidden="true" />, aide: p.canUndo ? "défaire la dernière modification" : "rien à défaire", groupe: "socle", resteOuvert: true, ouvrir: () => { if (p.canUndo) p.onUndo(); } },
+          { id: "retablir", nom: "Rétablir", icone: <Redo2 aria-hidden="true" />, aide: p.canRedo ? "refaire la modification défaite" : "rien à refaire", groupe: "socle", resteOuvert: true, ouvrir: () => { if (p.canRedo) p.onRedo(); } },
+        ] },
+      ...["broder", "fils", "affichage", "importer"].map(pris).filter((m): m is ModePoint => !!m),
+      { id: "galerie", nom: "Galerie", icone: <LayoutGrid aria-hidden="true" />, aide: "la Galerie des Vivants", groupe: "creation", ouvrir: () => { window.location.href = import.meta.env.BASE_URL + "galerie"; } },
+      { id: "partager", nom: "Partager", icone: <Share2 aria-hidden="true" />, aide: "exporter le patron, le projet, exposer dans la Galerie", groupe: "creation", ouvrir: () => {},
+        enfants: () => [...(exporter?.enfants?.() ?? []), ...(p.actions.exposer ? [{ id: "partager-exposer", nom: "Exposer", icone: <Sparkles aria-hidden="true" />, aide: "une copie dans la Galerie des Vivants", groupe: "creation", ouvrir: p.actions.exposer } satisfies ModePoint] : [])] },
+      ...["guide"].map(pris).filter((m): m is ModePoint => !!m),
+      { id: "reglages", nom: "Réglages", icone: <CircleHelp aria-hidden="true" />, aide: "les réglages du studio, l’aide, la navigation classique", groupe: "socle", ouvrir: () => {},
+        enfants: () => [
+          { id: "reglages-studio", nom: "Réglages et aide", icone: <CircleHelp aria-hidden="true" />, aide: "les réglages du studio et l’aide", groupe: "socle", ouvrir: p.actions.settings },
+          { id: "nav-classique", nom: "Navigation classique", icone: <Menu aria-hidden="true" />, aide: "retrouver le dock du haut", groupe: "socle", ouvrir: () => { changerNav0(false); setTambourOuvert(false); } },
+        ] },
+      ...["loupe"].map(pris).filter((m): m is ModePoint => !!m),
+    ];
   };
   const retracterTambour = () => { setTambourOuvert(false); requestAnimationFrame(() => tambourBouton.current?.focus()); };
 
@@ -399,6 +446,7 @@ export default function StudioDocks(p: Props) {
                 <li><a href={import.meta.env.BASE_URL + "galerie"}>Galerie des Vivants</a></li>
                 <li><a href={import.meta.env.BASE_URL + "tambour"}>Essai : le Tambour vivant</a></li>
                 <li><button type="button" aria-pressed={essaiBloc} onClick={() => { const v = !essaiBloc; ecrireEssaiBloc(v); setEssaiBloc(v); if (v) { ecrireCadreTambour(false); setCadreTambour(false); setTambourOuvert(false); } setBloc(null); }}>{essaiBloc ? "Revenir au dock du bas" : "Essai : les outils sur le bloc"}</button></li>
+                <li><button type="button" aria-pressed={nav0} onClick={() => changerNav0(!nav0)}>{nav0 ? "Quitter la navigation intégrale .0" : "Essai : Navigation intégrale .0"}</button></li>
                 <li><button type="button" aria-pressed={cadreTambour} onClick={() => { const v = !cadreTambour; ecrireCadreTambour(v); setCadreTambour(v); setTambourOuvert(false); if (v) { ecrireEssaiBloc(false); setEssaiBloc(false); } setBloc(null); }}>{cadreTambour ? "Revenir au dock en bas de l’écran" : "Essai : le Cadre-Tambour"}</button></li>
                 <li><button type="button" onClick={() => { setBloc(null); p.actions.settings(); }}>Réglages et aide</button></li>
                 {p.actions.visite && <li><button type="button" onClick={() => { setBloc(null); p.actions.visite!(); }}>Revoir la visite avec Le Point</button></li>}
@@ -504,7 +552,7 @@ export default function StudioDocks(p: Props) {
       <button type="button" data-guide="loupe" className="pzs-btm pzs-loupe-btn" aria-pressed={loupe} aria-label="Loupe : la grille agrandie sous le pointeur" title="Loupe" onClick={() => setLoupe(v => !v)}><Search size={17} aria-hidden="true" /><span className="pzs-loupe-txt">Loupe</span></button>
         </>}
     </nav>
-    {cadreTambour && tambourOuvert && !p.sansPoint && <TambourAtelier indicateurs={indicateurs} ouvrage={p.pattern?.id} contexte={contexteBroderie} retracter={retracterTambour} part={prog} etiquette={total ? "patron brodé à " + Math.round(prog * 100) + " %" : undefined} />}
+    {cadreTambour && tambourOuvert && !p.sansPoint && <TambourAtelier racine={nav0 ? racine0() : undefined} indicateurs={indicateurs} ouvrage={p.pattern?.id} contexte={contexteBroderie} retracter={retracterTambour} part={prog} etiquette={total ? "patron brodé à " + Math.round(prog * 100) + " %" : undefined} />}
     </>}
   </>;
 }

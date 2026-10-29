@@ -42,7 +42,7 @@ def geom_ok(pg, nom):
     return g
 def page(b, l, h, mobile=False, active=True, motion='reduce', script='', dsf=1):
     ctx = b.new_context(viewport={'width': l, 'height': h}, has_touch=mobile, is_mobile=mobile, reduced_motion=motion, device_scale_factor=dsf)
-    ctx.add_init_script("localStorage.setItem('pointzero:visite-docks:v1', 'vue')" + ("; localStorage.setItem('pointzero:essai:cadre-tambour', '1')" if active else "") + script)
+    ctx.add_init_script("localStorage.setItem('pointzero:visite-docks:v1', 'vue')" + ("; localStorage.setItem('pointzero:essai:cadre-tambour', '1'); localStorage.setItem('pointzero:disque:presentation', 'disque')" if active else "") + script)
     pg = ctx.new_page(); pg.set_default_timeout(8000); pg.on('pageerror', lambda e: erreurs.append(str(e)))
     pg.goto(B + '/atelier?offerte=5D-12342.g21.v0.1'); pg.wait_for_selector('.cadre[data-pret]', timeout=20000); pg.wait_for_timeout(1500)
     return ctx, pg
@@ -126,6 +126,7 @@ with sync_playwright() as p:
         # clavier : Entrée ouvre, Échap (focus sur la grille) rétracte ; Broder › Sur ma toile ; l'orbe ouvre le Tambour vivant
         pg.keyboard.press('Enter'); pg.wait_for_timeout(700); ok(pg.locator('.pzt').count() == 1, 'clavier : Entrée ouvre le tambour')
         pg.locator(f'{MENU} [data-mode="broder"]').click(); pg.wait_for_timeout(250)
+        if not pg.locator(f'{MENU} [data-mode="sur-ma-toile"]').count(): pg.locator(f'{MENU} [data-mode="__suite"]').click(); pg.wait_for_timeout(250)   # la couronne se pagine selon sa capacité
         ok(pg.locator(f'{MENU} [data-mode="sur-ma-toile"]').count() == 1, 'Broder › Sur ma toile : la caméra au clavier et au lecteur d’écran')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(150); pg.evaluate("document.activeElement?.blur()"); pg.keyboard.press('Escape'); pg.wait_for_timeout(600)
         ok(pg.locator('.pzt').count() == 0, 'Échap remonte d’un niveau, puis rétracte')
@@ -155,7 +156,7 @@ with sync_playwright() as p:
 
         # —— un seul système de messages (mobile) : jamais deux messages l'un sur l'autre, ni sur le disque ou le dock ——
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, has_touch=True, is_mobile=True, reduced_motion='reduce')
-        ctx.add_init_script("localStorage.setItem('pointzero:visite-docks:v1', 'vue'); localStorage.setItem('pointzero:essai:cadre-tambour', '1')")
+        ctx.add_init_script("localStorage.setItem('pointzero:visite-docks:v1', 'vue'); localStorage.setItem('pointzero:essai:cadre-tambour', '1'); localStorage.setItem('pointzero:disque:presentation', 'disque')")
         pg = ctx.new_page(); pg.on('pageerror', lambda e: erreurs.append(str(e)))
         pg.goto(B + '/atelier?offerte=5D-12342.g21.v0.1'); pg.wait_for_selector('.toast-in', timeout=20000); pg.wait_for_timeout(300)
         RECT = "s => { const e = document.querySelector(s); if (!e || getComputedStyle(e).visibility === 'hidden') return null; const r = e.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }"

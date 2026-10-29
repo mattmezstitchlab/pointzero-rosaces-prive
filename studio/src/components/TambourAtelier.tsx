@@ -22,6 +22,7 @@ import "./blocs/broderie";
 import "./TambourAtelier.css";
 
 export const CADRE_TAMBOUR_CLE = "pointzero:essai:cadre-tambour";
+export const PRESENTATION_CLE = "pointzero:disque:presentation";
 export const lireCadreTambour = () => { try { return localStorage.getItem(CADRE_TAMBOUR_CLE) === "1"; } catch { return false; } };
 export const ecrireCadreTambour = (v: boolean) => { try { if (v) localStorage.setItem(CADRE_TAMBOUR_CLE, "1"); else localStorage.removeItem(CADRE_TAMBOUR_CLE); } catch { /* rien */ } };
 
@@ -43,7 +44,7 @@ function rectCadre(): Rect | null {
   return Number.isFinite(v("--fx0")) && v("--fw") > 0 ? { x: v("--fx0"), y: v("--fy0"), w: v("--fw"), h: v("--fh") } : null;
 }
 
-export default function TambourAtelier({ contexte, retracter, part, etiquette, ouvrage, indicateurs }: { contexte: ContexteBroderie; retracter: () => void; part?: number; etiquette?: string; ouvrage?: string; indicateurs?: Indicateurs }) {
+export default function TambourAtelier({ contexte, retracter, part, etiquette, ouvrage, indicateurs, racine }: { contexte: ContexteBroderie; retracter: () => void; part?: number; etiquette?: string; ouvrage?: string; indicateurs?: Indicateurs; /** une autre racine (Navigation intégrale .0) ; sinon les commandes du bloc broderie */ racine?: ModePoint[] }) {
   /* les points lumineux : la liste réelle (publiée par les modules), lue ici ; le disque n'invente aucun statut */
   const [indic, setIndic] = useState<Indicateur[]>([]);
   useEffect(() => indicateurs?.abonner(l => setIndic(l.filter(i => !i.resolu))), [indicateurs]);
@@ -54,7 +55,10 @@ export default function TambourAtelier({ contexte, retracter, part, etiquette, o
     for (const i of indic) annonces.current.set(i.id, i.etat + i.libelle);
     if (nouveaux[0]) setAnnonce(`${MOT_ETAT[nouveaux[0].etat]} : ${nouveaux[0].libelle}`);
   }, [indic]);
-  const [replie, setReplie] = useState(false);
+  /* trois états : le Point (dans le dock), le Disque, le contenu étendu (couronne repliée). Sur téléphone, le contenu étendu d'abord ;
+     la présentation choisie est retenue sur l'appareil */
+  const [replie, setReplieBrut] = useState(() => { try { const v = localStorage.getItem(PRESENTATION_CLE); if (v) return v === "etendu"; } catch { /* rien */ } return window.innerWidth < 600; });
+  const setReplie = (v: boolean) => { setReplieBrut(v); try { localStorage.setItem(PRESENTATION_CLE, v ? "etendu" : "disque"); } catch { /* rien */ } };
   const mesurer = useCallback((rep: boolean): Disque => {
     const haut = Math.max(document.querySelector(".pzs-top")?.getBoundingClientRect().bottom ?? 72, document.querySelector(".pzs-crumbs")?.getBoundingClientRect().bottom ?? 0) + 8;
     /* la taille du texte du Confort (--pz-user-font-scale), et le zoom du navigateur (déjà dans la largeur de la fenêtre) */
@@ -108,14 +112,14 @@ export default function TambourAtelier({ contexte, retracter, part, etiquette, o
   const surMaToile = () => { window.location.href = import.meta.env.BASE_URL + "tambour?mode=superposer" + (ouvrage ? "&ouvrage=" + encodeURIComponent(ouvrage) : ""); };
   const voir = aVoir(indic);
   const modes = useMemo(() => decorer(premierAnneau([
-    ...commandesDuBloc<ContexteBroderie>("broderie", { ...contexte, dockClassique: undefined, surMaToile }),
+    ...(racine ?? commandesDuBloc<ContexteBroderie>("broderie", { ...contexte, dockClassique: undefined, surMaToile })),
     { id: "replier", nom: "Replier", icone: <ChevronsDownUp aria-hidden="true" />, aide: "essai : la couronne se replie, la toile prend toute la place ; les outils reviennent à la demande", groupe: "socle", ouvrir: () => setReplie(true) },
     { id: "retracter", nom: "Rétracter", icone: <Minimize2 aria-hidden="true" />, aide: "le tambour se replie : le patron entier, le Cadre pour agrandir et déplacer, le dock dessous", groupe: "socle", ouvrir: fermer },
     /* « À voir » : plusieurs informations en attente se retrouvent ici (la même source que les points, pas une seconde) */
     ...(voir.length >= 2 ? [{ id: "a-voir", nom: `À voir (${voir.length})`, icone: <Bell aria-hidden="true" />, aide: voir.map(i => i.libelle).join(" · "), groupe: "socle" as const, ouvrir: () => {},
       enfants: () => voir.map((i): ModePoint => ({ id: "voir-" + i.id, nom: i.libelle, aide: MOT_ETAT[i.etat], groupe: "socle", indicateur: { etat: i.etat, mot: MOT_ETAT[i.etat], libelle: i.libelle, herite: false, id: i.id }, ouvrir: () => indicateurs?.consulter(i.id) })) }] : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], g.capacite), indic, id => indicateurs?.consulter(id)), [contexte, g.capacite, fermer, indic]);
+  ], g.capacite), indic, id => indicateurs?.consulter(id)), [contexte, g.capacite, fermer, indic, racine]);
 
   const c = g.Ro + 2, fin = phase === "ouvert";
   /* le cartouche dit ce qui se passe : la commande visée d'abord (geste de la personne), sinon l'information la plus importante */
