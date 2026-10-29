@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import TopDock from "./TopDock";
 import Metamorphose from "./Metamorphose";
 import TraineePoints from "./TraineePoints";
+import "../design/aime.css";
 import "./CrossStitchHome.css";
 import { CHAPITRES_EDITION, EditionEnLigne } from "./edition/Edition";
 

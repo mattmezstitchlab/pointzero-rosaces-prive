@@ -5,14 +5,14 @@
       "titre": "Garance & indigo",
       "sous": "Des couleurs qui traversent les siècles.",
       "corps": "Avant les fils, il y eut des plantes, des voyages et des mains expertes : la racine de garance pour le rouge, les feuilles d’indigotier pour le bleu.",
-      "geste": "Passez la souris, le doigt, ou Tab puis les flèches : la loupe voit à travers la broderie, jusqu’à la grille et aux symboles.",
+      "geste": "Passez la souris, le doigt, ou Tab puis les flèches : sous la loupe, l’image se brode, point par point, aux fils DMC.",
       "media": {
         "src": "images/histoire/reconstitution-pigments.webp",
         "licence": "reconstitution",
         "reconstitution": true,
         "provenance": "",
         "alt": "Reconstitution : poudres de garance et d’indigo, racines, feuilles et une étoffe imprimée, rendues en broderie",
-        "legende": "Reconstitution générée (pigments, racines, étoffe), rendue en broderie par la conversion du studio. Pas une photographie d’époque.",
+        "legende": "Reconstitution générée (pigments, racines, étoffe), brodée sous la loupe par la conversion du studio. Pas une photographie d’époque.",
         "cadrage": {
           "ordinateur": {
             "x": 50,
@@ -38,8 +38,8 @@
           "licence": "domaine-public",
           "reconstitution": false,
           "provenance": "The Metropolitan Museum of Art, 2010.337",
-          "alt": "Palampore de la côte de Coromandel : un grand arbre fleuri, rouges de garance et bleus, rendu en broderie",
-          "legende": "Palampore, côte de Coromandel (Inde), pour le marché sri-lankais, premier quart du XVIIIᵉ siècle. The Metropolitan Museum of Art, 2010.337, domaine public. Rendu en broderie par le studio.",
+          "alt": "Palampore de la côte de Coromandel : un grand arbre fleuri, rouges de garance et bleus",
+          "legende": "Palampore, côte de Coromandel (Inde), pour le marché sri-lankais, premier quart du XVIIIᵉ siècle. The Metropolitan Museum of Art, 2010.337, domaine public. Brodée sous la loupe par le studio.",
           "cadrage": {
             "ordinateur": {
               "x": 50,
@@ -60,8 +60,8 @@
           "licence": "domaine-public",
           "reconstitution": false,
           "provenance": "The Metropolitan Museum of Art, 40.128",
-          "alt": "Panneau à réserve bleue : oiseaux et feuillages en bleus d’indigo, rendu en broderie",
-          "legende": "Panneau de rideau à réserve bleue, vers 1725–1775. The Met, 40.128, domaine public. Rendu en broderie par le studio.",
+          "alt": "Panneau à réserve bleue : oiseaux et feuillages en bleus d’indigo",
+          "legende": "Panneau de rideau à réserve bleue, vers 1725–1775. The Met, 40.128, domaine public. Brodée sous la loupe par le studio.",
           "cadrage": {
             "ordinateur": {
               "x": 50,
@@ -89,8 +89,8 @@
         "licence": "reconstitution",
         "reconstitution": true,
         "provenance": "",
-        "alt": "Reconstitution : un artisan imprime une étoffe à la planche de bois, rendue en broderie",
-        "legende": "Reconstitution générée d’un atelier d’impression à la planche, rendue en broderie. Pas un document d’époque.",
+        "alt": "Reconstitution : un artisan imprime une étoffe à la planche de bois",
+        "legende": "Reconstitution générée d’un atelier d’impression à la planche, brodée sous la loupe. Pas un document d’époque.",
         "cadrage": {
           "ordinateur": {
             "x": 50,
@@ -114,7 +114,7 @@
         "reconstitution": true,
         "provenance": "",
         "alt": "Reconstitution : des ouvrages anciens ouverts sur des motifs brodés, des écheveaux et des ciseaux, rendus en broderie",
-        "legende": "Reconstitution générée (ouvrages, écheveaux), rendue en broderie. Couvertures et étiquettes imaginées.",
+        "legende": "Reconstitution générée (ouvrages, écheveaux), brodée sous la loupe. Couvertures et étiquettes imaginées.",
         "cadrage": {
           "ordinateur": {
             "x": 50,

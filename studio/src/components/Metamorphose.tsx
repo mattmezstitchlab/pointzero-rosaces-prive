@@ -5,7 +5,7 @@ import { drawSymbol } from "../lib/symbols";
 /**
  * La métamorphose : une peinture qui, au fil du défilement, devient pixels, puis points de croix, puis patron à symboles.
  * Les couleurs sont de vrais fils DMC (le moteur du studio), les symboles ceux des patrons exportés.
- * Sous la souris, une loupe montre l'étape suivante : la peinture se brode là où l'on passe.
+ * Sous la souris, un cercle au bord flou montre l'étape suivante : la peinture se brode là où l'on passe.
  * Moins d'animations demandées : l'image reste brodée, sans défilement piloté.
  */
 export const ETAPES_META = ["La peinture", "Les pixels", "Le point de croix", "Le patron"] as const;
@@ -52,8 +52,11 @@ export default function Metamorphose({ src, titre, children }: { src: string; ti
   const reduit = typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   useEffect(() => {
-    const el = section.current, cv = toile.current, ctx = cv?.getContext?.("2d");
-    if (!el || !cv || !ctx) return;
+    const el = section.current, cv = toile.current, principal = cv?.getContext?.("2d");
+    if (!el || !cv || !principal) return;
+    /* le contexte où l'on dessine : la toile, ou le calque de la loupe le temps de dessiner l'étape suivante */
+    let ctx: CanvasRenderingContext2D = principal;
+    const calque = document.createElement("canvas");
     let img: HTMLImageElement | null = null, grille: Grille | null = null, souris: { x: number; y: number } | null = null, image = 0, vivant = true;
     const mini = document.createElement("canvas");
     const prog = () => { if (reduit) return .62; const r = el.getBoundingClientRect(), course = r.height - window.innerHeight; return course > 0 ? Math.min(1, Math.max(0, -r.top / course)) : 0; };
@@ -133,14 +136,19 @@ export default function Metamorphose({ src, titre, children }: { src: string; ti
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const p = prog();
       scene(W, H, p);
-      /* la loupe de la souris : l'étape suivante, dans un cercle */
+      /* la loupe de la souris : l'étape suivante, dans un cercle au bord flou (aucun liseré) */
       if (souris && img && grille && !reduit && p < .9) {
-        const R = Math.min(W, H) * .13;
-        ctx.save(); ctx.beginPath(); ctx.arc(souris.x, souris.y, R, 0, Math.PI * 2); ctx.clip();
-        const suivante = p < .32 ? .5 : p < .6 ? .8 : 1;
-        scene(W, H, suivante); ctx.restore();
-        ctx.beginPath(); ctx.arc(souris.x, souris.y, R, 0, Math.PI * 2); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.stroke();
-        ctx.beginPath(); ctx.arc(souris.x, souris.y, R + 5, 0, Math.PI * 2); ctx.lineWidth = 1; ctx.setLineDash([3, 5]); ctx.strokeStyle = "rgba(196,65,107,.9)"; ctx.stroke(); ctx.setLineDash([]);
+        const R = Math.min(W, H) * .17, suivante = p < .32 ? .5 : p < .6 ? .8 : 1;
+        if (calque.width !== cv.width || calque.height !== cv.height) { calque.width = cv.width; calque.height = cv.height; }
+        const c2 = calque.getContext("2d");
+        if (c2) {
+          c2.setTransform(1, 0, 0, 1, 0, 0); c2.globalCompositeOperation = "source-over"; c2.clearRect(0, 0, calque.width, calque.height);
+          c2.setTransform(dpr, 0, 0, dpr, 0, 0); ctx = c2; scene(W, H, suivante); ctx = principal;
+          const fondu = c2.createRadialGradient(souris.x, souris.y, R * .35, souris.x, souris.y, R);
+          fondu.addColorStop(0, "rgba(0,0,0,1)"); fondu.addColorStop(1, "rgba(0,0,0,0)");
+          c2.globalCompositeOperation = "destination-in"; c2.fillStyle = fondu; c2.fillRect(0, 0, W, H); c2.globalCompositeOperation = "source-over";
+          principal.save(); principal.setTransform(1, 0, 0, 1, 0, 0); principal.drawImage(calque, 0, 0); principal.restore();
+        }
       }
       const e = p < .3 ? 0 : p < .58 ? 1 : p < .86 ? 2 : 3;
       setEtape(x => x === e ? x : e); setProgres(p);
