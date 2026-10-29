@@ -42,6 +42,8 @@ async function menage() {
   for (const l of lignes) await A.effacerTraces(db, l);   /* espaces, adhésions, ouvrages : comme une suppression de compte */
   await db.query('delete from contenus_journal where auteur = any($1::text[])', [u]);
   await db.query('delete from contenus_versions where auteur = any($1::text[])', [u]);
+  /* les compteurs des parcours de test (liens de connexion, galerie) : sinon un deuxième passage dans l'heure est bloqué ; base de test seulement (garde-fou plus haut) */
+  await db.query("delete from quotas where cle like 'lien:ip:%' or cle like 'galerie:%'").catch(() => {});
   for (const id of u) { await db.query('delete from session where "userId" = $1', [id]); await db.query('delete from account where "userId" = $1', [id]); await db.query('delete from "user" where id = $1', [id]); }
   return { comptes: u.length, versions: (await db.query('select count(*)::int as n from contenus_versions')).rows[0].n };
 }

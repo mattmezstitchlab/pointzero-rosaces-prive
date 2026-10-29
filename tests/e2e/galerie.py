@@ -14,8 +14,12 @@ def cap(pg, nom):
 def lien(email): return json.load(urllib.request.urlopen(B + '/__test/lien?email=' + email))['lien']
 def connecter(ctx, email):
     pg = ctx.new_page(); pg.goto(B + '/studio/bureau'); pg.wait_for_selector('#bu-email', timeout=20000)
-    pg.fill('#bu-email', email); pg.get_by_role('button', name='Recevoir le lien').click()
-    pg.wait_for_selector('text=Un lien de connexion vient de partir', timeout=20000)
+    for essai in range(4):  # le limiteur de liens (3 par minute, partagé en local) : on patiente et on réessaie
+        pg.fill('#bu-email', email); pg.get_by_role('button', name='Recevoir le lien').click()
+        try: pg.wait_for_selector('text=Un lien de connexion vient de partir', timeout=8000); break
+        except Exception:
+            if essai == 3: raise
+            time.sleep(25)
     pg.goto(lien(email)); pg.wait_for_timeout(800); return pg
 def atelier(pg, query=''):
     pg.goto(B + '/studio/atelier'); pg.evaluate("localStorage.setItem('pointzero:visite-docks:v1', 'vue')")
@@ -78,11 +82,19 @@ with sync_playwright() as p:
 
         # — l'administration : les signalements, masquer, démasquer —
         time.sleep(20)
-        ca = b.new_context(); pa = connecter(ca, ADMIN); pa.goto(B + '/studio/galerie'); pa.wait_for_timeout(500)
+        ca = b.new_context(viewport={'width': 1440, 'height': 900}); pa = connecter(ca, ADMIN); pa.goto(B + '/studio/galerie'); pa.wait_for_timeout(500)
         ok(api(pa, None, '?signalements=1')['signalements'][0]['n'] >= 1, 'admin : les signalements sont listés')
         ok(api(pm, None, '?signalements=1').get('ok') is False, 'Marc : la liste des signalements lui est refusée')
-        ok(api(pa, {'action': 'masquer', 'id': oid, 'motif': 'essai'})['ok'] and len(api(pv)['oeuvres']) == 0, 'admin : masquer retire l’œuvre du mur')
-        ok(api(pa, {'action': 'demasquer', 'id': oid})['ok'] and len(api(pv)['oeuvres']) == 1, 'admin : démasquer la remet')
+        pa.goto(B + '/studio/bureau'); pa.wait_for_selector('.bu-onglets', timeout=20000)
+        onglet = pa.get_by_role('tab', name='Galerie (1)'); onglet.wait_for(timeout=10000); ok(True, 'Bureau : l’onglet Galerie annonce 1 œuvre signalée')
+        onglet.click(); pa.wait_for_selector('.bu-moderation li[data-statut]')
+        ok('Givre de minuit' in pa.locator('.bu-moderation').inner_text() and 'Lise B.' in pa.locator('.bu-moderation').inner_text(), 'Bureau : le signalement est listé, avec le titre et le pseudonyme')
+        pa.get_by_role('button', name='Masquer…').click(); pa.get_by_label('Motif (gardé pour l’historique)').fill('essai')
+        pa.get_by_role('button', name='Confirmer : masquer').click(); pa.wait_for_selector('text=est masquée')
+        ok(len(api(pv)['oeuvres']) == 0, 'Bureau : masquer retire l’œuvre du mur'); cap(pa, '6-bureau')
+        pa.get_by_role('button', name='Remettre en ligne').click(); pa.wait_for_selector('text=de nouveau visible')
+        ok(len(api(pv)['oeuvres']) == 1, 'Bureau : remettre en ligne la rend au mur')
+        ok(api(pm, {'action': 'masquer', 'id': oid}).get('ok') is False, 'Marc : masquer lui est refusé')
 
         # — Lise retire son œuvre : elle disparaît, et ses cœurs avec elle —
         pl.goto(B + '/galerie?vue=miennes'); pl.wait_for_selector('.ga-carte')

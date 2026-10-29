@@ -11,6 +11,7 @@ import { ORIGINE, validerContenus, type Contenus, type Media } from "../componen
 import type { Ecart } from "../components/edition/validation.mjs";
 import { api, type Version } from "./api";
 import Inspecteur from "./Inspecteur";
+import Moderation from "./Moderation";
 import Mediatheque from "./Mediatheque";
 import { ecrire, lire, SECTIONS, sectionDe } from "./sections";
 import type { MediaBureau } from "./catalogue";
@@ -68,7 +69,10 @@ function Editeur() {
   const [brouillon, setBrouillon] = useState<Contenus>(ORIGINE);
   const [enregistre, setEnregistre] = useState<{ id: string; json: string } | null>(null);   /* la dernière version enregistrée ou ouverte, et son contenu */
   const [versions, setVersions] = useState<Version[]>([]), [publie, setPublie] = useState<string | null>(null);
-  const [choisie, setChoisie] = useState(SECTIONS[0].cle), [panneau, setPanneau] = useState<"inspecteur" | "historique">("inspecteur");
+  const [choisie, setChoisie] = useState(SECTIONS[0].cle), [panneau, setPanneau] = useState<"inspecteur" | "historique" | "galerie">("inspecteur");
+  const [aModerer, setAModerer] = useState<number | null>(null);
+  /* le nombre d'œuvres signalées encore visibles, pour l'onglet Galerie (rien si la galerie ne répond pas) */
+  useEffect(() => { void fetch("/api/galerie?signalements=1", { credentials: "same-origin" }).then(r => r.json()).then(j => { if (j?.ok) setAModerer(j.signalements.filter((x: { statut: string }) => x.statut === "visible").length); }).catch(() => {}); }, []);
   const [vue, setVue] = useState<"ordinateur" | "mobile">("ordinateur");
   const [statut, setStatut] = useState(""), [ecartsServeur, setEcartsServeur] = useState<Ecart[]>([]);
   const [confirmer, setConfirmer] = useState<null | { action: "publier" | "restaurer"; id: string }>(null);
@@ -194,11 +198,13 @@ function Editeur() {
         <div className="bu-onglets" role="tablist">
           <button type="button" role="tab" aria-selected={panneau === "inspecteur"} onClick={() => setPanneau("inspecteur")}>Inspecteur</button>
           <button type="button" role="tab" aria-selected={panneau === "historique"} onClick={() => setPanneau("historique")}>Historique ({versions.length})</button>
+          <button type="button" role="tab" aria-selected={panneau === "galerie"} onClick={() => setPanneau("galerie")}>Galerie{aModerer ? ` (${aModerer})` : ""}</button>
         </div>
         {panneau === "inspecteur" ? <div role="tabpanel" className="bu-inspecteur">
           <h2>{section.nom}</h2>
           <Inspecteur valeur={lire(brouillon, section.chemin)} chemin={section.chemin} changer={changer} ecarts={ecarts} remplacer={c => setMediatheque(c)} />
-        </div> : <div role="tabpanel" className="bu-historique">
+        </div> : panneau === "galerie" ? <div role="tabpanel" className="bu-historique"><Moderation compter={setAModerer} /></div>
+        : <div role="tabpanel" className="bu-historique">
           <h2>Historique des versions</h2>
           <p className="bu-aide">Une version n’est jamais modifiée ni effacée. Restaurer republie une copie d’une version antérieure.</p>
           <ol>{versions.map(v => <li key={v.id} data-etat={v.etat}>

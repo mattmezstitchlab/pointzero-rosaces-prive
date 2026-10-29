@@ -124,3 +124,9 @@
 .bu-direct-ok { color: #9be3a8; }
 .bu-direct-attente { color: var(--bu-doux); }
 .bu-direct-muet { color: #fff; background: rgba(255,143,128,.16); }
+
+/* la modération de la galerie */
+.bu-historique li[data-statut="masquee"] { opacity: .75; border-style: dashed; }
+.bu-mots { margin: 6px 0 0; padding: 0 0 0 4px; list-style: none; display: grid; gap: 2px; font-size: 13px; color: var(--bu-doux); overflow-wrap: anywhere; }
+.bu-masquer { display: grid; gap: 6px; width: 100%; }
+.bu-masquer label { font-size: 13px; }
