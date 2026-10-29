@@ -2652,3 +2652,16 @@ html[data-pz-motion="reduce"] .pz-guided-lens { transition: none; }
   .pzs-tool.pzs-verbe { min-width: 38px; }
   .pzs-tool.pzs-verbe .pzs-lib { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
+
+/* Préférences du Point dans le compte (Mes ouvrages) */
+.pzs-prefs { display: grid; gap: 6px; margin: 12px 2px 4px; padding: 12px; border-radius: 14px; background: #f3f3f1; }
+.pzs-prefs-titre { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #55555a; }
+.pzs-prefs .pzs-note { margin: 0; }
+.pzs-prefs button { justify-self: start; min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #0b0b0c; background: #0b0b0c; color: #fff; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.pzs-prefs button + button { background: #fff; color: #0b0b0c; }
+.pzs-prefs button:disabled { opacity: .5; cursor: progress; }
+.pzs-prefs-choix { display: flex; flex-wrap: wrap; gap: 8px; }
+html[data-aime-studio="nuit"] .pzs-prefs { background: #1f1f22; }
+html[data-aime-studio="nuit"] .pzs-prefs-titre { color: #b5b5b1; }
+html[data-aime-studio="nuit"] .pzs-prefs button { background: #f4f4f2; color: #0a0a0b; border-color: #f4f4f2; }
+html[data-aime-studio="nuit"] .pzs-prefs button + button { background: transparent; color: #f4f4f2; }

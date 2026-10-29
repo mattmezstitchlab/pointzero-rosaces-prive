@@ -6,6 +6,7 @@ import { GrilleOutils, GROUPES_BRODER, GROUPES_DESSIN, Loupe, Nuancier } from ".
 import type { Pattern } from "../lib/pattern";
 import { FLOSS } from "../lib/dmc";
 import { dansAime } from "../lib/aimeSync";
+import PreferencesCompte from "./PreferencesCompte";
 import type { Tool } from "../lib/stitch";
 import type { ViewMode } from "./Canvas";
 import { LEVEL_LABELS, type InterfaceLevel } from "../lib/interfaceLevel";
@@ -321,6 +322,7 @@ export default function StudioDocks(p: Props) {
               <p className="pzs-titre">{moi ? (moi.image ? <img className="pzs-avatar" src={moi.image} alt="" /> : <span className="pzs-avatar" aria-hidden="true">{initiales(moi.name || moi.email || "")}</span>) : null}Mes ouvrages{moi?.name ? " · " + moi.name.split(" ")[0] : ""}
                 <button type="button" className="pzs-aide-bouton" aria-expanded={aideOuvrages} aria-controls="pzs-aide-ouvrages" onClick={() => setAideOuvrages(v => !v)}><CircleHelp size={16} aria-hidden="true" /><span className="sr-only">Aide sur Mes ouvrages</span></button></p>
               {p.ouvrages && <OuvragesBloc courant={p.ouvrages.courant} ouvrir={id => { setBloc(null); p.ouvrages!.ouvrir(id); }} importer={f => { setBloc(null); p.ouvrages!.importer(f); }} />}
+              {moi && <PreferencesCompte />}
               {aideOuvrages && <p id="pzs-aide-ouvrages" className="pzs-note">Touchez un ouvrage pour l’ouvrir ; déposez un fichier pour l’importer. « Partager en direct » : quelqu’un regarde l’ouvrage ouvert, depuis son appareil.{!moi && aime ? " Entrez dans AIME pour retrouver vos ouvrages partout." : moi ? " Vos ouvrages sont sur votre compte AIME et sur cet appareil." : ""}</p>}
             </div>
             <div className="pzs-mini" role="group" aria-label="Nouvel ouvrage et invitation">
