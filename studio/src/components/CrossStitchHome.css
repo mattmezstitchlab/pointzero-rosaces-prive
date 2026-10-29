@@ -250,3 +250,20 @@ html:has(.cross-stitch-home) { scroll-padding-top: 110px; scroll-padding-bottom:
 
 /* ===== La traîne de la souris : des points de croix et des symboles ===== */
 .tp-traine { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 35; pointer-events: none; }
+
+/* ===== Socle AIME (29 octobre) : cartes douces, rayons, graisses moyennes ; les docks ne changent pas ===== */
+.pzh-card, .pzh-way, .pzh-safety { border: 0; border-radius: 22px; box-shadow: inset 0 0 0 1px rgba(10,10,11,.08), 0 14px 34px rgba(20,20,24,.06); }
+.pzh-way { transition: box-shadow .18s ease, transform .18s ease; }
+.pzh-way:hover { box-shadow: inset 0 0 0 1px rgba(10,10,11,.5), 0 14px 34px rgba(20,20,24,.08); transform: translateY(-1px); }
+.pzh-drop { border: 1.5px dashed #b9b9b6; border-radius: 22px; box-shadow: 0 14px 34px rgba(20,20,24,.05); }
+.pzh-drop-plus { border-radius: 50%; }
+.pzh-card .pzh-btn, .pzh-safety .pzh-btn, .pzh-way .pzh-btn { border-radius: 10px; }
+.pzh-btn-primary:hover { background: #2a2a2e; }
+.pzh-btn-secondary { border: 0; box-shadow: inset 0 0 0 1px rgba(10,10,11,.6); }
+.pzh-btn-secondary:hover { background: #ececea; }
+.pzh-soon { border-radius: 999px; padding: 2px 9px; font-weight: 600; }
+.pzh-section h2 { font-weight: 620; }
+.tout-liste dt { font-weight: 600; }
+.tout-liste > div { border-top-color: rgba(10,10,11,.1); }
+.pzh-foot-cols :is(button, a) { font-weight: 500; }
+.pzh-way strong, .pzh-drop strong { font-weight: 550; }
