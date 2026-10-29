@@ -24,7 +24,7 @@ export const sectionDe = (cle: string) => SECTIONS.find(s => s.cle === cle);
 /** Les noms des champs, pour des inspecteurs lisibles (les autres gardent leur nom technique). */
 export const LIBELLES: Record<string, string> = {
   alt: "Description de l’image (texte alternatif)", provenance: "Provenance (musée, auteur, autorisation)",
-  kicker: "Surtitre", titre: "Titre", sous: "Phrase en italique", corps: "Texte", geste: "Consigne de la loupe", aparte: "Mention en marge",
+  kicker: "Surtitre", titre: "Titre", sous: "Sous-titre", corps: "Texte", geste: "Consigne de la loupe", aparte: "Mention en marge",
   media: "Grand fond", rouge: "Étoffe rouge", bleu: "Étoffe bleue", nom: "Nom", texte: "Texte", liens: "Liens", libelle: "Libellé", url: "Adresse (https)",
   question: "Question de l’Orbe", reaction: "Réaction de l’Orbe", chapeau: "Chapeau", etapes: "Étapes", titreAvant: "Titre avant le premier choix",
   titreApres: "Titre après le premier choix", legende: "Légende", titreFini: "Titre, rosace complète", orbeFini: "L’Orbe, rosace complète",

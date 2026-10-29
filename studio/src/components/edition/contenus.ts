@@ -7,7 +7,7 @@
  *   ni la longueur d'une liste. Seuls des textes, des adresses d'images vérifiées et des drapeaux sont acceptés ; jamais de code.
  * - Les paramètres des moteurs (colonnes de la broderie, seuils du défilement, recette 5D) ne sont pas ici : ils restent dans le code.
  *
- * Mise en forme permise dans les textes : *italique*. Dans un titre, « & » est dessiné en italique à empattements.
+ * Mise en forme permise dans les textes : *italique*. Dans un titre, « & » est dessiné plus léger, estompé (socle AIME).
  * Gabarits : {reponse} dans les réactions de l'Orbe, {n} dans les phrases qui comptent.
  * La validation (validation.mjs) est la même dans le navigateur et sur le serveur (/api/contenus).
  */

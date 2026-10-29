@@ -60,9 +60,9 @@ with sync_playwright() as p:
     ok(cadre.locator('#hi-origine h2 .hi-et').count() == 1, 'aperçu en direct : le nouveau titre, avec son « & » en italique')
 
     # un champ invalide bloque l'enregistrement
-    pg.get_by_label('Phrase en italique').fill('<b>non</b>')
+    pg.get_by_label('Sous-titre', exact=True).fill('<b>non</b>')
     ok(pg.get_by_role('button', name='Enregistrer le brouillon').is_disabled() and pg.locator('.bu-erreur').count() >= 1, 'un champ invalide : message sous le champ, Enregistrer impossible')
-    pg.get_by_label('Phrase en italique').fill('Des couleurs qui traversent les siècles.')
+    pg.get_by_label('Sous-titre', exact=True).fill('Des couleurs qui traversent les siècles.')
 
     # 2. remplacer le grand fond et le cadrer
     pg.get_by_role('button', name='Remplacer l’image…').first.click()

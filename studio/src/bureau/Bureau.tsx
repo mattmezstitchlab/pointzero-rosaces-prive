@@ -14,6 +14,7 @@ import Inspecteur from "./Inspecteur";
 import Mediatheque from "./Mediatheque";
 import { ecrire, lire, SECTIONS, sectionDe } from "./sections";
 import type { MediaBureau } from "./catalogue";
+import "../design/aime.css";
 import "./Bureau.css";
 
 const BASE = import.meta.env.BASE_URL;

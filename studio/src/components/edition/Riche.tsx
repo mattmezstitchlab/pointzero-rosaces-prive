@@ -1,6 +1,6 @@
 /**
  * Le rendu des textes éditoriaux : du texte, jamais du HTML. Deux marques seulement :
- * *italique* → <i>, et dans un titre « & » dessiné en italique à empattements.
+ * *italique* → <i>, et dans un titre « & » dessiné plus léger, estompé (socle AIME).
  */
 import { Fragment } from "react";
 
