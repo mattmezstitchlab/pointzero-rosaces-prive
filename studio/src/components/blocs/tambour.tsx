@@ -3,7 +3,7 @@
  * Les commandes du Point autour du tambour : Caméra, Vues, Couleurs, Détail, Fils DMC (échanger), Figer, Broder ce motif, Une photo.
  * Chaque feuille appelle une vraie action. Le centre du Point ouvre aussi la caméra (raccourci du mode Tambour seulement).
  */
-import { Camera, CameraOff, Columns2, Eye, FileUp, Grid3x3, Image as ImageIcon, Palette, Pause, Play, RotateCcw, Scan, Sparkles } from "lucide-react";
+import { Camera, CameraOff, Layers, Columns2, Eye, FileUp, Grid3x3, Image as ImageIcon, Palette, Pause, Play, RotateCcw, Scan, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 import { FLOSS } from "../../lib/dmc";
 import { enregistrerTypeBloc, typeBloc } from "../../lib/point/registre";
@@ -26,6 +26,8 @@ export interface ContexteTambour {
   fige: boolean; figer: () => void;
   capturer: () => void;
   importer: () => void;
+  /** passer au lot B : poser un patron sur la vraie toile filmée */
+  superposer: () => void;
 }
 
 const nomFil = (i: number) => FLOSS[i] ? `DMC ${FLOSS[i].code} · ${FLOSS[i].name}` : "fil";
@@ -51,6 +53,7 @@ export function commandesTambour(c: ContexteTambour): ModePoint[] {
     { id: "figer", nom: c.fige ? "Reprendre" : "Figer", icone: c.fige ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />, aide: c.fige ? "revenir à l’image en direct" : "garder cette image pour la régler tranquillement", groupe: "creation", actif: c.fige, resteOuvert: true, ouvrir: c.figer },
     { id: "capturer", nom: "Broder ce motif", icone: <Sparkles aria-hidden="true" />, aide: c.aSource ? `ouvrir ces ${c.cote} × ${c.cote} points dans l’atelier, avec la photo ; l’ouvrage rejoint Mes ouvrages` : "il faut d’abord une image : la caméra, ou une photo", groupe: "creation", ouvrir: c.capturer },
     { id: "photo", nom: "Une photo", icone: <FileUp aria-hidden="true" />, aide: "choisir une photo de l’appareil à la place de la caméra", groupe: "creation", ouvrir: c.importer },
+    { id: "superposer", nom: "Superposer un patron", icone: <Layers aria-hidden="true" />, aide: "filmer votre vraie toile et y poser un patron de Mes ouvrages", groupe: "creation", ouvrir: c.superposer },
   ];
 }
 
