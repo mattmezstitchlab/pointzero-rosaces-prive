@@ -141,7 +141,7 @@ function useDefile() {
 function useAccroche(ref: { current: HTMLElement | null }, actif: boolean) {
   useLayoutEffect(() => {
     const nav = ref.current; if (!nav) return;
-    const nettoyer = () => { for (const k of ["left", "top", "bottom", "transform"]) nav.style.removeProperty(k); };
+    const nettoyer = () => { for (const k of ["left", "top", "bottom", "transform"]) nav.style.removeProperty(k); document.documentElement.style.removeProperty("--pz-dock-haut"); document.documentElement.classList.remove("pz-dock-accroche"); };
     if (!actif) { nettoyer(); return; }
     let raf = 0, obs: MutationObserver | null = null, cadre: Element | null = null;
     const placer = () => {
@@ -153,6 +153,8 @@ function useAccroche(ref: { current: HTMLElement | null }, actif: boolean) {
       const w = nav.offsetWidth, h = nav.offsetHeight, bas = window.innerHeight - h - Math.max(12, parseFloat(getComputedStyle(nav).getPropertyValue("--pz-sur")) || 12);
       const top = Math.max(fy + 24, Math.min(fy + fh + 12, bas)), left = Math.max(12, Math.min(fx + fw / 2 - w / 2, window.innerWidth - w - 12));
       nav.style.left = left + "px"; nav.style.top = top + "px"; nav.style.bottom = "auto"; nav.style.transform = "none";
+      /* les notifications se posent au-dessus du dock accroché, jamais dessus */
+      document.documentElement.style.setProperty("--pz-dock-haut", top + "px"); document.documentElement.classList.add("pz-dock-accroche");
     };
     const programmer = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(placer); };
     const brancher = () => { const c = document.querySelector(".cadre"); if (c && c !== cadre) { cadre = c; obs?.disconnect(); obs = new MutationObserver(programmer); obs.observe(c, { attributes: true, attributeFilter: ["style"] }); } };

@@ -12,7 +12,8 @@ import { commandesDuBloc, typeBloc } from "../lib/point/registre";
 import { createPattern } from "../lib/pattern";
 import { FLOSS } from "../lib/dmc";
 import LePoint from "../components/point/LePoint";
-import { placeTambour } from "../components/TambourAtelier";
+import { premierAnneau } from "../components/TambourAtelier";
+import { angleCommande, chevauchent, distances, geometrieDisque, TOILE_MIN } from "../lib/tambour/disque";
 import { appliquer, coinsInitiaux, convexe, homographie, matrix3d } from "../lib/tambour/homographie";
 import { ecrireCoins, lireCoins, resteAFaire } from "../lib/tambour/superposition";
 import { commandesSuperposition, type ContexteSuperposition } from "../components/blocs/superposition";
@@ -144,21 +145,46 @@ describe("Superposer un patron (lot B) : la perspective par quatre coins", () =>
 describe("Le Cadre-Tambour (essai de l'atelier)", () => {
   let root: Root | null = null, hote: HTMLDivElement | null = null;
   afterEach(() => { act(() => root?.unmount()); hote?.remove(); root = null; });
-  it("le tambour tient à l'écran avec son anneau d'outils, sur ordinateur comme sur téléphone", () => {
-    for (const [l, h] of [[1440, 900], [390, 844], [320, 568], [1024, 600]]) {
-      const t = placeTambour(l, h, 80);
-      expect(t.cx - t.r - 88).toBeGreaterThanOrEqual(-1); expect(t.cx + t.r + 88).toBeLessThanOrEqual(l + 1);
-      if (h - 80 > 2 * (60 + 96)) { expect(t.cy - t.r - 96).toBeGreaterThanOrEqual(79); expect(t.cy + t.r + 96).toBeLessThanOrEqual(h + 1); }
+  const ECRANS: [number, number][] = [[320, 568], [360, 740], [390, 844], [430, 932], [768, 1024], [1024, 768], [1440, 900], [844, 390], [1024, 1366]];
+  it("chaque commande (rond, mot, focus) reste entière dans la couronne, sur tous les écrans et jusqu'à 200 % de texte", () => {
+    for (const [l, h] of ECRANS) for (const texte of [1, 1.5, 2]) {
+      const g = geometrieDisque(l, h, 110, { texte }), Rmax = Math.min(l / 2 - 8, (h - 110 - 12) / 2);
+      expect(g.Ro, `${l}×${h} ×${texte}`).toBeLessThanOrEqual(Rmax + .5);
+      expect(g.rb).toBeLessThan(g.ri); expect(g.r + 6 + 6).toBeLessThanOrEqual(g.ri);   /* la vis reste sur le bois, sous la couronne */
+      for (let n = 3; n <= g.capacite; n++) for (let i = 0; i < n; i++) {
+        const a = angleCommande(i, n), d = distances(g.rho * Math.cos(a), g.rho * Math.sin(a), g.env, g.marge);
+        expect(d.min, `${l}×${h} ×${texte} n=${n} i=${i}`).toBeGreaterThanOrEqual(g.ri - .01);
+        expect(d.max, `${l}×${h} ×${texte} n=${n} i=${i}`).toBeLessThanOrEqual(g.Ro + .01);
+      }
+      expect(chevauchent(g.rho, g.capacite, g.env, 4)).toBe(false);
+      expect(g.capacite).toBeGreaterThanOrEqual(6);
     }
   });
-  it("l'anneau entoure le tambour : les choix à r + 40 du centre, pas de sphère au centre, le centre laisse passer les gestes", () => {
+  it("sur ordinateur, les mots sous les boutons et dix familles ; quand la place manque, les mots passent en cartouche, la toile reste grande", () => {
+    const d = geometrieDisque(1440, 900, 110);
+    expect(d.etiquettes).toBe("dessous"); expect(d.r).toBeGreaterThanOrEqual(TOILE_MIN); expect(d.capacite).toBeGreaterThanOrEqual(11);
+    const m = geometrieDisque(390, 844, 110);
+    expect(m.etiquettes).toBe("cartouche"); expect(m.env.rond).toBeGreaterThanOrEqual(44);
+    const rep = geometrieDisque(390, 844, 110, { replie: true });
+    expect(rep.r).toBeGreaterThan(m.r + 50);   /* la couronne repliée : la toile prend la place */
+  });
+  it("trop de commandes pour l'anneau : les prioritaires restent, les autres passent dans « Plus »", () => {
+    const ids = ["loupe", "guide", "points", "broder", "fils", "affichage", "importer", "exporter", "replier", "retracter"];
+    const modes = ids.map(id => ({ id, nom: id, aide: id, groupe: "metier" as const, ouvrir: () => {} }));
+    expect(premierAnneau(modes, 16)).toBe(modes);
+    const l = premierAnneau(modes, 8), plus = l.find(m => m.id === "plus")!;
+    expect(l.length + 1).toBeLessThanOrEqual(8);
+    expect(l.map(m => m.id)).toEqual(expect.arrayContaining(["points", "broder", "fils", "affichage", "loupe"]));
+    expect([...l.filter(m => m.id !== "plus").map(m => m.id), ...plus.enfants!().map(m => m.id)].sort()).toEqual([...ids].sort());
+  });
+  it("l'anneau entoure le tambour : les choix au rayon donné, pas de sphère au centre, le centre laisse passer les gestes", () => {
     hote = document.createElement("div"); document.body.appendChild(hote); root = createRoot(hote);
     const modes = [{ id: "confort", nom: "Confort", aide: "c", groupe: "acces" as const, ouvrir: () => {} }, ...["a", "b", "c", "d", "e"].map(id => ({ id, nom: id, aide: id, groupe: "metier" as const, ouvrir: () => {} }))];
-    act(() => root!.render(<LePoint scene tambour={200} modes={modes} />));
+    act(() => root!.render(<LePoint scene tambour={{ rayon: 240, cote: 592, parPage: 13 }} modes={modes} />));
     const anneau = hote.querySelector<HTMLElement>(".lp-anneau.lp-tambour")!;
     expect(anneau).not.toBeNull(); expect(hote.querySelector(".lp-centre, .lp-centre-niveau, .lp-centre-action")).toBeNull();
     const cote = parseFloat(anneau.style.width), items = [...anneau.querySelectorAll<HTMLElement>("[role=menuitem]")];
-    expect(cote).toBe(2 * (200 + 96)); expect(items).toHaveLength(6);
+    expect(cote).toBe(592); expect(items).toHaveLength(6);
     for (const it of items) expect(Math.hypot(parseFloat(it.style.left) - cote / 2, parseFloat(it.style.top) - cote / 2)).toBeCloseTo(240, 3);
   });
 });

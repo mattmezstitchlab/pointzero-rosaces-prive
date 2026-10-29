@@ -21,7 +21,7 @@ const ICONE_CONFORT = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
  */
 export default function Point({ contexte, modes, part, teinte, etiquette, refBouton, guide, ancrage, memoire, scene, centre, tambour }: {
   /** l'anneau autour d'un tambour (présentation scène) : voir LePoint */
-  tambour?: number;
+  tambour?: { rayon: number; cote: number; parPage: number };
   /** le raccourci du centre (mode Tambour) : voir LePoint */
   centre?: Parameters<typeof LePoint>[0]["centre"];
   /** le disque posé dans une page (landing), toujours ouvert : voir LePoint */

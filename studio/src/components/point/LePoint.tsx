@@ -39,7 +39,7 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
    * Facultatif (présentation « scène » seulement, essai du Cadre-Tambour) : le rayon, en pixels, d'un tambour que l'anneau entoure.
    * Les choix se posent autour du cercle, le centre reste vide et laisse passer les gestes vers l'ouvrage. Sans lui, rien ne change.
    */
-  tambour?: number;
+  tambour?: { rayon: number; cote: number; parPage: number };
   /**
    * Présentation « scène » (une page qui montre le Point, comme la landing) : le disque est posé dans la page, toujours ouvert,
    * sans bouton ni portail. Même noyau, mêmes niveaux, mêmes touches, mêmes annonces ; il ne prend le focus qu'après un geste.
@@ -95,13 +95,13 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
   const profondeur = familles.length, parent = familles[profondeur - 1];
   const remonter = () => { setChemin(c => c.slice(0, -1)); setPage(0); const p = familles[profondeur - 1]; setFocus(Math.max(0, (profondeur - 1 === 0 ? racineModes : familles[profondeur - 2].enfants!()).findIndex(m => m.id === p?.id) + (profondeur - 1 >= 2 ? 2 : profondeur - 1 >= 1 ? 1 : 0))); if (p) setAnnonce(`Retour : ${profondeur - 1 === 0 ? "Point Zéro" : familles[profondeur - 2].nom}.`); };
   const origine = () => { setChemin([]); setPage(0); setFocus(0); setAnnonce("Point Zéro : le premier cercle."); };
-  const courant = profondeur === 0 ? racineModes : niveau(paginer(enfants, page, 16, setPage), profondeur, parent?.nom ?? "", { retour: remonter, origine });
+  const courant = profondeur === 0 ? racineModes : niveau(paginer(enfants, page, tambour && scene ? Math.max(3, tambour.parPage) : 16, setPage), profondeur, parent?.nom ?? "", { retour: remonter, origine });
   const n = courant.length;
   /* un niveau de couleurs (presque toutes) : un anneau serré de pastilles ; les rares autres choix s'y font ronds, à pictogramme */
   const choixNiveau = courant.filter(m => !NAV.has(m.id)), nCouleurs = choixNiveau.filter(m => !!m.couleur || !!m.valeur).length;
   const pastilles = profondeur > 0 && nCouleurs >= 3 && nCouleurs >= 0.7 * choixNiveau.length;
-  const enTambour = scene && !!tambour && tambour > 0;
-  const RAYON = enTambour ? tambour! + 40 : rayonPour(n, pastilles), COTE = enTambour ? 2 * (tambour! + 96) : cotePour(n, pastilles);
+  const enTambour = scene && !!tambour && tambour.rayon > 0;
+  const RAYON = enTambour ? tambour!.rayon : rayonPour(n, pastilles), COTE = enTambour ? tambour!.cote : cotePour(n, pastilles);
   /* l'anneau intérieur : la famille d'où viennent les nuances, quand elle est faite de couleurs elle aussi */
   const freres = profondeur >= 1 ? (profondeur === 1 ? racineModes : familles[profondeur - 2].enfants!()) : [];
   const interieur = pastilles && freres.filter(m => m.couleur).length >= 3 ? freres.filter(m => m.couleur) : [];
