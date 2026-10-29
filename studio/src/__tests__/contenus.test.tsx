@@ -18,7 +18,7 @@ describe("Les contenus publiés, validés contre l'origine", () => {
   });
   it("un titre et une image valides remplacent l'origine ; le reste ne bouge pas", () => {
     const { contenus, ecarts } = validerContenus({ histoire: { origine: { titre: "Rouge & bleu",
-      media: { src: "https://abc123.public.blob.vercel-storage.com/medias/garance.webp", alt: "Une racine de garance", legende: "Photographie de l’atelier, 2026.", licence: "autorise", reconstitution: false } } } });
+      media: { src: "https://abc123.public.blob.vercel-storage.com/contenus/garance.webp", alt: "Une racine de garance", legende: "Photographie de l’atelier, 2026.", licence: "autorise", reconstitution: false } } } });
     expect(ecarts).toEqual([]);
     expect(contenus.histoire.origine.titre).toBe("Rouge & bleu");
     expect(contenus.histoire.origine.media.src).toMatch(/^https:\/\/abc123\.public\.blob/);
@@ -41,7 +41,7 @@ describe("Les contenus publiés, validés contre l'origine", () => {
     expect(ecarts.map(e => e.chemin)).toEqual(expect.arrayContaining(["histoire.origine.titre", "histoire.origine.sous", "histoire.origine.corps", "histoire.origine.inconnu", "histoire.sources.liens", "fils.etapes", "cadeau.usages[0].titre"]));
   });
   it("des images d'ici ou du stockage de médias seulement ; des liens https seulement", () => {
-    for (const ok of ["images/histoire/a.webp", "https://x1.public.blob.vercel-storage.com/m/b.jpg"]) expect(srcOk(ok)).toBe(true);
+    for (const ok of ["images/histoire/a.webp", "https://x1.public.blob.vercel-storage.com/contenus/b.jpg"]) expect(srcOk(ok)).toBe(true);
     for (const non of ["javascript:alert(1)", "https://exemple.com/a.webp", "images/../secret.webp", "/images/a.webp", "data:image/png;base64,AAA", "http://x1.public.blob.vercel-storage.com/a.png", "images/a.svg"]) expect(srcOk(non)).toBe(false);
     const { contenus } = validerContenus({ histoire: { sources: { liens: ORIGINE.histoire.sources.liens.map((l, i) => i ? l : { ...l, url: "javascript:alert(1)" }) } } });
     expect(contenus.histoire.sources.liens[0].url).toBe(ORIGINE.histoire.sources.liens[0].url);
@@ -111,5 +111,60 @@ describe("Les modes Tambour et Projection sur toile : des places réservées, ri
     expect(dispositionEffective("n'importe quoi")).toBe("disque");
     expect(dispositionEffective(undefined)).toBe("disque");
     expect(dispositionsProposees().map(d => d.id)).toEqual(["disque"]);
+  });
+});
+
+describe("La landing lit la version publiée ; l'aperçu reste réservé et annoncé", () => {
+  const monter = async (url: string, reponse: (u: string) => Response | Promise<Response>) => {
+    window.history.replaceState(null, "", url);
+    const f = vi.fn((u: string) => Promise.resolve(reponse(u)));
+    vi.stubGlobal("fetch", f); vi.stubEnv("BASE_URL", "/studio/");
+    const { EditionEnLigne } = await import("../components/edition/Edition");
+    hote = document.createElement("div"); document.body.appendChild(hote); root = createRoot(hote);
+    await act(async () => { root!.render(<EditionEnLigne actions={{ ouvrir: vi.fn(), importer: vi.fn(), visite: vi.fn() }} />); });
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+    return f;
+  };
+  const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json" } });
+  afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); localStorage.clear(); window.history.replaceState(null, "", "/"); });
+
+  it("une version publiée remplace le titre ; elle est revalidée dans le navigateur", async () => {
+    const c = structuredClone(ORIGINE); c.histoire.origine.titre = "Publié & vu"; c.histoire.origine.sous = "<b>refusé</b>";
+    const f = await monter("/?edition", () => json({ ok: true, version: "7", contenus: c }));
+    expect(f).toHaveBeenCalledWith("/api/contenus", expect.anything());
+    expect(document.querySelector("#hi-origine h2")!.textContent).toBe("Publié & vu");
+    expect(document.querySelector<HTMLImageElement>("#hi-origine .ed-brode-photo")!.getAttribute("src")).toBe("/studio/images/histoire/reconstitution-pigments.webp");
+    expect(document.querySelector("#hi-origine .hi-sous")!.textContent).toBe(ORIGINE.histoire.origine.sous);
+    expect(document.querySelector(".ed-apercu")).toBeNull();
+  });
+  it("sans API (page HTML, erreur réseau) ou sans publication : le texte d'origine", async () => {
+    await monter("/?edition", () => new Response("<!doctype html>", { status: 200, headers: { "Content-Type": "text/html" } }));
+    expect(document.querySelector("#hi-origine h2")!.textContent).toBe("Garance & indigo");
+    await act(async () => root?.unmount()); hote?.remove(); root = null;
+    await monter("/?edition", () => json({ ok: true, contenus: null }));
+    expect(document.querySelector("#hi-origine h2")!.textContent).toBe("Garance & indigo");
+  });
+  it("?apercu=ID : la version demandée, annoncée comme non publiée ; refusée sans le compte d'administration", async () => {
+    const c = structuredClone(ORIGINE); c.histoire.origine.titre = "Brouillon & essai";
+    const f = await monter("/?edition&apercu=12", () => json({ ok: true, contenus: c, ecarts: [] }));
+    expect(f).toHaveBeenCalledWith("/api/contenus?version=12", expect.objectContaining({ credentials: "same-origin" }));
+    expect(document.querySelector("#hi-origine h2")!.textContent).toBe("Brouillon & essai");
+    expect(document.querySelector(".ed-apercu")!.textContent).toMatch(/Aperçu de la version 12 : elle n’est pas publiée/);
+    await act(async () => root?.unmount()); hote?.remove(); root = null;
+    await monter("/?edition&apercu=12", () => json({ ok: false }, 403));
+    expect(document.querySelector(".ed-apercu")!.textContent).toMatch(/réservé à l’administration/);
+    expect(document.querySelector("#hi-origine h2")!.textContent).toBe("Garance & indigo");
+  });
+});
+
+describe("Servi seul (essais locaux, sans API)", () => {
+  it("n'appelle aucune API : pas d'erreur 404 dans la page, les textes d'origine", async () => {
+    const f = vi.fn(); vi.stubGlobal("fetch", f);
+    const { EditionEnLigne } = await import("../components/edition/Edition");
+    hote = document.createElement("div"); document.body.appendChild(hote); root = createRoot(hote);
+    await act(async () => { root!.render(<EditionEnLigne actions={{ ouvrir: vi.fn(), importer: vi.fn(), visite: vi.fn() }} />); });
+    expect(f).not.toHaveBeenCalled();
+    expect(document.querySelector("#hi-origine h2")!.textContent).toBe("Garance & indigo");
+    vi.unstubAllGlobals();
   });
 });

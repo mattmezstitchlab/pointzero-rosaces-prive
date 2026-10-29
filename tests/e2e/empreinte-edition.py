@@ -16,6 +16,7 @@ SCENES = ['hi-origine', 'hi-indiennes', 'or-forme', 'hi-mulhouse', 'or-lignes', 
 
 def propre(html):
     html = re.sub(r'(data:image/[a-z]+;base64,)[A-Za-z0-9+/=]+', r'\1…', html)   # aperçus peints : comparés par les captures
+    html = re.sub(r' data-pret="(oui|non)"', '', html)   # l'état de conversion des broderies dépend du moment : les captures attendent qu'elles soient prêtes
     return html
 
 resume = {}

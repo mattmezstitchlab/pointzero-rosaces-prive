@@ -3,7 +3,7 @@ import TopDock from "./TopDock";
 import Metamorphose from "./Metamorphose";
 import TraineePoints from "./TraineePoints";
 import "./CrossStitchHome.css";
-import Edition, { CHAPITRES_EDITION } from "./edition/Edition";
+import { CHAPITRES_EDITION, EditionEnLigne } from "./edition/Edition";
 
 /** L'édition (la nouvelle narration sous le héros) : en essai privé derrière ?edition, la page actuelle reste la même sans ce paramètre. */
 const estEdition = () => { try { return new URLSearchParams(window.location.search).has("edition"); } catch { return false; } };
@@ -190,7 +190,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
       </Metamorphose>
 
       {edition
-        ? <div id="chapitres"><Edition actions={{ ouvrir: e => onOpen(e), importer: onImport, visite }} /></div>
+        ? <div id="chapitres"><EditionEnLigne actions={{ ouvrir: e => onOpen(e), importer: onImport, visite }} /></div>
         : <div id="chapitres" className="chapitres">
         {CHAPITRES.map((c, n) => <ChapitreVue key={c.id} c={c} n={n} onVoir={setChapitre} />)}
       </div>}
