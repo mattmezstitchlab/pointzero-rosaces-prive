@@ -123,3 +123,11 @@
 [data-aime-univers="spectacle"] { --aime-univers: #8a6cf0; --aime-univers-fond: linear-gradient(135deg, #22164a, #0f0d1c); }
 [data-aime-univers="culture"]   { --aime-univers: #4f8f7a; --aime-univers-fond: linear-gradient(135deg, #16302a, #0f1715); }
 [data-aime-univers="art"]       { --aime-univers: #e0805c; --aime-univers-fond: linear-gradient(135deg, #3d1f16, #1a1210); }
+
+/* l'éclat d'un univers : un dégradé vif, réservé aux cartes éditoriales (une mise en avant, un chiffre clé), toujours avec un texte blanc */
+[data-aime-univers] { --aime-univers-eclat: linear-gradient(150deg, #3a3a40, #121214); }
+[data-aime-univers="broderie"]  { --aime-univers-eclat: linear-gradient(150deg, #e2553f 0%, #b5263f 48%, #2b3a8f 100%); }
+[data-aime-univers="mariage"]   { --aime-univers-eclat: linear-gradient(150deg, #c98f6d 0%, #a8556f 55%, #5b3c78 100%); }
+[data-aime-univers="spectacle"] { --aime-univers-eclat: linear-gradient(150deg, #ff5a36 0%, #e8195f 45%, #8a1fc0 100%); }
+[data-aime-univers="culture"]   { --aime-univers-eclat: linear-gradient(150deg, #2f8f74 0%, #1d6577 50%, #213f7a 100%); }
+[data-aime-univers="art"]       { --aime-univers-eclat: linear-gradient(150deg, #f08a3c 0%, #d6345a 50%, #6a2bb8 100%); }
