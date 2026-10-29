@@ -11,6 +11,9 @@ import type { ViewMode } from "./Canvas";
 import { LEVEL_LABELS, type InterfaceLevel } from "../lib/interfaceLevel";
 import { VISIBILITY, VISIBILITY_ORDER, type Visibility } from "../lib/visibility";
 import VisibilityOrb from "./VisibilityOrb";
+import LePoint from "./point/LePoint";
+import PanneauConfort from "./point/PanneauConfort";
+import type { ModePoint } from "../lib/point/modes";
 
 /**
  * Les deux docks du studio (charte UniO du Monde AIME).
@@ -117,6 +120,9 @@ export default function StudioDocks(p: Props) {
   const [modes, setModes] = useState(false);
   const [modeBas, setModeBas] = useState<ModeBas>(p.path === "fils" ? "fils" : "reperes");
   const cercleRef = useRef<HTMLButtonElement>(null);
+  const [confort, setConfort] = useState(false);
+  const [annonceConfort, setAnnonceConfort] = useState("");
+  const fermerConfort = () => { setConfort(false); requestAnimationFrame(() => cercleRef.current?.focus()); };
   useEffect(() => { if (p.path === "fils") { setModeBas("fils"); setModes(false); } else setModeBas(m => m === "fils" ? "reperes" : m); }, [p.path]);
   const upRef = useRef<HTMLButtonElement>(null);
   const wasPath = useRef<DockPath>(p.path);
@@ -193,6 +199,7 @@ export default function StudioDocks(p: Props) {
 
   return <>
     <header className="pzs-head" aria-label="En-tête du studio">
+      <button type="button" className="lp-evitement" onClick={() => { setLoupe(false); setConfort(true); }}>Réglages de confort</button>
       {bloc && <div className="pzs-voile" aria-hidden="true" onClick={fermer} />}
       <nav className={"pzs-top" + (bloc ? " pzs-ouvert" : "")} aria-label="Dock des outils du studio de broderie" onKeyDown={onKey}>
         <div className="pzs-ligne">
@@ -294,10 +301,18 @@ export default function StudioDocks(p: Props) {
       {!bloc && <p className="pzs-crumbs">{crumbs.map((c, i) => <span key={i}>{i > 0 && <span aria-hidden="true"> › </span>}{i === crumbs.length - 1 ? <strong>{c}</strong> : c}</span>)}</p>}
     </header>
 
+    {confort && <PanneauConfort onFermer={fermerConfort} onAnnonce={setAnnonceConfort} />}
     {loupe && p.pattern && <div className="pzs-loupe-dock"><Loupe pattern={p.pattern} /><button type="button" className="pzs-loupe-fermer" aria-label="Fermer la loupe" onClick={() => setLoupe(false)}><X size={16} aria-hidden="true" /></button></div>}
     <nav className="pzs-bottom" aria-label="Se repérer dans le studio" onKeyDown={e => { if (e.key === "Escape" && loupe) { e.preventDefault(); setLoupe(false); return; } if (e.key === "Escape" && modes) { e.preventDefault(); setModes(false); cercleRef.current?.focus(); } }}>
-      <Cercle refBouton={cercleRef} ouvert={modes} onClick={() => setModes(v => !v)} part={prog} teinte={teinte}
-        label={(modes ? "Revenir au dock" : "Changer le dock") + ", mode " + (MODES.find(m => m[0] === modeBas)?.[1] ?? "") + (total ? ", patron brodé à " + Math.round(prog * 100) + " %" : "")} />
+      {/* Le Point, contrôleur universel : Confort (toujours premier), Loupe, Guide, puis le métier (Broderie : Repères, Fils, Progression) */}
+      <LePoint refBouton={cercleRef} part={prog} teinte={teinte} annonceExterne={annonceConfort}
+        etiquette={"Dock en mode " + (MODES.find(m => m[0] === modeBas)?.[1] ?? "") + (total ? ", patron brodé à " + Math.round(prog * 100) + " %" : "")}
+        modes={[
+          { id: "confort", nom: "Confort", aide: "taille du texte, contraste, thème, mouvement", groupe: "acces", actif: confort, ouvrir: () => { setLoupe(false); setConfort(v => !v); } },
+          { id: "loupe", nom: "Loupe", aide: "la grille agrandie sous le pointeur, sans rien modifier", groupe: "socle", actif: loupe, ouvrir: () => { setConfort(false); setLoupe(v => !v); } },
+          ...(p.actions.visite ? [{ id: "guide", nom: "Guide", aide: "la visite du studio avec Le Point", groupe: "socle", ouvrir: () => { setConfort(false); p.actions.visite!(); } } satisfies ModePoint] : []),
+          { id: "broderie", nom: "Broderie", aide: "le dock du bas en Repères, Fils DMC ou Progression", groupe: "metier", actif: modes, ouvrir: () => { setModes(v => !v); requestAnimationFrame(() => document.querySelector<HTMLElement>(".pzs-modes [aria-pressed=\"true\"]")?.focus()); } },
+        ]} />
       {modes
         ? <div className="pzs-modes" role="group" aria-label="Les modes du dock">
           {MODES.map(([id, nom, halo]) => <button key={id} type="button" className="pzs-btm pzs-halo-mode" aria-pressed={modeBas === id}
@@ -319,22 +334,6 @@ export default function StudioDocks(p: Props) {
         </>}
     </nav>
   </>;
-}
-
-/* Le cercle du dock du bas : l'anneau suit la progression du patron ; un clic change le dock (Repères, Fils, Progression). */
-function Cercle({ refBouton, ouvert, onClick, part, teinte, label }: { refBouton: React.RefObject<HTMLButtonElement | null>; ouvert: boolean; onClick: () => void; part: number; teinte: string; label: string }) {
-  const c = 2 * Math.PI * 11;
-  const pt = (a: number) => { const t = a * Math.PI / 180; return (22 + 18 * Math.cos(t)).toFixed(2) + " " + (22 + 18 * Math.sin(t)).toFixed(2); };
-  const arcs = Array.from({ length: 12 }, (_, k) => { const a0 = -90 + k * 30 + 5, a1 = a0 + 20; return "M " + pt(a0) + " A 18 18 0 0 1 " + pt(a1); });
-  return <button ref={refBouton} type="button" data-guide="cercle" className="pzs-cercle" aria-expanded={ouvert} aria-label={label} title={ouvert ? "Revenir au dock" : "Changer le dock"} onClick={onClick}>
-    <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true">
-      {arcs.map((d, k) => <path key={k} d={d} fill="none" stroke={teinte} strokeOpacity={.55} strokeWidth={2} strokeLinecap="round" />)}
-      <circle cx="22" cy="22" r="11" fill="none" stroke="#fff" strokeOpacity={.18} strokeWidth="2" />
-      <circle cx="22" cy="22" r="11" fill="none" stroke={teinte} strokeWidth="2" strokeDasharray={`${(c * part).toFixed(1)} ${c.toFixed(1)}`} transform="rotate(-90 22 22)" />
-      <circle cx="22" cy="22" r="5.5" fill="url(#pzs-iris)" />
-      <defs><radialGradient id="pzs-iris" cx="35%" cy="32%" r="75%"><stop offset="0%" stopColor="#ffffff" /><stop offset="35%" stopColor="#d9e8ff" /><stop offset="60%" stopColor="#c9b8ff" /><stop offset="80%" stopColor="#ffd6ec" /><stop offset="100%" stopColor="#b9f0e4" /></radialGradient></defs>
-    </svg>
-  </button>;
 }
 
 /* La timeline du patron : chaque fil, de celui qui compte le plus de points au plus petit, rempli à mesure qu'il est brodé. */

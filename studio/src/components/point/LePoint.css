@@ -1,0 +1,51 @@
+/* Le Point, contrôleur universel : le bouton, l'anneau des modes, le panneau Confort. Charte du studio : sombre, nacre, sobre. */
+.lp { position: relative; flex: none; display: flex; }
+.lp-point { position: relative; }
+.lp-point:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.lp-onde { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; border: 2px solid rgba(201,184,255,.9); pointer-events: none; animation: lp-onde .7s ease-out forwards; }
+@keyframes lp-onde { from { transform: scale(.6); opacity: 1; } to { transform: scale(2.2); opacity: 0; } }
+
+.lp-anneau { position: fixed; z-index: 70; border-radius: 50%; background: rgba(11,11,12,.94); box-shadow: 0 0 0 1px #3a3a38, 0 30px 70px rgba(11,11,12,.45); animation: lp-ouvre .18s ease-out; }
+@keyframes lp-ouvre { from { transform: scale(.9); opacity: 0; } to { transform: none; opacity: 1; } }
+.lp-trace { position: absolute; inset: 0; pointer-events: none; }
+.lp-trace circle { stroke: rgba(255,255,255,.16); stroke-width: 1; stroke-dasharray: 2 4; }
+.lp-trace line { stroke: rgba(255,255,255,.5); stroke-width: 1.5; }
+.lp-centre { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: radial-gradient(circle at 32% 30%, #ffffff 0%, #d9e8ff 22%, #c9b8ff 48%, #ffd6ec 72%, #b9f0e4 100%); }
+.lp-secteur { position: absolute; transform: translate(-50%, -50%); min-width: 72px; min-height: 44px; padding: 0 12px; border-radius: 22px; border: 1px solid rgba(255,255,255,.35); background: #1b1b1a; color: #fff; font: 600 13px/1 inherit; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+.lp-secteur:hover { background: #2a2a28; }
+.lp-secteur:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+/* le groupe se lit par la forme du bord, jamais par la couleur seule */
+.lp-acces { border: 2px solid #c9b8ff; }
+.lp-metier { background: #2a2a28; border-style: solid; border-width: 1px 1px 3px; }
+.lp-creation { border-style: dashed; }
+.lp-marque { width: 7px; height: 7px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 2px #0b0b0c; }
+
+.lp-annonce { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.lp-panneau { position: fixed; z-index: 70; left: 50%; bottom: 92px; transform: translateX(-50%); width: min(460px, calc(100vw - 24px)); max-height: calc(100vh - 200px); overflow: auto; box-sizing: border-box;
+  padding: 16px 16px 18px; border-radius: 20px; background: #0b0b0c; color: #fff; border: 1px solid #3a3a38; box-shadow: 0 24px 60px rgba(11,11,12,.35); font-size: calc(15px * var(--pz-user-font-scale, 1)); line-height: var(--pz-user-line-height, 1.5); letter-spacing: var(--pz-user-letter-spacing, 0); }
+.lp-panneau-tete { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lp-panneau h2 { margin: 0; font-size: 1.2em; font-weight: 700; }
+.lp-fermer { min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.35); background: transparent; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.lp-note { margin: 6px 0 4px; color: rgba(255,255,255,.72); font-size: .9em; }
+.lp-groupe { margin: 14px 0 0; padding: 12px; border: 1px solid #3a3a38; border-radius: 14px; }
+.lp-groupe legend { padding: 0 6px; font-weight: 700; font-size: .85em; letter-spacing: .04em; text-transform: uppercase; color: rgba(255,255,255,.8); }
+.lp-profils { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lp-profils button { min-height: 44px; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,.3); background: #1b1b1a; color: #fff; font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+.lp-profils button:hover { background: #2a2a28; }
+.lp-aide { display: block; margin-top: 3px; font-weight: 400; font-size: .85em; color: rgba(255,255,255,.7); }
+.lp-curseur { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; margin: 6px 0 10px; font-weight: 600; }
+.lp-curseur output { font-variant-numeric: tabular-nums; color: #fff; }
+.lp-curseur input { grid-column: 1 / -1; width: 100%; min-height: 32px; accent-color: #c9b8ff; }
+.lp-choix { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.lp-choix label, .lp-case { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; padding: 8px 0; cursor: pointer; }
+.lp-choix input, .lp-case input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: #c9b8ff; }
+.lp-panneau :focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.lp-erreur { margin: 12px 0 0; padding: 10px; border-radius: 10px; border: 2px solid #f5b754; }
+.lp-evitement { position: fixed; left: 8px; top: -60px; z-index: 80; padding: 10px 14px; border-radius: 10px; background: #0b0b0c; color: #fff; border: 2px solid #c9b8ff; font-weight: 700; }
+.lp-evitement:focus { top: 8px; }
+
+@media (max-width: 720px) { .lp-profils { grid-template-columns: 1fr; } .lp-panneau { bottom: 84px; max-height: calc(100vh - 170px); } }
+@media (prefers-reduced-motion: reduce) { .lp-onde, .lp-anneau { animation: none; } .lp-onde { display: none; } }
+html[data-pz-motion="reduce"] .lp-onde { display: none; }
+html[data-pz-motion="reduce"] .lp-anneau { animation: none; }

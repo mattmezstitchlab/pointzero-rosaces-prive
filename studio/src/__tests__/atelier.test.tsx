@@ -114,15 +114,18 @@ describe("POINTZERO : atelier unique sans assistant", () => {
     await click(button("Remonter d’un niveau"));
     expect(container?.querySelector('[aria-label="Fils du motif"]')).toBeNull();
   });
-  it("change le dock du bas depuis son cercle : Progression, puis retour aux repères", async () => {
+  it("change le dock du bas depuis le Point (mode Broderie) : Progression, puis retour aux repères", async () => {
     await mount();
     const cercle = () => bottom()?.querySelector(".pzs-cercle") as HTMLButtonElement | null;
+    const secteur = (id: string) => document.querySelector(`.lp-anneau [data-mode="${id}"]`) as HTMLButtonElement | null;
     await click(cercle());
     expect(cercle()?.getAttribute("aria-expanded")).toBe("true");
+    await click(secteur("broderie"));
     await click(inBottom("Progression"));
     expect(bottom()?.textContent).toContain("Rien à broder");
     expect(inBottom("Tout voir")).toBeUndefined();
     await click(cercle());
+    await click(secteur("broderie"));
     await click(inBottom("Repères"));
     expect(inBottom("Tout voir")).toBeTruthy();
   });
