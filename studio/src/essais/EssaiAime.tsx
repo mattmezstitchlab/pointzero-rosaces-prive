@@ -189,14 +189,16 @@ function LaUne({ themeChoix }: { themeChoix: React.ReactNode }) {
   const toile = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     let image: HTMLImageElement | null = null, vivant = true;
-    const dessiner = () => { if (image && toile.current) tramer(image, toile.current, { mode: "bayer", pas: 6, luminosite: 8, niveaux: 3 }); };
-    chargerImage(IMG + "landing/peinture-roses.webp").then(i => { if (vivant) { image = i; dessiner(); } }).catch(() => {});
+    const dessiner = () => { if (image && toile.current) tramer(image, toile.current, { mode: "bayer", pas: 5, luminosite: 10, niveaux: 3, gris: 1 }); };
+    chargerImage(IMG + "une/mariee-cosmos.webp").then(i => { if (vivant) { image = i; dessiner(); } }).catch(() => {});
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(dessiner) : null; if (toile.current) ro?.observe(toile.current);
     return () => { vivant = false; ro?.disconnect(); };
   }, []);
   return <section className="ea-une" data-aime="nuit" aria-labelledby="ea-une-titre">
-    <img className="ea-une-image" src={IMG + "landing/peinture-roses.webp"} alt="" />
-    <canvas ref={toile} className="ea-une-trame" aria-hidden="true" />
+    <div className="ea-une-visuel" aria-hidden="true">
+      <img className="ea-une-image" src={IMG + "une/mariee-cosmos.webp"} alt="" />
+      <canvas ref={toile} className="ea-une-trame" />
+    </div>
     <div className="ea-une-haut">
       <p className="ea-marque ea-marque-photo"><span className="aime-point" aria-hidden="true" />AIME<sup>®</sup></p>
       <MegaMenu />
@@ -209,7 +211,7 @@ function LaUne({ themeChoix }: { themeChoix: React.ReactNode }) {
         <div className="ea-ligne"><a className="aime-btn ea-blanc" href="#point">Commencer <span aria-hidden="true">→</span></a><a className="aime-btn aime-btn--contour ea-contour-photo" href="#composants">Les composants</a></div>
       </div>
     </div>
-    <p className="ea-une-legende">Peinture de roses, visuel de la landing Point Zéro · trame calculée dans la page</p>
+    <p className="ea-une-legende">Visuel fourni par Matt · trame calculée dans la page</p>
   </section>;
 }
 

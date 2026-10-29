@@ -6,7 +6,7 @@
  *  - « points » : une demi-teinte, des disques dont la taille suit la lumière.
  */
 export type ModeTrame = "croix" | "bayer" | "points";
-export interface OptionsTrame { mode: ModeTrame; pas: number; luminosite: number; niveaux: number; fond?: string }
+export interface OptionsTrame { mode: ModeTrame; pas: number; luminosite: number; niveaux: number; fond?: string; /** sous cette lumière (0 à 1), les points sont gris */ gris?: number }
 
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v + .5) / 16);
 
@@ -29,7 +29,7 @@ export function tramer(source: CanvasImageSource & { width: number; height: numb
       const s = BAYER[(y % 4) * 4 + (x % 4)], l = .2126 * R + .7152 * G + .0722 * B;
       if (l < .08) continue;                                   /* le noir reste noir */
       /* dans les ombres, des points gris (pas de grésillement coloré) ; la couleur revient avec la lumière */
-      const [r, g, b] = l < .24 ? [l, l, l] : [R, G, B];
+      const [r, g, b] = l < (o.gris ?? .24) ? [l, l, l] : [R, G, B];
       c.fillStyle = `rgb(${q(r, s) * 255},${q(g, s) * 255},${q(b, s) * 255})`; c.fillRect(X, Y, pas - (pas > 3 ? 1 : 0), pas - (pas > 3 ? 1 : 0));
     } else if (o.mode === "points") {
       const l = .2126 * R + .7152 * G + .0722 * B, rayon = (pas / 2) * Math.sqrt(q(l));
