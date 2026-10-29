@@ -33,6 +33,11 @@ describe("Le Point est portable", () => {
     const interdits = /dmc|pattern|stitch|motif5d|cadre|canvas|pdf|oxs|floss|broderie|Studio|Docks|Composer|library|aimeSync/i;
     expect(fichiers.filter(f => interdits.test(f))).toEqual([]);
   });
+  it("les points lumineux (indicateurs) restent portables : aucun import, sinon les types du Point", async () => {
+    const { readFileSync } = await import("node:fs"); const { join } = await import("node:path");
+    const src = readFileSync(join(__dirname, "../lib/point/indicateurs.ts"), "utf8");
+    expect([...src.matchAll(/from "([^"]+)"/g)].map(m => m[1])).toEqual(["./modes"]);
+  });
   it("tient en dix fichiers connus (la mémoire des habitudes et les profils compris)", () => {
     expect(fichiers).toEqual([
       "components/point/LePoint.css", "components/point/LePoint.tsx", "components/point/PanneauConfort.tsx", "components/point/Point.tsx",

@@ -187,3 +187,29 @@ html[data-pz-motion="reduce"] .lp-centre-action .lp-centre { transition: none; }
 .lp-anneau.lp-tambour .lp-secteur, .lp-anneau.lp-tambour .lp-interieur { pointer-events: auto; }
 .lp-anneau.lp-tambour .lp-trace { display: none; }
 .lp-anneau.lp-tambour .lp-centre-action { pointer-events: auto; }
+
+/* ——— Les points lumineux (lib/point/indicateurs) : un état par commande, sa forme autant que sa couleur ———
+   Repos : neutre. Guide : violet nacré, halo léger. Information : bleu doux. Décision attendue : corail cerclé.
+   En cours : anneau qui tourne lentement. Réussite : vert doux. Erreur : losange. Hérité d'un sous-menu : anneau creux.
+   Une montée courte à l'apparition, puis une lumière fixe ; aucune pulsation permanente ; rien en mouvement réduit. */
+.lp, .pzt, .pzs-ouvrir-tambour { --lp-i-repos: rgba(255,255,255,.42); --lp-i-guide: #cdbdff; --lp-i-info: #8ab4ff; --lp-i-action: #ff8f73; --lp-i-encours: #f4f4f2; --lp-i-reussite: #86dc9d; --lp-i-erreur: #ff8f80; }
+.lp-indic { position: absolute; left: 50%; bottom: 1px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--lp-i-repos); pointer-events: none; }
+.lp-indic[data-etat]:not([data-etat="repos"]) { width: 7px; height: 7px; margin-left: -3.5px; bottom: 0; animation: lp-indic-monte .7s cubic-bezier(.2,.8,.2,1) both; }
+.lp-indic[data-etat="guide"] { background: var(--lp-i-guide); box-shadow: 0 0 0 2px rgba(205,189,255,.18), 0 0 10px 2px rgba(205,189,255,.55); }
+.lp-indic[data-etat="info"] { background: var(--lp-i-info); box-shadow: 0 0 8px rgba(138,180,255,.45); }
+.lp-indic[data-etat="action"] { background: var(--lp-i-action); box-shadow: 0 0 0 2px #0b0b0c, 0 0 0 3.5px var(--lp-i-action), 0 0 10px rgba(255,143,115,.5); }
+.lp-indic[data-etat="encours"] { background: conic-gradient(var(--lp-i-encours) 0 70%, transparent 70%); -webkit-mask: radial-gradient(circle, transparent 1.6px, #000 2px); mask: radial-gradient(circle, transparent 1.6px, #000 2px); width: 9px; height: 9px; margin-left: -4.5px; animation: lp-indic-tourne 1.6s linear infinite; }
+.lp-indic[data-etat="reussite"] { background: var(--lp-i-reussite); box-shadow: 0 0 8px rgba(134,220,157,.5); }
+.lp-indic[data-etat="erreur"] { border-radius: 1.5px; transform: rotate(45deg); background: var(--lp-i-erreur); box-shadow: 0 0 8px rgba(255,143,128,.55); }
+.lp-indic[data-herite]:not([data-etat="encours"]) { background: transparent; box-shadow: inset 0 0 0 1.5px var(--lp-i, currentColor); }
+.lp-indic[data-herite][data-etat="guide"] { --lp-i: var(--lp-i-guide); } .lp-indic[data-herite][data-etat="info"] { --lp-i: var(--lp-i-info); }
+.lp-indic[data-herite][data-etat="action"] { --lp-i: var(--lp-i-action); } .lp-indic[data-herite][data-etat="reussite"] { --lp-i: var(--lp-i-reussite); }
+.lp-indic[data-herite][data-etat="erreur"] { --lp-i: var(--lp-i-erreur); }
+@keyframes lp-indic-monte { 0% { opacity: 0; transform: scale(.4); } 45% { opacity: 1; transform: scale(1.45); filter: brightness(1.35); } 100% { opacity: 1; } }
+.lp-indic[data-etat="erreur"] { animation-name: lp-indic-monte-losange; }
+@keyframes lp-indic-monte-losange { 0% { opacity: 0; transform: rotate(45deg) scale(.4); } 45% { opacity: 1; transform: rotate(45deg) scale(1.45); } 100% { opacity: 1; transform: rotate(45deg); } }
+@keyframes lp-indic-tourne { to { transform: rotate(360deg); } }
+/* hors de la couronne d'un tambour : le point en haut à droite du rond (anneau, panneau, liste) */
+.lp-secteur:not(.lp-outil) .lp-indic, .lp-ligne .lp-indic { left: auto; right: 6px; top: 6px; bottom: auto; margin: 0; }
+html[data-pz-motion="reduce"] .lp-indic { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .lp-indic { animation: none !important; } }

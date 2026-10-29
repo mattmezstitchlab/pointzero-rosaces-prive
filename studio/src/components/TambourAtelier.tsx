@@ -11,7 +11,8 @@
  * Aucune logique du Cadre ni de la grille ne change : ce composant se pose par-dessus.
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Camera, ChevronsDownUp, Ellipsis, Minimize2 } from "lucide-react";
+import { Bell, Camera, ChevronsDownUp, Ellipsis, Minimize2 } from "lucide-react";
+import { aVoir, decorer, MOT_ETAT, trier, type Indicateur, type Indicateurs } from "../lib/point/indicateurs";
 import Point from "./point/Point";
 import { commandesDuBloc } from "../lib/point/registre";
 import type { ModePoint } from "../lib/point/modes";
@@ -42,7 +43,17 @@ function rectCadre(): Rect | null {
   return Number.isFinite(v("--fx0")) && v("--fw") > 0 ? { x: v("--fx0"), y: v("--fy0"), w: v("--fw"), h: v("--fh") } : null;
 }
 
-export default function TambourAtelier({ contexte, retracter, part, etiquette, ouvrage }: { contexte: ContexteBroderie; retracter: () => void; part?: number; etiquette?: string; ouvrage?: string }) {
+export default function TambourAtelier({ contexte, retracter, part, etiquette, ouvrage, indicateurs }: { contexte: ContexteBroderie; retracter: () => void; part?: number; etiquette?: string; ouvrage?: string; indicateurs?: Indicateurs }) {
+  /* les points lumineux : la liste réelle (publiée par les modules), lue ici ; le disque n'invente aucun statut */
+  const [indic, setIndic] = useState<Indicateur[]>([]);
+  useEffect(() => indicateurs?.abonner(l => setIndic(l.filter(i => !i.resolu))), [indicateurs]);
+  /* une seule annonce par événement (et pas celles que le module annonce déjà) */
+  const [annonce, setAnnonce] = useState(""), annonces = useRef(new Map<string, string>());
+  useEffect(() => {
+    const nouveaux = trier(indic).filter(i => i.annonce !== false && annonces.current.get(i.id) !== i.etat + i.libelle);
+    for (const i of indic) annonces.current.set(i.id, i.etat + i.libelle);
+    if (nouveaux[0]) setAnnonce(`${MOT_ETAT[nouveaux[0].etat]} : ${nouveaux[0].libelle}`);
+  }, [indic]);
   const [replie, setReplie] = useState(false);
   const mesurer = useCallback((rep: boolean): Disque => {
     const haut = Math.max(document.querySelector(".pzs-top")?.getBoundingClientRect().bottom ?? 72, document.querySelector(".pzs-crumbs")?.getBoundingClientRect().bottom ?? 0) + 8;
@@ -88,26 +99,32 @@ export default function TambourAtelier({ contexte, retracter, part, etiquette, o
   /* l'orbe du centre : au repos, transparente aux gestes (on dessine au centre) ; elle s'éveille quand la main revient sur la couronne */
   const [eveil, setEveil] = useState(false), minuteur = useRef(0);
   const surCouronne = (e: React.SyntheticEvent) => { if ((e.target as Element).closest?.(".pzt-couronne-zone, [role=menuitem], .lp-centre-action")) { window.clearTimeout(minuteur.current); setEveil(true); } };
-  const horsCouronne = () => { window.clearTimeout(minuteur.current); minuteur.current = window.setTimeout(() => setEveil(false), 1400); };
+  const horsCouronne = () => { window.clearTimeout(minuteur.current); minuteur.current = window.setTimeout(() => { setEveil(false); setCarte(null); }, 1400); };
   useEffect(() => () => window.clearTimeout(minuteur.current), []);
   /* le cartouche (place juste) : le mot et l'aide de la commande visée */
   const [carte, setCarte] = useState<{ nom: string; aide: string } | null>(null);
   const viser = (e: React.SyntheticEvent) => { const b = (e.target as Element).closest?.("[role=menuitem]") as HTMLElement | null; if (b) setCarte({ nom: b.querySelector(".lp-mot")?.textContent?.replace("›", "").trim() || b.getAttribute("aria-label")?.split(",")[0] || "", aide: b.title }); };
 
   const surMaToile = () => { window.location.href = import.meta.env.BASE_URL + "tambour?mode=superposer" + (ouvrage ? "&ouvrage=" + encodeURIComponent(ouvrage) : ""); };
-  const modes = useMemo(() => premierAnneau([
+  const voir = aVoir(indic);
+  const modes = useMemo(() => decorer(premierAnneau([
     ...commandesDuBloc<ContexteBroderie>("broderie", { ...contexte, dockClassique: undefined, surMaToile }),
     { id: "replier", nom: "Replier", icone: <ChevronsDownUp aria-hidden="true" />, aide: "essai : la couronne se replie, la toile prend toute la place ; les outils reviennent à la demande", groupe: "socle", ouvrir: () => setReplie(true) },
     { id: "retracter", nom: "Rétracter", icone: <Minimize2 aria-hidden="true" />, aide: "le tambour se replie : le patron entier, le Cadre pour agrandir et déplacer, le dock dessous", groupe: "socle", ouvrir: fermer },
+    /* « À voir » : plusieurs informations en attente se retrouvent ici (la même source que les points, pas une seconde) */
+    ...(voir.length >= 2 ? [{ id: "a-voir", nom: `À voir (${voir.length})`, icone: <Bell aria-hidden="true" />, aide: voir.map(i => i.libelle).join(" · "), groupe: "socle" as const, ouvrir: () => {},
+      enfants: () => voir.map((i): ModePoint => ({ id: "voir-" + i.id, nom: i.libelle, aide: MOT_ETAT[i.etat], groupe: "socle", indicateur: { etat: i.etat, mot: MOT_ETAT[i.etat], libelle: i.libelle, herite: false, id: i.id }, ouvrir: () => indicateurs?.consulter(i.id) })) }] : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], g.capacite), [contexte, g.capacite, fermer]);
+  ], g.capacite), indic, id => indicateurs?.consulter(id)), [contexte, g.capacite, fermer, indic]);
 
   const c = g.Ro + 2, fin = phase === "ouvert";
+  /* le cartouche dit ce qui se passe : la commande visée d'abord (geste de la personne), sinon l'information la plus importante */
+  const haut = trier(indic.filter(i => !i.consulte || i.etat === "action" || i.etat === "erreur" || i.etat === "encours"))[0];
   const cadre = depart.current!.cadre, dock = depart.current!.dock;
   /* le contour qui se transforme : le Cadre (rectangle) au départ, le bois (cercle) à l'arrivée */
   const rond = { left: g.cx - g.rb, top: g.cy - g.rb, width: 2 * g.rb, height: 2 * g.rb };
   const bois = fin || !cadre ? rond : { left: cadre.x, top: cadre.y, width: cadre.w, height: cadre.h };
-  return <div ref={hote} className={"pzt pzt-" + phase + (eveil ? " pzt-eveil" : "") + (replie ? " pzt-replie" : "") + " pzt-etiq-" + g.etiquettes} data-etiquettes={g.etiquettes}
+  return <div ref={hote} className={"pzt pzt-" + phase + (eveil ? " pzt-eveil" : "") + (replie ? " pzt-replie" : "") + (voir.length >= 2 ? " pzt-attention" : "") + " pzt-etiq-" + g.etiquettes} data-etiquettes={g.etiquettes}
     style={{ ["--pzt-x" as string]: g.cx + "px", ["--pzt-y" as string]: g.cy + "px", ["--pzt-r" as string]: g.r + "px", ["--pzt-rb" as string]: g.rb + "px", ["--pzt-ri" as string]: g.ri + "px", ["--pzt-ro" as string]: g.Ro + "px",
       ["--pzt-bl" as string]: g.env.l + "px", ["--pzt-bh" as string]: g.env.h + "px", ["--pzt-bd" as string]: g.env.rond + "px",
       ["--pzt-dx" as string]: (dock ? dock.x - g.cx : 0) + "px", ["--pzt-dy" as string]: (dock ? dock.y - g.cy : 0) + "px" }}
@@ -128,8 +145,10 @@ export default function TambourAtelier({ contexte, retracter, part, etiquette, o
           centre={{ nom: "Sur ma toile", aide: "filmer votre vraie toile et y poser ce patron", icone: <Camera aria-hidden="true" />, ouvrir: surMaToile }} />
       </div>
       {/* le cartouche : le nom et l'aide de la commande visée (une nuance DMC : son numéro et son nom, jamais la couleur seule) */}
-      <p className="pzt-cartouche" aria-hidden="true">{carte ? <><b>{carte.nom}</b>{carte.aide && !carte.nom.includes(carte.aide) && <span>{carte.aide}</span>}</> : <span>{g.etiquettes === "cartouche" ? "Touchez une commande : son nom s’affiche ici." : "Survolez une commande : ce qu’elle fait s’affiche ici."}</span>}</p>
+      <p className="pzt-cartouche" aria-hidden="true" data-etat={!carte && haut ? haut.etat : undefined}>{carte ? <><b>{carte.nom}</b>{carte.aide && !carte.nom.includes(carte.aide) && <span>{carte.aide}</span>}</>
+        : haut ? <><i className="lp-indic" data-etat={haut.etat} aria-hidden="true" /><b>{haut.libelle}</b></> : <span>{g.etiquettes === "cartouche" ? "Touchez une commande : son nom s’affiche ici." : "Survolez une commande : ce qu’elle fait s’affiche ici."}</span>}</p>
     </>}
+    <span className="sr-only" role="status" aria-live="polite">{annonce}</span>
     {replie && <button type="button" className="pzt-deployer" aria-label="Déployer les outils du tambour" title="Déployer les outils" onClick={() => setReplie(false)}
       style={{ left: g.cx + (g.rb - 4) * Math.SQRT1_2, top: g.cy + (g.rb - 4) * Math.SQRT1_2 }}><span className="lp-centre" /><Ellipsis aria-hidden="true" /></button>}
   </div>;

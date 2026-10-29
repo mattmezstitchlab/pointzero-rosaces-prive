@@ -682,7 +682,7 @@ export default function App() {
         magnify: () => window.dispatchEvent(new CustomEvent("pointzero:canvas", { detail: { action: "magnify" } })),
         fit: () => setFitKey(k => k + 1),
       }}
-      progression={progression} onCouleur={pickColor} pattern={P} couleur={color} blocDemande={blocDemande}
+      progression={progression} onCouleur={pickColor} onPattern={p => setPattern(p)} pattern={P} couleur={color} blocDemande={blocDemande}
       ouvrages={{ courant: P.id, ouvrir: id => { void ouvrirOuvrage(id); }, importer: importAnyFile }}
       fils={<FlossRail dock pattern={P} active={color} onActive={pickColor} onPattern={(p) => setPattern(p)} onSupply={updateSupply} onBrowse={() => ouvrirNuancier()} stitching={workspace === "stitch"} hidden={showWelcome || !!file} />} />}
     {atelierLibre && <OrbeGuide ouverte={visite && !composer} onFermer={() => setVisite(false)} onChemin={c => {

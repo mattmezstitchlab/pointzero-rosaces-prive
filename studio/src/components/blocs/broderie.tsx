@@ -4,7 +4,7 @@
  * Chaque famille remplace les choix du cercle par ses sous-outils ; chaque feuille appelle la vraie action de l'atelier (rien de simulé).
  * Le registre ne sait rien de la broderie, ce fichier si.
  */
-import { Camera, LayoutGrid, ListChecks, FileJson, FileText, Folder, HelpCircle, Image as ImageIcon, PanelBottom, Settings2, Share2, Compass, Download, Eye, FileUp, Grid3x3, Maximize, Palette, Pencil, Search, Shapes, Sparkles, Spool, Square } from "lucide-react";
+import { Camera, Check, Lightbulb, Replace, Undo2, LayoutGrid, ListChecks, FileJson, FileText, Folder, HelpCircle, Image as ImageIcon, PanelBottom, Settings2, Share2, Compass, Download, Eye, FileUp, Grid3x3, Maximize, Palette, Pencil, Search, Shapes, Sparkles, Spool, Square } from "lucide-react";
 import { enregistrerTypeBloc, typeBloc } from "../../lib/point/registre";
 import type { ModePoint } from "../../lib/point/modes";
 import type { ReactNode } from "react";
@@ -35,6 +35,10 @@ export interface ContexteBroderie {
   guide?: () => void;
   /** revenir tout de suite au dock du bas (l'interface classique) */
   dockClassique?: () => void;
+  /** remplacer un fil du motif par une autre nuance : aperçu sur le vrai motif (avec son historique), puis confirmer ou annuler */
+  /** le Guide lumineux : les suggestions de la prochaine étape (un point violet), activées ou non */
+  suggestions?: { actives: boolean; basculer: () => void };
+  remplacement?: { attente: { de: number; vers: number } | null; preparer: (de: number, vers: number) => void; confirmer: () => void; annuler: () => void };
   /** le Tambour vivant : filmer sa vraie toile et y poser ce patron (essai du Cadre-Tambour) */
   surMaToile?: () => void;
 }
@@ -44,6 +48,23 @@ const POINTS: [Tool, string, string][] = [["cross", "Croix", "le point de croix 
 const PLUS: [Tool, string][] = [["hand", "Main"], ["fill", "Remplir"], ["pick", "Pipette"], ["select", "Sélection"], ["quarter", "Quart"], ["threeQuarter", "Trois quarts"], ["petite", "Petite croix"], ["bead", "Perle"], ["knot", "Nœud"], ["long", "Point lancé"], ["line", "Ligne"], ["rect", "Rectangle"], ["ellipse", "Ellipse"], ["lasso", "Lasso"], ["move", "Déplacer"]];
 const BRODER: [Tool, string, string][] = [["mark", "Marquer", "cocher les cases brodées"], ["block", "Bloc 10 × 10", "cocher un carré de dix sur dix"], ["row", "Ligne", "cocher une rangée"], ["unpick", "À défaire", "décocher des cases"], ["park", "Parking", "garer une aiguille sur une case"], ["hand", "Main", "déplacer la grille sans cocher"], ["pick", "Pipette", "prendre le fil d’une case"], ["details", "Détails", "le fil et la case sous le doigt"], ["note", "Note", "une note sur une case"]];
 const VUES: [ViewMode, string, string, ReactNode][] = [["flat", "À plat", "les couleurs à plat", <Square aria-hidden="true" />], ["real", "Réaliste", "le rendu du fil sur la toile", <Sparkles aria-hidden="true" />], ["pattern", "Patron", "la grille à suivre, case par case", <Grid3x3 aria-hidden="true" />]];
+
+/* Fils › Remplacer un fil : le fil du motif, puis sa famille, puis la nouvelle nuance ; l'aperçu s'applique au vrai motif (annulable),
+   et la décision reste en attente (Confirmer / Annuler) : rien d'irréversible sans un second geste */
+const nomDmc = (i: number) => FLOSS[i] ? `DMC ${FLOSS[i].code}` : "fil";
+function remplacer(c: ContexteBroderie): ModePoint[] {
+  const r = c.remplacement; if (!r) return [];
+  if (r.attente) { const { de, vers } = r.attente; return [
+    { id: "remplacer-confirmer", nom: "Confirmer", icone: <Check aria-hidden="true" />, aide: `garder ${nomDmc(vers)} à la place de ${nomDmc(de)}`, groupe: "metier", ouvrir: r.confirmer },
+    { id: "remplacer-annuler", nom: "Annuler", icone: <Undo2 aria-hidden="true" />, aide: `revenir à ${nomDmc(de)}`, groupe: "metier", ouvrir: r.annuler },
+  ]; }
+  if (!c.filsDuMotif.length) return [];
+  return [{ id: "remplacer", nom: "Remplacer un fil", icone: <Replace aria-hidden="true" />, aide: "un fil du motif, puis sa nouvelle nuance : un aperçu sur le motif, puis vous confirmez ou annulez", groupe: "metier", ouvrir: () => {},
+    enfants: () => c.filsDuMotif.map((de): ModePoint => ({ id: "rempl-de-" + (FLOSS[de]?.code ?? de), nom: nomDmc(de), couleur: FLOSS[de]?.hex, aide: `remplacer ${FLOSS[de]?.name ?? ""}`, groupe: "metier", ouvrir: () => {},
+      enfants: () => FAMILLES.map((f): ModePoint => { const l = (filsParFamille().get(f.id) ?? []).filter(i => i !== de);
+        return { id: "rempl-fam-" + f.id, nom: f.nom, couleur: f.hex, aide: `${l.length} nuances`, groupe: "metier", ouvrir: () => {},
+          enfants: () => l.map((vers): ModePoint => ({ id: "rempl-vers-" + (FLOSS[vers]?.code ?? vers), nom: nomDmc(vers), couleur: FLOSS[vers]?.hex, aide: `${FLOSS[vers]?.name ?? ""} : aperçu, puis confirmer ou annuler`, groupe: "metier", ouvrir: () => r.preparer(de, vers) })) }; }) })) }];
+}
 
 const fil = (c: ContexteBroderie, idx: number): ModePoint => {
   const f = FLOSS[idx];
@@ -60,6 +81,7 @@ export function commandesBroderie(c: ContexteBroderie): ModePoint[] {
       enfants: () => [
         ...(c.guide ? [{ id: "guide-visite", nom: "Visite", icone: <Compass aria-hidden="true" />, aide: "la visite du studio avec Le Point", groupe: "socle", ouvrir: c.guide } satisfies ModePoint] : []),
         { id: "guide-chercher", nom: "Chercher", icone: <Search aria-hidden="true" />, aide: "un fil, un outil ou une fonction, par son nom", groupe: "socle", ouvrir: c.chercher },
+        ...(c.suggestions ? [{ id: "guide-suggestions", nom: c.suggestions.actives ? "Suggestions : oui" : "Suggestions : non", icone: <Lightbulb aria-hidden="true" />, aide: c.suggestions.actives ? "un point violet indique la prochaine étape conseillée ; toucher pour les retirer" : "montrer la prochaine étape conseillée par un point violet", groupe: "socle" as const, actif: c.suggestions.actives, resteOuvert: true, ouvrir: c.suggestions.basculer } satisfies ModePoint] : []),
         { id: "guide-aide", nom: "Réglages et aide", icone: <HelpCircle aria-hidden="true" />, aide: "les réglages du studio et l’aide", groupe: "socle", ouvrir: c.aide },
       ],
     },
@@ -73,6 +95,7 @@ export function commandesBroderie(c: ContexteBroderie): ModePoint[] {
     {
       id: "fils", nom: "Fils", icone: <Palette aria-hidden="true" />, aide: "les fils du motif et le nuancier DMC par familles de couleur", groupe: "metier", ouvrir: () => {},
       enfants: () => [
+        ...remplacer(c),
         ...(c.filsDuMotif.length ? [{ id: "fils-motif", nom: "Fils du motif", aide: `${c.filsDuMotif.length} fil${c.filsDuMotif.length > 1 ? "s" : ""} déjà dans le motif`, groupe: "metier", couleur: FLOSS[c.filsDuMotif[0]]?.hex, ouvrir: () => {}, enfants: () => c.filsDuMotif.map(i => fil(c, i)) } satisfies ModePoint] : []),
         ...FAMILLES.map((f): ModePoint => { const l = filsParFamille().get(f.id) ?? []; return { id: "famille-" + f.id, nom: f.nom, aide: `${l.length} nuances DMC, du plus clair au plus foncé`, groupe: "metier", couleur: f.hex, ouvrir: () => {}, enfants: () => l.map(i => fil(c, i)) }; }),
         { id: "fils-toile", nom: "Fils et toile", icone: <Settings2 aria-hidden="true" />, aide: "le nombre de brins, la toile et son compte", groupe: "metier", ouvrir: c.filsEtToile },

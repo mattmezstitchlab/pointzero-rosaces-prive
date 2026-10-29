@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import OuvragesBloc from "./OuvragesBloc";
 import { ToolIcon } from "./ToolIcons";
 import { ArrowLeft, CircleHelp, Compass, Folder, Grid3x3, LayoutGrid, Maximize, Menu, Palette, Pencil, Redo2, Search, Shapes, Share2, Sparkles, Spool, Square, Undo2, X } from "lucide-react";
@@ -18,6 +18,9 @@ import "./blocs/broderie";
 import type { ContexteBroderie } from "./blocs/broderie";
 import { ecrireEssaiBloc, lireEssaiBloc } from "../lib/point/registre";
 import TambourAtelier, { ecrireCadreTambour, lireCadreTambour } from "./TambourAtelier";
+import { aVoir, Indicateurs, trier, type Indicateur } from "../lib/point/indicateurs";
+import { suggestion } from "./blocs/guideBroderie";
+import { replaceColor } from "../lib/editing";
 import type { ModePoint } from "../lib/point/modes";
 
 /**
@@ -74,6 +77,8 @@ interface Props {
   /** la progression du patron : le cercle du dock et le mode Progression */
   progression?: { total: number; done: number; couleurs: { idx: number; hex: string; code: string; cells: number; done: number }[] };
   onCouleur?: (idx: number) => void;
+  /** remplacer le motif (avec historique : annulable) — pour les actions du disque (remplacement de fil) */
+  onPattern?: (p: Pattern) => void;
   /** le patron : pour le nuancier (fils du motif) et la loupe */
   pattern?: Pattern;
   /** l'index DMC du fil actif */
@@ -178,6 +183,12 @@ export default function StudioDocks(p: Props) {
   const [cadreTambour, setCadreTambour] = useState(() => lireCadreTambour() && !lireEssaiBloc());
   const [tambourOuvert, setTambourOuvert] = useState(false);
   const tambourBouton = useRef<HTMLButtonElement>(null);
+  /* les points lumineux : un seul tableau d'indicateurs pour l'atelier (le disque, le bouton du dock) ; des événements réels seulement */
+  const indicateurs = useMemo(() => new Indicateurs(), []);
+  const [listeIndic, setListeIndic] = useState<Indicateur[]>([]);
+  useEffect(() => indicateurs.abonner(setListeIndic), [indicateurs]);
+  const [filChoisi, setFilChoisi] = useState(false);
+  const [suggestions, setSuggestions] = useState(() => { try { return localStorage.getItem("pointzero:disque:suggestions") !== "0"; } catch { return true; } });
   useAccroche(navBas, cadreTambour && !essaiBloc);
   const [q, setQ] = useState("");
   const [genre, setGenre] = useState<Genre>("tout");
@@ -271,18 +282,72 @@ export default function StudioDocks(p: Props) {
   if (p.path) { const parent = PARENT[p.path]; if (parent) crumbs.push(LABELS[parent]); crumbs.push(LABELS[p.path]); }
   if ((p.path === "dessiner" || p.path === "broder") && toolName) crumbs.push(toolName);
 
+  /* — Scénario A : le Guide lumineux, des règles explicites sur l'état réel (il ne fait rien à la place de la personne) — */
+  const couleurs = p.progression?.couleurs ?? [];
+  const active = couleurs.find(c => c.idx === p.couleur);
+  const conseil = suggestion({ points: total, brodes: p.progression?.done ?? 0, filChoisi, outilEnMain: p.path === "dessiner" || p.path === "broder", couleurTerminee: !!active && active.cells > 0 && active.done >= active.cells });
+  useEffect(() => {
+    if (!suggestions || !conseil) { indicateurs.retirer("guide"); return; }
+    indicateurs.publier({ id: "guide", commande: conseil.commande, contexte: "broderie", etat: "guide", libelle: conseil.libelle });
+  }, [indicateurs, suggestions, conseil?.commande, conseil?.libelle]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* — une couleur entièrement brodée (le vrai suivi) : un « terminé » discret, une seule fois — */
+  const avancees = useRef(new Map<number, number>());
+  useEffect(() => {
+    for (const c of couleurs) {
+      const avant = avancees.current.get(c.idx);
+      if (avant !== undefined && c.cells > 0 && avant < c.cells && c.done >= c.cells)
+        indicateurs.publier({ id: "couleur-" + c.idx, commande: "broder", contexte: "broderie", etat: "reussite", libelle: `Tous les points de DMC ${c.code} sont terminés.`, duree: 8000 });
+      avancees.current.set(c.idx, c.done);
+    }
+  }, [couleurs, indicateurs]);
+  /* — Scénario B : remplacer un fil, avec une décision en attente (aperçu sur le vrai motif, son historique) — */
+  const [attente, setAttente] = useState<{ de: number; vers: number; avant: Pattern; apres: Pattern } | null>(null);
+  const remplacement = {
+    attente: attente && { de: attente.de, vers: attente.vers },
+    preparer: (de: number, vers: number) => {
+      if (!p.pattern || !p.onPattern || attente) return;
+      const avant = p.pattern, apres = replaceColor(avant, de, vers);
+      p.onPattern(apres); setAttente({ de, vers, avant, apres });
+      indicateurs.publier({ id: "remplacement", commande: "remplacer-confirmer", contexte: "broderie", etat: "action", libelle: `Aperçu : DMC ${FLOSS[de]?.code} remplacé par DMC ${FLOSS[vers]?.code}. Confirmez ou annulez.` });
+    },
+    confirmer: () => {
+      if (!attente) return; setAttente(null); indicateurs.retirer("remplacement");
+      indicateurs.publier({ id: "remplacement-fin", commande: "fils", contexte: "broderie", etat: "reussite", libelle: `Remplacement confirmé : DMC ${FLOSS[attente.vers]?.code}.`, duree: 5000 });
+    },
+    annuler: () => {
+      if (!attente) return;
+      const meme = p.pattern === attente.apres || p.pattern?.cross === attente.apres.cross;
+      /* l'annulation ne défait jamais autre chose que l'aperçu : si le motif a changé depuis, on le dit plutôt que de deviner */
+      if (meme && p.canUndo) p.onUndo();
+      else if (p.pattern && p.onPattern && !attente.avant.palette.includes(attente.vers)) p.onPattern(replaceColor(p.pattern, attente.vers, attente.de));
+      else { indicateurs.publier({ id: "remplacement", commande: "remplacer-annuler", contexte: "broderie", etat: "erreur", libelle: "Le motif a changé depuis l’aperçu : utilisez Annuler (↶) dans le dock du haut." }); return; }
+      setAttente(null); indicateurs.retirer("remplacement");
+      indicateurs.publier({ id: "remplacement-fin", commande: "fils", contexte: "broderie", etat: "info", libelle: `Remplacement annulé : DMC ${FLOSS[attente.de]?.code} revient.`, duree: 4000 });
+    },
+  };
+  /* — Scénario C : l'export du projet, son état réel (en cours, prêt, ou l'erreur), sans réussite fictive — */
+  const exporterProjet = () => {
+    indicateurs.publier({ id: "export", commande: "exp-projet", contexte: "broderie", etat: "encours", libelle: "Préparation du fichier du projet…", annonce: false });
+    window.setTimeout(() => {
+      try { p.actions.save(); indicateurs.publier({ id: "export", commande: "exp-projet", contexte: "broderie", etat: "reussite", libelle: "Le fichier du projet est prêt : son téléchargement a commencé.", duree: 6000, annonce: false }); }
+      catch (e) { indicateurs.publier({ id: "export", commande: "exp-projet", contexte: "broderie", etat: "erreur", libelle: "L’export n’a pas abouti" + (e instanceof Error && e.message ? " : " + e.message : ".") }); }
+    }, 60);
+  };
+  const basculerSuggestions = () => { const v = !suggestions; setSuggestions(v); try { localStorage.setItem("pointzero:disque:suggestions", v ? "1" : "0"); } catch { /* rien */ } };
+
   /* les outils de l'ouvrage, pour le Point posé sur le bloc (essai) comme pour l'anneau du tambour */
   const contexteBroderie: ContexteBroderie = {
       outil: p.tool,
       choisirOutil: (t, atelier) => { if (p.workspace !== atelier) p.onWorkspace(atelier); p.onPath(atelier === "stitch" ? "broder" : "dessiner"); p.onTool(t); },
       couleur: p.couleur ?? 0, filsDuMotif: (p.progression?.couleurs ?? []).map(c => c.idx),
-      choisirFil: idx => p.onCouleur?.(idx),
+      choisirFil: idx => { setFilChoisi(true); p.onCouleur?.(idx); },
       vue: p.view, choisirVue: p.onView,
       symboles: !!p.symbols, basculerSymboles: p.onSymbols,
       grille: p.grille ?? "visible", basculerGrille: () => p.onGrille?.(),
       loupe, basculerLoupe: () => setLoupe(v => !v), toutVoir: p.zoom.fit,
       importer: genre => p.onImporter?.(genre), ouvrages: () => setBloc("inviter"), composer: p.onComposer,
-      exporter: p.actions.exportPanel, enregistrer: p.actions.save, partager: p.actions.share,
+      exporter: p.actions.exportPanel, enregistrer: exporterProjet, partager: p.actions.share, remplacement,
+      suggestions: { actives: suggestions, basculer: basculerSuggestions },
       filsEtToile: p.actions.threadsSettings, suivi: p.actions.follow,
       aide: p.actions.settings, chercher: () => setBloc("chercher"),
       guide: p.actions.visite,
@@ -415,8 +480,9 @@ export default function StudioDocks(p: Props) {
         ]} />}
       {/* essai du Cadre-Tambour : le tambour se déploie depuis le dock accroché ; ses outils l'entourent */}
       {cadreTambour && !p.sansPoint && <button ref={tambourBouton} type="button" className="pzs-btm pzs-sq pzs-ouvrir-tambour" aria-expanded={tambourOuvert}
-        aria-label="Tambour : refermer l’ouvrage en cercle, les outils tout autour" title="Tambour" onClick={() => setTambourOuvert(true)}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="13" r="8" /><circle cx="12" cy="13" r="4.5" strokeDasharray="2 2.5" /><path d="M10 3.5h4" strokeLinecap="round" /></svg></button>}
+        aria-label={"Tambour : refermer l’ouvrage en cercle, les outils tout autour" + (aVoir(listeIndic).length ? `. ${aVoir(listeIndic).length} information${aVoir(listeIndic).length > 1 ? "s" : ""} à voir` : "")} title="Tambour" onClick={() => setTambourOuvert(true)}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="13" r="8" /><circle cx="12" cy="13" r="4.5" strokeDasharray="2 2.5" /><path d="M10 3.5h4" strokeLinecap="round" /></svg>
+        {(() => { const t = trier(listeIndic.filter(i => i.etat !== "guide"))[0]; return t ? <span className="lp-indic" data-etat={t.etat} aria-hidden="true" /> : null; })()}</button>}
       {modes
         ? <div className="pzs-modes" role="group" aria-label="Les modes du dock">
           {MODES.map(([id, nom, halo]) => <button key={id} type="button" className="pzs-btm pzs-halo-mode" aria-pressed={modeBas === id}
@@ -438,7 +504,7 @@ export default function StudioDocks(p: Props) {
       <button type="button" data-guide="loupe" className="pzs-btm pzs-loupe-btn" aria-pressed={loupe} aria-label="Loupe : la grille agrandie sous le pointeur" title="Loupe" onClick={() => setLoupe(v => !v)}><Search size={17} aria-hidden="true" /><span className="pzs-loupe-txt">Loupe</span></button>
         </>}
     </nav>
-    {cadreTambour && tambourOuvert && !p.sansPoint && <TambourAtelier ouvrage={p.pattern?.id} contexte={contexteBroderie} retracter={retracterTambour} part={prog} etiquette={total ? "patron brodé à " + Math.round(prog * 100) + " %" : undefined} />}
+    {cadreTambour && tambourOuvert && !p.sansPoint && <TambourAtelier indicateurs={indicateurs} ouvrage={p.pattern?.id} contexte={contexteBroderie} retracter={retracterTambour} part={prog} etiquette={total ? "patron brodé à " + Math.round(prog * 100) + " %" : undefined} />}
     </>}
   </>;
 }

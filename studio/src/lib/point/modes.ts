@@ -10,6 +10,8 @@ export type GroupeMode = "acces" | "socle" | "metier" | "creation";
 
 export interface ModePoint {
   id: string;
+  /** un point lumineux (lib/point/indicateurs) : l'état attaché à cette commande, ou hérité d'un sous-menu ; posé par la couche visuelle, jamais par le registre */
+  indicateur?: { etat: string; mot: string; libelle: string; herite: boolean; id?: string };
   /** le mot du secteur, court */
   nom: string;
   /** ce que le mode fait, une phrase : dite au lecteur d'écran avec le nom */
@@ -92,7 +94,7 @@ export function secteurVise(dx: number, dy: number, n: number, seuil = 28, decal
 }
 
 /** Le nom accessible d'un secteur : son nom, « actif » s'il l'est, puis ce qu'il fait. */
-export const nomAccessible = (m: ModePoint) => `${m.nom}${m.actif ? ", actif" : ""} : ${m.aide}`;
+export const nomAccessible = (m: ModePoint) => `${m.nom}${m.actif ? ", actif" : ""} : ${m.aide}${m.indicateur && m.indicateur.etat !== "repos" ? (m.indicateur.herite ? `. À voir dans ce sous-menu, ${m.indicateur.mot} : ` : `. ${m.indicateur.mot} : `) + m.indicateur.libelle : ""}`;
 
 /**
  * Où ouvrir l'anneau et les panneaux du Point : dans la boîte de dialogue modale qui le contient (le compositeur),

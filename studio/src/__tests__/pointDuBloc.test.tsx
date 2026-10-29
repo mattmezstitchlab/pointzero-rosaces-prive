@@ -197,7 +197,7 @@ describe("L'essai : les outils sur le bloc", () => {
     await cliquer(document.querySelector(".lp-point")); await cliquer(mode("exporter"));
     expect(secteurs().map(x => x.dataset.mode)).toEqual(["__retour", "exp-patron", "exp-projet", "exp-partager"]);
     await touche("Escape"); await cliquer(mode("guide"));
-    expect(secteurs().map(x => x.dataset.mode)).toEqual(["__retour", "guide-visite", "guide-chercher", "guide-aide"]);
+    expect(secteurs().map(x => x.dataset.mode)).toEqual(["__retour", "guide-visite", "guide-chercher", "guide-suggestions", "guide-aide"]);
     await touche("Escape"); await touche("Escape");
     await cliquer(document.querySelector(".lp-point")); await cliquer(mode("dock-classique"));
     expect(container!.querySelector(".pzs-bottom")).toBeTruthy();

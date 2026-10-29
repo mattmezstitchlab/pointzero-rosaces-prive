@@ -198,6 +198,9 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
       className={"lp-secteur lp-" + m.groupe + classe + (m.couleur ? " lp-teinte" : "") + (NAV.has(m.id) ? " lp-nav" : "")} data-mode={m.id} aria-label={nomAccessible(m) + (m.enfants ? ", famille" : "")} title={m.aide}
       style={{ ...style, ...(m.couleur ? { ["--lp-teinte" as string]: m.couleur } : null) }} onClick={() => choisir(i)} onFocus={() => setFocus(i)} onPointerEnter={() => setFocus(i)}>
       {m.actif && !classe.includes("lp-outil") && <span className="lp-marque" aria-hidden="true" />}{contenu}
+      {/* le point lumineux : l'état de cette commande (dit dans son nom accessible) ; neutre sur la couronne d'un tambour */}
+      {m.indicateur && m.indicateur.etat !== "repos" ? <span className="lp-indic" data-etat={m.indicateur.etat} data-herite={m.indicateur.herite ? "1" : undefined} aria-hidden="true" />
+        : scene && tambour ? <span className="lp-indic" data-etat="repos" aria-hidden="true" /> : null}
     </button>;
   /* le rond d'un choix : une couleur, une valeur, le signe de la navigation, le pictogramme, sinon l'initiale */
   const rond = (m: ModePoint) => m.couleur ? <span className="lp-pastille-couleur" aria-hidden="true" />
