@@ -59,8 +59,8 @@ html[data-pz-motion="reduce"] .ot .lp-indic { animation: none !important; }
 .ot-progression svg { width: 96px; height: 96px; } .ot-piste { fill: none; stroke: var(--aime-surface-2); stroke-width: 6; } .ot-arc { fill: none; stroke: #2f9e5b; stroke-width: 6; stroke-linecap: round; }
 .ot-commande { margin: 6px 0 0; padding: 6px 10px; border-radius: 8px; background: var(--aime-surface-2); font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .8em; color: var(--aime-texte); overflow-x: auto; white-space: nowrap; }
 .ot-commande span { color: var(--aime-texte-3); }
-.ot-etendre { position: absolute; right: 9%; top: 6%; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--aime-bordure-forte); background: var(--aime-surface); color: var(--aime-texte); display: grid; place-items: center; cursor: pointer; }
-.ot-etendu .ot-etendre { right: clamp(16px, 5vw, 64px); top: 0; } .ot-etendre svg { width: 16px; height: 16px; }
+.ot-etendre { position: absolute; right: 50%; bottom: 2.5%; transform: translateX(50%); width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--aime-bordure-forte); background: var(--aime-surface); color: var(--aime-texte); display: grid; place-items: center; cursor: pointer; }
+.ot-etendu .ot-etendre { right: clamp(16px, 5vw, 64px); top: 0; bottom: auto; transform: none; } .ot-etendre svg { width: 16px; height: 16px; }
 .ot-occupe .ot-corps { opacity: .55; }
 
 /* l'aperçu audio : la forme d'onde autour du cœur */

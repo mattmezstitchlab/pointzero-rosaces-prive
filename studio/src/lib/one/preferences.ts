@@ -19,7 +19,8 @@ export const FACTEUR_CIBLES: Record<Cibles, number> = { standard: 1, grandes: 1.
 
 export interface ReglagesOne {
   version: 1;
-  interaction: { cibles: Cibles; /** confirmer avant d'agir (un temps de validation) */ validation: "immediate" | "confirmer"; gestesSimples: boolean; parEtapes: boolean; positionPoint: "gauche" | "centre" | "droite" };
+  interaction: { cibles: Cibles; /** confirmer avant d'agir (un temps de validation) */ validation: "immediate" | "confirmer"; gestesSimples: boolean; parEtapes: boolean; positionPoint: "gauche" | "centre" | "droite";
+    /** le degré de guidage choisi (l'Orbe relationnelle explique plus ou moins) */ guidage?: "discret" | "standard" | "pas-a-pas" };
   notifications: { sons: boolean; volume: number; signauxVisuels: boolean; sousTitres: boolean };
   /** des besoins concrets (jamais un diagnostic), gardés pour retrouver ses choix ; jamais envoyés */
   besoins: IdBesoin[];
@@ -35,7 +36,7 @@ export interface PreferencesOne extends ReglagesOne {
 
 export const DEFAUT_ONE: ReglagesOne = {
   version: 1,
-  interaction: { cibles: "standard", validation: "immediate", gestesSimples: false, parEtapes: false, positionPoint: "gauche" },
+  interaction: { cibles: "standard", validation: "immediate", gestesSimples: false, parEtapes: false, positionPoint: "gauche", guidage: "standard" },
   notifications: { sons: false, volume: 0.5, signauxVisuels: true, sousTitres: true },
   besoins: [], favoris: ["broderie", "bureau"], identite: { prenom: "", ville: "", langue: "fr" }, rencontre: { etape: 0, terminee: false },
 };
@@ -73,7 +74,8 @@ export function lireReglages(): ReglagesOne {
   return {
     version: 1,
     interaction: { cibles: dans(i.cibles, ["standard", "grandes", "tres-grandes"] as const, d.interaction.cibles), validation: dans(i.validation, ["immediate", "confirmer"] as const, d.interaction.validation),
-      gestesSimples: bool(i.gestesSimples, false), parEtapes: bool(i.parEtapes, false), positionPoint: dans(i.positionPoint, ["gauche", "centre", "droite"] as const, d.interaction.positionPoint) },
+      gestesSimples: bool(i.gestesSimples, false), parEtapes: bool(i.parEtapes, false), positionPoint: dans(i.positionPoint, ["gauche", "centre", "droite"] as const, d.interaction.positionPoint),
+      guidage: dans(i.guidage, ["discret", "standard", "pas-a-pas"] as const, "standard") },
     notifications: { sons: bool(n.sons, d.notifications.sons), volume: typeof n.volume === "number" && n.volume >= 0 && n.volume <= 1 ? n.volume : d.notifications.volume,
       signauxVisuels: bool(n.signauxVisuels, true), sousTitres: bool(n.sousTitres, true) },
     besoins: Array.isArray(brut.besoins) ? brut.besoins.filter((b): b is IdBesoin => BESOINS.some(x => x.id === b)) : [],

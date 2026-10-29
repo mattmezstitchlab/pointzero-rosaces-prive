@@ -33,6 +33,8 @@ const tambour = /\/tambour\/?$/.test(window.location.pathname);
 /* .0NE (branche privée one-universel) : la Première rencontre et la mosaïque des univers */
 const onePremiere = /\/one\/premiere-rencontre\/?$/.test(window.location.pathname);
 const oneTerminal = /\/one\/terminal\/?$/.test(window.location.pathname);
+/* la preuve isolée de l'Orbe relationnelle, sur le Disque Terminal (le Terminal validé reste à /one/terminal) */
+const oneTerminalOrbe = /\/one\/terminal-orbe\/?$/.test(window.location.pathname);
 const oneUnivers = /\/one(\/univers)?\/?$/.test(window.location.pathname);
 const essaiTraversee = /\/essai-traversee\/?$/.test(window.location.pathname);
 
@@ -46,6 +48,7 @@ createRoot(document.getElementById("root")!).render(
       : galerie ? <Suspense fallback={null}><Galerie /></Suspense>
       : tambour ? <AccessibilityShell><Suspense fallback={null}><Tambour /></Suspense></AccessibilityShell>
       : onePremiere ? <AccessibilityShell><Suspense fallback={null}><PremiereRencontre /></Suspense></AccessibilityShell>
+      : oneTerminalOrbe ? <AccessibilityShell><Suspense fallback={null}><Terminal relation /></Suspense></AccessibilityShell>
       : oneTerminal ? <AccessibilityShell><Suspense fallback={null}><Terminal /></Suspense></AccessibilityShell>
       : oneUnivers ? <AccessibilityShell><Suspense fallback={null}><Mosaique /></Suspense></AccessibilityShell>
       : essaiTraversee ? <AccessibilityShell><Suspense fallback={null}><EssaiTraversee /></Suspense></AccessibilityShell>
