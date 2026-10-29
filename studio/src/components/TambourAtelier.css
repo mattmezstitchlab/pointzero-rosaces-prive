@@ -79,3 +79,7 @@ html.pz-tambour-ouvert .toast-in { top: var(--pz-message-y) !important; bottom: 
 html.pz-tambour-ouvert:has(.toast-in) .pzt-cartouche { visibility: hidden; }
 /* en mode Cadre (dock accroché), les notifications se posent au-dessus du dock */
 html.pz-dock-accroche:not(.pz-tambour-ouvert) .toast-in { top: auto !important; bottom: calc(100vh - var(--pz-dock-haut) + 10px) !important; }
+/* la Loupe pendant le tambour : sur le côté libre, jamais sur la couronne (s'il y a la place ; sinon, comme avant) */
+@media (min-width: 1100px) {
+  html.pz-tambour-ouvert .pzs-loupe-dock { left: auto; right: 12px; top: 50%; bottom: auto; transform: translateY(-50%); width: min(340px, calc((100vw - 2 * var(--pz-disque-r, 400px)) / 2 - 24px)); }
+}

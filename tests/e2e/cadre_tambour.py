@@ -85,6 +85,10 @@ with sync_playwright() as p:
         pg.locator('[aria-label="Annuler"]').click(); pg.wait_for_timeout(300); ok(pg.locator('[aria-label="Annuler"]').is_disabled(), 'Annuler défait le point posé dans le tambour')
         pg.locator(f'{MENU} [data-mode="loupe"]').hover(); pg.wait_for_timeout(300)
         ok(pg.evaluate("() => document.querySelector('.pzt').classList.contains('pzt-eveil')") and pg.locator('.pzt .lp-centre-action').evaluate("e => getComputedStyle(e).pointerEvents") == 'auto', 'la main sur la couronne : l’orbe s’éveille, la caméra devient cliquable')
+        pg.locator(f'{MENU} [data-mode="loupe"]').click(); pg.wait_for_timeout(400)
+        lp = pg.evaluate("() => { const b = document.querySelector('.pzs-loupe-dock').getBoundingClientRect(), s = getComputedStyle(document.querySelector('.pzt')), v = k => parseFloat(s.getPropertyValue(k)); return b.left >= v('--pzt-x') + v('--pzt-ro') && b.right <= innerWidth && b.width >= 240; }")
+        ok(lp and 'DMC' in pg.locator('.pzs-loupe-dock').inner_text(), 'Loupe : elle inspecte la vraie grille, à côté du disque, sans toucher la couronne')
+        pg.locator(f'{MENU} [data-mode="loupe"]').click(); pg.wait_for_timeout(300)
         # Affichage agit ; Fils › famille › nuance s'applique, sur la même couronne
         sym = pg.evaluate("() => document.querySelector('[data-guide=symboles]')?.getAttribute('aria-pressed')")
         pg.locator(f'{MENU} [data-mode="affichage"]').click(); pg.wait_for_timeout(300); geom_ok(pg, 'niveau Affichage')

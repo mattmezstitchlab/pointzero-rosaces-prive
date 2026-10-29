@@ -69,7 +69,7 @@ export default function TambourAtelier({ contexte, retracter, part, etiquette, o
   }, [retracter]);
 
   /* la place des messages (notifications du studio) : sous le disque, celle du cartouche */
-  useLayoutEffect(() => { const r = document.documentElement; r.style.setProperty("--pz-message-y", Math.round(g.cy + g.Ro + 8) + "px"); return () => { r.style.removeProperty("--pz-message-y"); }; }, [g.cy, g.Ro]);
+  useLayoutEffect(() => { const r = document.documentElement; r.style.setProperty("--pz-message-y", Math.round(g.cy + g.Ro + 8) + "px"); r.style.setProperty("--pz-disque-r", Math.round(g.Ro) + "px"); return () => { r.style.removeProperty("--pz-message-y"); r.style.removeProperty("--pz-disque-r"); }; }, [g.cy, g.Ro]);
   /* le Cadre et le dock du bas se replient dans le tambour tant qu'il est ouvert */
   useLayoutEffect(() => { document.documentElement.classList.add("pz-tambour-ouvert"); return () => document.documentElement.classList.remove("pz-tambour-ouvert"); }, []);
   /* Échap rétracte aussi quand le focus est sur la grille (pas dans un champ, ni dans un panneau ouvert) */
