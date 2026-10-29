@@ -32,8 +32,8 @@ with sync_playwright() as p:
     ctx.close()
     for l, h in ((390, 844), (768, 1024), (1440, 900), (1920, 1080)):
         ctx, pg = page(b, l, h)
-        ok(pg.locator('.mm-toile').count() == 1 and pg.locator('.mm-cadre h1').inner_text().strip() == 'Point Zéro', f'{l} px · le héros historique (la peinture qui se brode) est là, en tête')
-        ok(pg.evaluate("() => document.querySelector('.ed').getBoundingClientRect().top > document.querySelector('.mm-toile').getBoundingClientRect().top"), f'{l} px · l’édition commence sous le héros')
+        ok(pg.locator('.ru .ed-brode-photo').count() == 1 and pg.locator('.ru h1').inner_text().strip() == 'Point Zéro', f'{l} px · la une (le fond floral, brodé sous la loupe) est là, en tête')
+        ok(pg.evaluate("() => document.querySelector('.ed').getBoundingClientRect().top > document.querySelector('.ru').getBoundingClientRect().top"), f'{l} px · l’édition commence sous le héros')
         ok(all(pg.locator(f'#{s}').count() == 1 for s in SCENES) and pg.locator('.ed .lp-anneau.lp-scene').count() == 4, f'{l} px · les scènes et quatre disques (le Point en scène)')
         larges = pg.evaluate("() => document.documentElement.scrollWidth - innerWidth")
         ok(larges <= 1, f'{l} px · pas de défilement horizontal ({larges} px)')

@@ -41,7 +41,7 @@ describe("Point Zéro spécialisé", () => {
     expect(view.querySelector("iframe")).toBeNull();
     expect(view.textContent).toContain("Le puzzle PDF");
     expect(view.querySelector("h1")?.textContent).toBe("Point Zéro");
-    expect(view.querySelector("canvas.mm-toile")?.getAttribute("role")).toBe("img");
+    expect(view.querySelector(".ru .ed-brode-photo")?.getAttribute("src")).toMatch(/met-palampore/);
     expect(write).not.toHaveBeenCalled();
     expect(onOpen).not.toHaveBeenCalled();
     expect(localStorage.getItem("ouvrage")).toBe("données existantes");
@@ -101,11 +101,11 @@ describe("Point Zéro spécialisé", () => {
     expect(onShare).toHaveBeenCalled();
     expect(view.textContent).toContain("Bientôt");
   });
-  it("explique par l’image : la peinture qui se brode, puis huit chapitres illustrés et tout le studio", () => {
+  it("explique par l’image : le fond floral de la une, brodé sous la loupe, puis huit chapitres illustrés et tout le studio", () => {
     const { view, onOpen } = mount();
     expect(view.querySelector("#editions")).toBeNull();
-    const etapes = [...view.querySelectorAll(".mm-etapes li")].map(l => l.textContent?.replace(/^[IV]+/, ""));
-    expect(etapes).toEqual(["La peinture", "Les pixels", "Le point de croix", "Le patron"]);
+    expect(view.querySelector(".ru .ed-brode-vue")?.getAttribute("aria-label")).toMatch(/palampore.*points de croix/);
+    expect(view.querySelector(".ru figcaption")?.textContent).toMatch(/domaine public/);
     const chapitres = view.querySelectorAll("#chapitres .ch");
     expect(chapitres).toHaveLength(8);
     for (const c of chapitres) {
@@ -120,7 +120,7 @@ describe("Point Zéro spécialisé", () => {
     const tout = view.querySelector("#tout")!;
     expect(tout.querySelectorAll("dt")).toHaveLength(12);
     for (const t of ["demi-point", "point arrière", "puzzle PDF", "Miyuki Delica", "parking des fils", "PDF paginé", "contraste élevé"]) expect(tout.textContent).toContain(t);
-    act(() => [...view.querySelectorAll<HTMLButtonElement>(".mm-cadre button")].find(b => b.textContent === "Créer mon patron")!.click());
+    act(() => [...view.querySelectorAll<HTMLButtonElement>(".ru button")].find(b => b.textContent === "Créer mon patron")!.click());
     expect(onOpen).toHaveBeenLastCalledWith("create");
   });
   it("sans visite branchée, « Faire la visite » ouvre l’atelier", () => {

@@ -1,5 +1,5 @@
 /**
- * Une image nette, et une loupe qui la brode : sous la souris, dans un cercle au bord flou, l'image devient points de croix.
+ * Une image nette, et une loupe qui la brode : sous la souris, dans un cercle net, l'image devient points de croix sur sa grille.
  * Le reste de l'image reste une photographie, pour que le texte posé dessus se lise (choix de Matt, 29 octobre).
  * La conversion est celle du studio (asyncRasterToCells : moyenne par case, fil DMC le plus proche en CIELAB, réduction des fils,
  * anti-confetti). La loupe suit la souris, le doigt, ou les flèches du clavier (une case par pression, dix avec Maj),
@@ -156,6 +156,7 @@ export default function Brode({ src, cols: colsBase = 110, maxFils = 14, alt, le
       }}>
       <img className="ed-brode-photo" src={src} alt="" aria-hidden="true" decoding="async" loading="lazy" style={point.x !== 50 || point.y !== 50 ? { objectPosition: `${point.x}% ${point.y}%` } : undefined} />
       <canvas ref={toile} className="ed-brode-toile" aria-hidden="true" />
+      <span className="ed-brode-anneau" aria-hidden="true" />
       {fil && etat.current.loupe && <span className="ed-brode-fil" aria-hidden="true" style={{ left: etat.current.loupe.x, top: etat.current.loupe.y }}><i style={{ background: fil.hex }} />DMC {fil.code}</span>}
     </div>
     <figcaption>{legende}</figcaption>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import TopDock from "./TopDock";
-import Metamorphose from "./Metamorphose";
+import UneFlorale from "./UneFlorale";
 import TraineePoints from "./TraineePoints";
 import "../design/aime.css";
 import "./CrossStitchHome.css";
@@ -181,14 +181,14 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
     </nav>}
 
     <main id="csh-main">
-      <Metamorphose src={IMG + "peinture-roses.webp"} titre="Point Zéro">
+      <UneFlorale titre="Point Zéro">
         <p className="mm-sous">Du tableau à la dernière croix.</p>
         <ol className="mm-sommaire">{(edition ? CHAPITRES_EDITION : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.titre}</a><span>{c.num}</span></li>)}</ol>
         <div className="mm-actions">
           <button className="pzh-btn pzh-btn-clair" onClick={() => onOpen("create")}>Créer mon patron</button>
           <button className="pzh-btn mm-btn-point" onClick={visite}><span className="pzh-dot" aria-hidden="true" />Faire la visite avec Le Point</button>
         </div>
-      </Metamorphose>
+      </UneFlorale>
 
       {edition
         ? <div id="chapitres"><EditionEnLigne actions={{ ouvrir: e => onOpen(e), importer: onImport, visite }} /></div>
