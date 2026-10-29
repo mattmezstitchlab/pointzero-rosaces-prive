@@ -13,6 +13,8 @@ import { ACTIONS, actionsPour, disposition, modulesVisibles, NOMS_MODULES, type 
 import "./CarteVivante.css";
 
 type Face = "recto" | "verso";
+/* en page : ce qui accompagne le média, en haut à droite ; le reste se range dessous */
+const HAUT: TypeModule[] = ["identite", "description", "prestations", "localisation"];
 
 /* ——— Le carrousel des médias ——— */
 function Carrousel({ medias, index, onIndex, nom, grand }: { medias: Media[]; index: number; onIndex: (k: number) => void; nom: string; grand?: boolean }) {
@@ -100,11 +102,15 @@ export default function CarteVivante({ carte, role, format, onFormat }: { carte:
     onKeyDown={e => { if (e.key === "Escape" && format === "page") { e.stopPropagation(); onFormat(precedent.current); } }}>
     {format === "page"
       ? <div className="cv-page">
-          <div className="cv-page-tete"><button ref={retour} type="button" className="cv-btn" onClick={() => onFormat(precedent.current)}>Réduire la carte</button></div>
+          <div className="cv-page-tete"><button ref={retour} type="button" className="cv-btn" onClick={() => onFormat(precedent.current)}><span aria-hidden="true" className="cv-btn-signe">↙</span> Réduire la carte</button></div>
           <div className="cv-page-corps">
             <div className="cv-page-media">{rendre(recto.filter(t => t === "medias"), x)}</div>
-            <div className="cv-page-modules">{rendre(recto.filter(t => t !== "medias"), { ...x, idNom })}</div>
+            <div className="cv-page-modules">{rendre(recto.filter(t => HAUT.includes(t)), { ...x, idNom })}</div>
           </div>
+          {/* le reste, dans l'ordre du métier : en colonnes, puis la galerie en bandeau, puis les actions */}
+          <div className="cv-page-bas">{rendre(recto.filter(t => t !== "medias" && !HAUT.includes(t) && t !== "galerie" && t !== "actions"), x)}</div>
+          {recto.includes("galerie") && <div className="cv-page-galerie">{rendre(["galerie"], x)}</div>}
+          {recto.includes("actions") && <div className="cv-page-fin">{rendre(["actions"], x)}</div>}
         </div>
       : <>
           <div className="cv-plateau">
@@ -121,7 +127,7 @@ export default function CarteVivante({ carte, role, format, onFormat }: { carte:
           </div>
           <div className="cv-commandes">
             <button type="button" className="cv-btn" onClick={retourner} aria-label={face === "recto" ? "Retourner la carte : voir le verso" : "Retourner la carte : revenir au recto"}>
-              <span aria-hidden="true">↻</span> Retourner</button>
+              <span aria-hidden="true" className="cv-btn-signe">↻</span> Retourner</button>
             <button ref={deplier} type="button" className="cv-btn cv-btn-clair" onClick={() => onFormat("page")}>Voir toute la carte</button>
           </div>
         </>}

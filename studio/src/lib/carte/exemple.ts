@@ -26,8 +26,11 @@ export const CARTE_EXEMPLE: Carte = {
   ],
   tarifs: [{ libelle: "Patron sur mesure", prix: "à partir de 45 €" }, { libelle: "Initiation", prix: "60 €" }, { libelle: "Réparation", prix: "sur devis" }],
   galerie: [
-    { src: IMG + "ecrans/atelier-iphone-fils.webp", alt: "Les nuances DMC d’un motif, sur téléphone" },
+    { src: IMG + "histoire/met-palampore-2010-337.webp", alt: "Palampore aux rouges de garance (The Met, 2010.337, domaine public)" },
     { src: IMG + "histoire/reconstitution-pigments.webp", alt: "Reconstitution générée : poudres de garance et d’indigo" },
+    { src: IMG + "histoire/met-reserve-bleue-40-128.webp", alt: "Panneau à réserve bleue (The Met, 40.128, domaine public)" },
+    { src: IMG + "ecrans/atelier-iphone-fils.webp", alt: "Les nuances DMC d’un motif, sur téléphone (capture de l’atelier)" },
+    { src: IMG + "histoire/reconstitution-atelier.webp", alt: "Reconstitution générée : un atelier d’impression à la planche" },
   ],
   contact: [{ canal: "Message", valeur: "par la carte, sans adresse visible" }, { canal: "Téléphone", valeur: "06 00 00 00 00 (fictif)" }],
   disponibilites: [
