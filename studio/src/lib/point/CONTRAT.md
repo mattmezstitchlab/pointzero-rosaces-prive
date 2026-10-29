@@ -75,6 +75,8 @@ Quand un niveau est fait d'au moins 70 % de couleurs ou de valeurs, l'anneau dev
   - arc ou liste, au choix, dans Confort ;
   - jamais hors de l'écran ;
   - cibles d'au moins 24 px (44 px visés).
+- **Centre** : une sphère nacrée, jamais de texte dessus. Dans un anneau de pastilles, le nom et l'aide du choix en cours (« DMC 351 · Corail », « Luminosité +20 ») vont dans un cartouche discret sous le disque.
+- **Présentation « scène »** (`scene`, sur `Point` et `LePoint`) : le disque est posé dans une page (la landing), toujours ouvert, sans bouton ni portail. Mêmes niveaux, touches et annonces ; il ne prend le focus qu'après un geste ; un choix n'y referme rien, et Échap au premier cercle ne ferme pas.
 - **Favoris** (`memoire`) :
   - les derniers choix (au plus trois d'une même famille), puis les plus utilisés ;
   - une seule entrée au premier cercle, absente tant qu'il n'y a rien à proposer ;
