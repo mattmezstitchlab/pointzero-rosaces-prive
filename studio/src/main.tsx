@@ -12,6 +12,7 @@ const EssaiCarte = lazy(() => import("./essais/EssaiCarte"));
 const EssaiAime = lazy(() => import("./essais/EssaiAime"));
 const Galerie = lazy(() => import("./galerie/Galerie"));
 const Tambour = lazy(() => import("./tambour/Tambour"));
+const EssaiTraversee = lazy(() => import("./essais/EssaiTraversee"));
 
 /* essai privé : le bloc Image, piloté par le même Point (aucune autre application) */
 const essaiImage = /\/essai-image\/?$/.test(window.location.pathname);
@@ -25,6 +26,8 @@ const essaiAime = /\/essai-aime\/?$/.test(window.location.pathname);
 const galerie = /\/galerie\/?$/.test(window.location.pathname);
 /* essai privé : le Tambour vivant (Caméra → Broderie) */
 const tambour = /\/tambour\/?$/.test(window.location.pathname);
+/* essai privé (phase E, une scène) : le Point traverse la page */
+const essaiTraversee = /\/essai-traversee\/?$/.test(window.location.pathname);
 
 appliquerApercuAime();
 
@@ -35,6 +38,7 @@ createRoot(document.getElementById("root")!).render(
       : essaiAime ? <Suspense fallback={null}><EssaiAime /></Suspense>
       : galerie ? <Suspense fallback={null}><Galerie /></Suspense>
       : tambour ? <AccessibilityShell><Suspense fallback={null}><Tambour /></Suspense></AccessibilityShell>
+      : essaiTraversee ? <AccessibilityShell><Suspense fallback={null}><EssaiTraversee /></Suspense></AccessibilityShell>
       : essaiImage ? <AccessibilityShell><Suspense fallback={null}><EssaiImage /></Suspense></AccessibilityShell>
       : <AccessibilityShell><StorageRecoveryNotice/><App /></AccessibilityShell>}
   </StrictMode>
