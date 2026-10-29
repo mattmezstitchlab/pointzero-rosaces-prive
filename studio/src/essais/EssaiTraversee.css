@@ -19,3 +19,28 @@
 .tv-curseur b { padding: 4px 10px; border-radius: 999px; background: #0b0b0c; color: #fff; font-size: 12.5px; font-weight: 600; white-space: nowrap; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); }
 @media (prefers-reduced-motion: reduce) { .tv-curseur { display: none; } }
 @media (pointer: coarse) { .tv-curseur { display: none; } }
+
+/* §10 — la lisibilité : le texte n'est plus estompé ; une protection locale derrière le texte, pas sur toute la photographie */
+.tv-scene .hi-texte > * { opacity: 1; }
+.tv-scene .hi-texte::before { content: ""; position: absolute; z-index: -1; inset: -48px -64px; border-radius: 48px; background: radial-gradient(ellipse at 35% 50%, rgba(8, 8, 9, .66), rgba(8, 8, 9, .4) 55%, transparent 78%); }
+.tv-scene .hi-et { color: rgba(255, 255, 255, .78); }
+.tv-scene .hi-texte .ed-num { color: rgba(255, 255, 255, .86); }
+.tv-scene .hi-sous, .tv-scene .hi-corps { color: #fff; }
+.tv-invite { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; max-width: 520px; margin-top: 18px; padding: 12px 14px; border-radius: 14px; background: rgba(11, 11, 12, .72); color: #fff; font-size: 14px; }
+.tv-invite p { margin: 0; flex: 1 1 260px; }
+.tv-invite button { min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .4); background: transparent; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.tv-invite .tv-invite-oui { background: #fff; color: #0b0b0c; border-color: #fff; }
+
+/* §10 — téléphone : une composition blanche, lisible ; l'image et sa légende ensemble ; le Disque dans sa zone */
+@media (max-width: 820px) {
+  .tv-scene, .tv-scene .hi-plateau { background: #fff; }
+  .tv-scene .hi-plateau > [data-assistance] { position: relative; order: 2; height: 62vh; min-height: 340px; }   /* l'image en bloc, sa légende sur elle */
+  .tv-scene .hi-texte, .tv-scene .hi-disque { width: 100%; margin: 0; } .tv-scene .hi-texte { order: 1; } .tv-scene .hi-disque { order: 3; }
+  .tv-scene .hi-texte { background: #fff; color: #0b0b0c; text-shadow: none; padding: 32px 20px 12px; }
+  .tv-scene .hi-texte::before { display: none; }
+  .tv-scene .hi-texte .ed-num { color: #55555a; }
+  .tv-scene .hi-et { color: #6f6f6c; }
+  .tv-scene .hi-sous { color: #3a3a3c; } .tv-scene .hi-corps { color: #2a2a2c; }
+  .tv-scene .hi-disque { background: #fff; padding: 12px 16px 40px; }
+  .tv-fin { background: #fff; color: #3a3a3c; }
+}

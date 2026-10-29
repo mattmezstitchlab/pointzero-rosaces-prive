@@ -58,15 +58,18 @@ function CurseurAssistant() {
 }
 
 export default function EssaiTraversee() {
-  const reduit = mouvementReduit();
+  /* mouvement réduit, ou téléphone (§9) : rien ne voyage ; le Point est posé dans la zone de chaque scène */
+  const reduit = mouvementReduit() || window.innerWidth < 820 || (typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches);
   const ancreUne = useRef<HTMLDivElement>(null), ancreScene = useRef<HTMLDivElement>(null), couche = useRef<HTMLDivElement>(null), scene = useRef<HTMLElement>(null);
   /* où en est le voyage : 0 dans le héros, 1 posé dans la scène (suit le défilement de la personne) */
   const [lieu, setLieu] = useState<"une" | "origine">("une");
   const [loupe, setLoupe] = useState(0), [fils, setFils] = useState<number[]>([]), [filVu, setFilVu] = useState<number | null>(null);
-  const [curseur, setCurseur] = useState(() => { try { return localStorage.getItem(CURSEUR_CLE) !== "0"; } catch { return true; } });
-  const changerCurseur = () => { const v = !curseur; setCurseur(v); try { localStorage.setItem(CURSEUR_CLE, v ? "1" : "0"); } catch { /* rien */ } };
+  /* décision de Matt (§9) : le curseur d'assistance est proposé, jamais imposé ; activation explicite, puis préférence mémorisée */
+  const [curseur, setCurseur] = useState(() => { try { return localStorage.getItem(CURSEUR_CLE) === "1"; } catch { return false; } });
+  const [propose, setPropose] = useState(() => { try { return localStorage.getItem(CURSEUR_CLE) === null; } catch { return true; } });
+  const changerCurseur = (v = !curseur) => { setCurseur(v); setPropose(false); try { localStorage.setItem(CURSEUR_CLE, v ? "1" : "0"); } catch { /* rien */ } };
   const O = ORIGINE.histoire.origine;
-  const allerScene = () => { (ancreScene.current ?? scene.current)?.scrollIntoView({ behavior: reduit ? "auto" : "smooth", block: "center" }); scene.current?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true }); };
+  const allerScene = () => { (ancreScene.current ?? scene.current)?.scrollIntoView({ behavior: "auto", block: "center" });   /* un saut : le Point rejoint directement sa place, sans rejouer le voyage */ scene.current?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true }); };
 
   /* ce que le curseur d'assistance dit au-dessus du héros (la une reste inchangée : on annote seulement) */
   useEffect(() => { document.querySelector(".ru-fond")?.setAttribute("data-assistance", "Sous la loupe, la peinture se brode"); }, []);
@@ -91,7 +94,7 @@ export default function EssaiTraversee() {
   }, [reduit]);
 
   const outilCurseur: ModePoint[] = pointeurFin() && !reduit ? [{ id: "curseur", nom: curseur ? "Curseur d’assistance : oui" : "Curseur d’assistance : non", icone: <MousePointer2 aria-hidden="true" />,
-    aide: curseur ? "un anneau accompagne la souris et dit ce que le Point propose ; le pointeur reste le vôtre" : "faire accompagner la souris par le Point", groupe: "socle", actif: curseur, resteOuvert: true, ouvrir: changerCurseur }] : [];
+    aide: curseur ? "un anneau accompagne la souris et dit ce que le Point propose ; le pointeur reste le vôtre" : "faire accompagner la souris par le Point", groupe: "socle", actif: curseur, resteOuvert: true, ouvrir: () => changerCurseur() }] : [];
   /* les commandes changent avec le lieu : le même Point, d'autres gestes */
   const modesUne: ModePoint[] = [
     { id: "commencer", nom: "Commencer l’histoire", icone: <BookOpen aria-hidden="true" />, aide: "descendre vers « L’origine » : le Point vous accompagne", groupe: "creation", ouvrir: allerScene },
@@ -103,7 +106,7 @@ export default function EssaiTraversee() {
     ...(fils.length ? [{ id: "nuancier", nom: "Nuancier", icone: <Palette aria-hidden="true" />, aide: `les ${fils.length} fils DMC de cette broderie`, groupe: "metier" as const, ouvrir: () => {},
       enfants: () => fils.map((i): ModePoint => ({ id: "fil-" + FLOSS[i].code, nom: "DMC " + FLOSS[i].code, couleur: FLOSS[i].hex, aide: FLOSS[i].name, groupe: "metier", actif: filVu === i, resteOuvert: true, ouvrir: () => setFilVu(i) })) } satisfies ModePoint] : []),
     { id: "atelier", nom: "Atelier", icone: <ExternalLink aria-hidden="true" />, aide: "broder à votre tour : le studio", groupe: "creation", ouvrir: () => window.location.assign(import.meta.env.BASE_URL + "atelier") },
-    { id: "haut", nom: "Revenir à la une", icone: <Undo2 aria-hidden="true" />, aide: "remonter au héros : le Point redevient un point", groupe: "socle", ouvrir: () => window.scrollTo({ top: 0, behavior: reduit ? "auto" : "smooth" }) },
+    { id: "haut", nom: "Revenir à la une", icone: <Undo2 aria-hidden="true" />, aide: "remonter au héros : le Point redevient un point", groupe: "socle", ouvrir: () => window.scrollTo({ top: 0, behavior: "auto" }) },
     ...outilCurseur,
   ];
   const surFils = (b: Broderie) => setFils(b.palette.slice(0, 18));
@@ -115,6 +118,9 @@ export default function EssaiTraversee() {
       <p className="mm-sous">Du tableau à la dernière croix.</p>
       <p className="tv-note">Essai privé : une seule scène, pour éprouver le Point qui traverse la page.</p>
       <div ref={ancreUne} className="tv-ancre-une">{reduit && pointUne}</div>
+      {propose && pointeurFin() && !mouvementReduit() && <div className="tv-invite" role="group" aria-label="Curseur d’assistance">
+        <p><b>Un curseur d’assistance ?</b> Un anneau accompagne votre souris et dit ce que le Point propose. Votre pointeur reste le vôtre.</p>
+        <button type="button" className="tv-invite-oui" onClick={() => changerCurseur(true)}>L’activer</button><button type="button" onClick={() => changerCurseur(false)}>Non merci</button></div>}
     </UneFlorale>
 
     <section ref={scene} id="tv-origine" className="ed-scene hi-scene hi-sombre tv-scene" aria-labelledby="tv-origine-titre">

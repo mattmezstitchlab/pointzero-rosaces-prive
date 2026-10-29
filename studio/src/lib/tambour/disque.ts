@@ -51,10 +51,12 @@ function rayonExterieur(rho: number, e: Enveloppe, marge: number) {
 
 /** L'enveloppe d'une commande : le rond, ses deux lignes de mot et son point ; elle grandit avec la taille du texte (Confort).
     En cartouche, le rond seul (44 px, la cible tactile visée) : le mot est montré sous le disque et toujours dit. */
-export function enveloppe(etiquettes: "dessous" | "cartouche", texte = 1): Enveloppe {
-  if (etiquettes === "cartouche") return { rond: 44, lignes: 0, l: 44, h: 44 };
-  const t = Math.max(1, Math.min(2, texte));
-  return { rond: 50, lignes: 2, l: Math.round(86 * Math.min(t, 1.45)), h: Math.round(50 + 4 + 2 * 14 * t + 9) };
+export function enveloppe(etiquettes: "dessous" | "cartouche", texte = 1, cible = 1): Enveloppe {
+  /* cible : la taille des commandes choisie par la personne (.0NE, Première rencontre) ; 1, 1,2 ou 1,4 */
+  const c = Math.max(1, Math.min(1.5, cible));
+  if (etiquettes === "cartouche") { const r = Math.round(44 * c); return { rond: r, lignes: 0, l: r, h: r }; }
+  const t = Math.max(1, Math.min(2, texte)), rond = Math.round(50 * c);
+  return { rond, lignes: 2, l: Math.max(Math.round(86 * Math.min(t, 1.45)), rond + 16), h: Math.round(rond + 4 + 2 * 14 * t + 9) };
 }
 /** au-dessous de ce rayon de toile, on ne travaille plus confortablement : on passe les mots en cartouche */
 export const TOILE_MIN = 130;
@@ -63,11 +65,11 @@ export const TOILE_MIN = 130;
  * Le disque pour une place donnée (l × h, sous le dock du haut) : le plus grand tambour possible
  * dont la couronne, avec toutes ses commandes, tient entièrement dans la place.
  */
-export function geometrieDisque(l: number, h: number, haut: number, { texte = 1, bas = 12, cote = 8, replie = false } = {}): Disque {
+export function geometrieDisque(l: number, h: number, haut: number, { texte = 1, bas = 12, cote = 8, replie = false, cible = 1, toileMin = TOILE_MIN } = {}): Disque {
   const compact = l < 600 || h - haut < 560, marge = 6;
   const cx = l / 2, cy = haut + (h - haut - bas) / 2, Rmax = Math.min(l / 2 - cote, (h - haut - bas) / 2);
   const essai = (etiquettes: "dessous" | "cartouche") => {
-    const env = enveloppe(etiquettes, texte);
+    const env = enveloppe(etiquettes, texte, cible);
     const pour = (r: number) => { const rb = r + BOIS, ri = rb + JEU, rho = rhoMinimal(ri, env, marge), Ro = rayonExterieur(rho, env, marge); return { r, rb, ri, rho, Ro }; };
     let a = 30, b = Math.max(30, Rmax);
     for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (pour(m).Ro <= Rmax) a = m; else b = m; }
@@ -78,5 +80,8 @@ export function geometrieDisque(l: number, h: number, haut: number, { texte = 1,
   /* couronne repliée (essai de rétraction légère) : la toile prend toute la place, le bois au bord */
   if (replie) { const r = Math.floor(Rmax - BOIS - 4); return { ...essai("cartouche"), r, rb: r + BOIS, ri: r + BOIS + JEU, rho: r + BOIS + JEU, Ro: r + BOIS + JEU }; }
   const d = essai("dessous");
-  return d.r >= TOILE_MIN ? d : essai("cartouche");
+  return d.r >= toileMin ? d : essai("cartouche");
 }
+
+/** La couronne : un anneau entre r et R (chemin SVG, règle evenodd), dans un carré de côté 2c. */
+export const anneauSvg = (c: number, r: number, R: number) => `M ${c - R} ${c} a ${R} ${R} 0 1 0 ${2 * R} 0 a ${R} ${R} 0 1 0 ${-2 * R} 0 Z M ${c - r} ${c} a ${r} ${r} 0 1 0 ${2 * r} 0 a ${r} ${r} 0 1 0 ${-2 * r} 0 Z`;

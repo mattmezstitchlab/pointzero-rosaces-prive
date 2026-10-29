@@ -17,7 +17,7 @@ import Point from "./point/Point";
 import { commandesDuBloc } from "../lib/point/registre";
 import type { ModePoint } from "../lib/point/modes";
 import type { ContexteBroderie } from "./blocs/broderie";
-import { geometrieDisque, type Disque } from "../lib/tambour/disque";
+import { anneauSvg, geometrieDisque, type Disque } from "../lib/tambour/disque";
 import { prochainPoint } from "../lib/tambour/suivi";
 import type { Pattern } from "../lib/pattern";
 import type { VueCadre } from "./Canvas";
@@ -39,7 +39,6 @@ export function premierAnneau(modes: ModePoint[], capacite: number): ModePoint[]
 }
 
 const reduit = () => document.documentElement.getAttribute("data-pz-motion") === "reduce" || !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-const anneauSvg = (c: number, r: number, R: number) => `M ${c - R} ${c} a ${R} ${R} 0 1 0 ${2 * R} 0 a ${R} ${R} 0 1 0 ${-2 * R} 0 Z M ${c - r} ${c} a ${r} ${r} 0 1 0 ${2 * r} 0 a ${r} ${r} 0 1 0 ${-2 * r} 0 Z`;
 type Rect = { x: number; y: number; w: number; h: number };
 function rectCadre(): Rect | null {
   const c = document.querySelector(".cadre"); if (!c) return null;
@@ -73,7 +72,8 @@ export default function TambourAtelier({ contexte, retracter, part, etiquette, o
     /* la taille du texte du Confort (--pz-user-font-scale), et le zoom du navigateur (déjà dans la largeur de la fenêtre) */
     const texte = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--pz-user-font-scale")) || 1, l = window.innerWidth, h = window.innerHeight;
     /* une seule place pour les messages, sous le disque : le cartouche et les notifications la partagent (jamais l'un sur l'autre) */
-    return geometrieDisque(l, h, haut, { texte, replie: rep, bas: 64 });
+    const cible = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--one-cible")) || 1;   /* la taille des commandes (.0NE) */
+    return geometrieDisque(l, h, haut, { texte, replie: rep, bas: 64, cible });
   }, []);
   const [g, setG] = useState(() => mesurer(false));
   useEffect(() => { setG(mesurer(replie)); const f = () => setG(mesurer(replie)); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, [replie, mesurer]);

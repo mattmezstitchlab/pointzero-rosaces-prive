@@ -213,3 +213,13 @@ html[data-pz-motion="reduce"] .lp-centre-action .lp-centre { transition: none; }
 .lp-secteur:not(.lp-outil) .lp-indic, .lp-ligne .lp-indic { left: auto; right: 6px; top: 6px; bottom: auto; margin: 0; }
 html[data-pz-motion="reduce"] .lp-indic { animation: none !important; }
 @media (prefers-reduced-motion: reduce) { .lp-indic { animation: none !important; } }
+
+/* .0NE — la taille des commandes choisie par la personne (Première rencontre, Réglages) : des cibles plus grandes, partout */
+html[data-one-cibles="grandes"] .lp-rond { width: 52px; height: 52px; }
+html[data-one-cibles="tres-grandes"] .lp-rond { width: 62px; height: 62px; }
+html[data-one-cibles="grandes"] :is(.lp-rond, .lp-signe) svg { width: 23px; height: 23px; }
+html[data-one-cibles="tres-grandes"] :is(.lp-rond, .lp-signe) svg { width: 27px; height: 27px; }
+html[data-one-cibles="grandes"] .lp-secteur { min-height: 52px; }
+html[data-one-cibles="tres-grandes"] .lp-secteur { min-height: 62px; }
+html[data-one-cibles="grandes"] .lp-point { width: 58px; height: 54px; }
+html[data-one-cibles="tres-grandes"] .lp-point { width: 66px; height: 62px; }
