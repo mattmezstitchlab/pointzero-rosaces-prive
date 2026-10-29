@@ -12,7 +12,7 @@
 .lp-trace { position: absolute; inset: 0; pointer-events: none; }
 .lp-trace circle { stroke: rgba(255,255,255,.16); stroke-width: 1; stroke-dasharray: 2 4; }
 .lp-trace line { stroke: rgba(255,255,255,.5); stroke-width: 1.5; }
-.lp-centre { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: radial-gradient(circle at 32% 30%, #ffffff 0%, #d9e8ff 22%, #c9b8ff 48%, #ffd6ec 72%, #b9f0e4 100%); }
+.lp-centre { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; background: radial-gradient(circle at 32% 30%, #ffffff 0%, #d9e8ff 22%, #c9b8ff 48%, #ffd6ec 72%, #b9f0e4 100%); box-shadow: 0 0 24px rgba(201,184,255,.35); }
 .lp-secteur { position: absolute; transform: translate(-50%, -50%); min-width: 72px; min-height: 44px; padding: 0 12px; border-radius: 22px; border: 1px solid rgba(255,255,255,.35); background: #1b1b1a; color: #fff; font: 600 13px/1 inherit; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
 .lp-secteur:hover { background: #2a2a28; }
 .lp-secteur:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
@@ -126,3 +126,28 @@ html[data-pz-motion="reduce"] .lp-compact { animation: none; }
 .lp-nav-glyphe { font-size: 18px; line-height: 1; }
 .lp-centre-mot i { display: block; font-style: normal; font-size: 10px; opacity: .75; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lp-nav-glyphe svg { width: 18px; height: 18px; }
+
+/* ===== Le dock radial, comme la référence validée : un disque sombre, une sphère nacrée au centre, des ronds à pictogramme et leur mot dessous ===== */
+.lp-secteur.lp-outil { min-width: 76px; max-width: 96px; min-height: 0; padding: 2px 4px 4px; border: 0; border-radius: 14px; background: transparent; flex-direction: column; gap: 5px; white-space: normal; }
+.lp-secteur.lp-outil:hover { background: transparent; }
+.lp-rond { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: #2a2a28; border: 1px solid rgba(255,255,255,.22); color: #fff; flex: none; }
+.lp-outil:hover .lp-rond, .lp-outil:focus-visible .lp-rond { background: #3a3a38; }
+.lp-signe { display: inline-grid; place-items: center; font-size: 15px; font-weight: 700; line-height: 1; }
+.lp-signe svg, .lp-rond svg { width: 20px; height: 20px; }
+.lp-mot { font-size: 12px; font-weight: 600; line-height: 1.15; text-align: center; text-shadow: 0 1px 2px #000; }
+.lp-outil .lp-marque { position: absolute; top: -1px; right: -1px; }
+/* le groupe se lit par le bord du rond, jamais par la couleur seule */
+.lp-outil.lp-acces { border: 0; } .lp-outil.lp-acces .lp-rond { border: 2px solid #c9b8ff; }
+.lp-outil.lp-creation .lp-rond { border-style: dashed; }
+.lp-outil.lp-metier .lp-rond { border-width: 1px 1px 3px; }
+.lp-outil.lp-nav { border: 0; } .lp-outil.lp-nav .lp-rond { border-style: dashed; background: transparent; }
+.lp-outil:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+/* une valeur : un rond à texte, comme une couleur */
+.lp-valeur { display: inline-grid; place-items: center; min-width: 30px; height: 30px; padding: 0 4px; border-radius: 15px; background: #f4f2ee; color: #0b0b0c; font-size: 11.5px; font-weight: 800; font-variant-numeric: tabular-nums; flex: none; }
+.lp-secteur.lp-pastille-anneau .lp-valeur { min-width: 34px; height: 34px; border-radius: 50%; }
+.lp-case-mode .lp-valeur { height: 26px; }
+/* sous un niveau, au centre : où l'on est, la sphère, le choix en cours ; un clic remonte */
+.lp-centre-niveau { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 128px; height: 128px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #fff; cursor: pointer; font: inherit; }
+.lp-centre-niveau .lp-centre { width: 44px; height: 44px; margin: -22px 0 0 -22px; }
+.lp-centre-niveau small { position: absolute; left: 0; right: 0; top: 22px; font-size: 10px; color: rgba(255,255,255,.62); line-height: 1.2; }
+.lp-centre-niveau b { position: absolute; left: 0; right: 0; bottom: 24px; font-size: 13px; line-height: 1.15; }

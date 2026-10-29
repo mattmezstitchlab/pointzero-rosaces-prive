@@ -79,7 +79,9 @@ interface Props {
   /** les lignes de la grille, visibles ou masquées (Affichage, dans le Point du bloc) */
   grille?: "visible" | "masquee"; onGrille?: () => void;
   /** ouvrir le sélecteur de fichier de l'import (image, PDF, projet) */
-  onImporter?: () => void;
+  onImporter?: (genre?: "image" | "pdf" | "projet") => void;
+  /** ouvrir le compositeur de rosaces */
+  onComposer?: () => void;
 }
 type Genre = "tout" | "outils" | "fils" | "fonctions";
 const GENRES: [Genre, string][] = [["tout", "Tout"], ["outils", "Outils"], ["fils", "Fils"], ["fonctions", "Fonctions"]];
@@ -343,7 +345,10 @@ export default function StudioDocks(p: Props) {
       symboles: !!p.symbols, basculerSymboles: p.onSymbols,
       grille: p.grille ?? "visible", basculerGrille: () => p.onGrille?.(),
       loupe, basculerLoupe: () => setLoupe(v => !v), toutVoir: p.zoom.fit,
-      importer: () => p.onImporter?.(), exporter: p.actions.exportPanel, filsEtToile: p.actions.threadsSettings, suivi: p.actions.follow,
+      importer: genre => p.onImporter?.(genre), ouvrages: () => setBloc("inviter"), composer: p.onComposer,
+      exporter: p.actions.exportPanel, enregistrer: p.actions.save, partager: p.actions.share,
+      filsEtToile: p.actions.threadsSettings, suivi: p.actions.follow,
+      aide: p.actions.settings, chercher: () => setBloc("chercher"),
       guide: p.actions.visite,
       dockClassique: () => { ecrireEssaiBloc(false); setEssaiBloc(false); requestAnimationFrame(() => cercleRef.current?.focus()); },
     }} />) : <>

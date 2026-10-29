@@ -19,7 +19,9 @@ const ICONE_CONFORT = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
  * Un seul Point est à l'écran à la fois : le contexte qui a la main le rend, les autres le taisent.
  * Le Point ne crée rien et ne déplace pas : la création reste dans FAIRE, la navigation dans ALLER.
  */
-export default function Point({ contexte, modes, part, teinte, etiquette, refBouton, guide, ancrage }: {
+export default function Point({ contexte, modes, part, teinte, etiquette, refBouton, guide, ancrage, memoire }: {
+  /** retenir les habitudes (Favoris) sous cette clé, sur l'appareil */
+  memoire?: string;
   ancrage?: "dessus" | "autour";
   /** le nom du contexte (« broderie », « compositeur ») : pour les tests et la lecture du code */
   contexte: string;
@@ -50,7 +52,7 @@ export default function Point({ contexte, modes, part, teinte, etiquette, refBou
     ...modes.map(m => ({ ...m, ouvrir: () => { setConfort(false); m.ouvrir(); } })),
   ];
   return <span className="lp-contexte" data-contexte={contexte}>
-    <LePoint modes={tous} ancrage={ancrage} part={part} teinte={teinte} etiquette={etiquette} guide={guide} refBouton={ref} annonceExterne={annonce} />
+    <LePoint modes={tous} memoire={memoire} ancrage={ancrage} part={part} teinte={teinte} etiquette={etiquette} guide={guide} refBouton={ref} annonceExterne={annonce} />
     {confort && createPortal(<PanneauConfort onFermer={fermer} onAnnonce={setAnnonce} />, hotePortail(ref.current))}
   </span>;
 }

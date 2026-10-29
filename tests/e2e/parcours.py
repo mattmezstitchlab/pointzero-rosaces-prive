@@ -141,6 +141,26 @@ def critere_final(b):
         ok(False, 'critère · interrompu : ' + str(e).split('\n')[0][:160])
     ctx.close()
 
+def favoris_rapides(b):
+    """Fluidité : après un premier usage, le dernier outil, le dernier fil et le dernier affichage reviennent par Favoris, en trois gestes."""
+    ctx, pg = ouvrir(b, 1440, 900); g = Main(pg, False)
+    try:
+        g.chemin('points', 'o-back'); g.chemin('fils', 'famille-rouges', 'dmc-321'); g.chemin('affichage', 'vue-pattern'); g.fermer()
+        g.chemin('points', 'o-cross'); g.chemin('affichage', 'vue-real'); g.fermer()
+        for cle, mot in (('fav-fils~famille-rouges~dmc-321', 'DMC 321'), ('fav-affichage~vue-pattern', 'Patron'), ('fav-points~o-back', 'Point arrière')):
+            n0 = 0
+            pg.locator('.lp-point').first.click(); n0 += 1; pg.wait_for_timeout(200)
+            item(pg, '__favoris').click(); n0 += 1; pg.wait_for_timeout(200)
+            ok(item(pg, cle).count() == 1, f'favoris · {mot} est proposé')
+            item(pg, cle).click(); n0 += 1; pg.wait_for_timeout(220); g.fermer()
+            chemin = cle[4:].split('~')
+            ok(verifier(g, chemin, mot) and n0 == 3, f'favoris · {mot} rétabli en {n0} gestes, par sa vraie action')
+        etat = pg.evaluate("() => Object.keys(localStorage).filter(k => k.startsWith('pointzero:point:usage:'))")
+        ok(etat == ['pointzero:point:usage:bloc-broderie'], f'favoris · retenus sur l’appareil, sous une seule clé ({etat})')
+    except Exception as e:
+        ok(False, 'favoris · interrompu : ' + str(e).split('\n')[0][:160])
+    ctx.close()
+
 with sync_playwright() as p:
     b = p.chromium.launch()
     parcours(b, 'ordinateur-clavier', 1440, 900, 'clavier')
@@ -148,6 +168,7 @@ with sync_playwright() as p:
     parcours(b, 'telephone-toucher', 390, 844, 'toucher')
     parcours(b, 'telephone-320-texte-150', 320, 740, 'toucher', texte=True)
     critere_final(b)
+    favoris_rapides(b)
     b.close()
 ok(not erreurs, 'aucune erreur dans la page ' + str(erreurs[:2]))
 print(f'— {sum(resultats)}/{len(resultats)}')

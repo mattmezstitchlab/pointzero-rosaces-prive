@@ -154,6 +154,31 @@ describe("L'essai : les outils sur le bloc", () => {
     await cliquer(mode("grille"));
     expect(localStorage.getItem("pointzero:grille")).toBe("visible");
   });
+  it("Favoris : le dernier outil, le dernier fil et le dernier affichage reviennent en deux gestes ; « Oublier » les efface", async () => {
+    localStorage.setItem(ESSAI_BLOC_CLE, "1");
+    await ouvrir();
+    await cliquer(document.querySelector(".lp-point"));
+    expect(mode("__favoris")).toBeUndefined(); // rien de retenu : le premier cercle reste tel quel
+    await cliquer(mode("points")); await cliquer(mode("o-back"));
+    await cliquer(document.querySelector(".lp-point")); await cliquer(mode("fils")); await cliquer(mode("famille-rouges"));
+    const nuance = secteurs().find(x => x.dataset.mode!.startsWith("dmc-"))!.dataset.mode!; await cliquer(mode(nuance));
+    await cliquer(document.querySelector(".lp-point")); await cliquer(mode("affichage")); await cliquer(mode("vue-pattern")); await touche("Escape"); await touche("Escape");
+    await cliquer(document.querySelector(".lp-point")); await cliquer(mode("points")); await cliquer(mode("o-cross"));
+    await cliquer(document.querySelector(".lp-point"));
+    expect(mode("__favoris")).toBeTruthy();
+    await cliquer(mode("__favoris"));
+    const ids = secteurs().map(x => x.dataset.mode);
+    expect(ids).toEqual(["__retour", "fav-points~o-cross", "fav-affichage~vue-pattern", `fav-fils~famille-rouges~${nuance}`, "fav-points~o-back", "__favoris-effacer"]);
+    expect(mode(`fav-fils~famille-rouges~${nuance}`)!.style.getPropertyValue("--lp-teinte")).toBeTruthy(); // le fil reste une couleur
+    await cliquer(mode("fav-points~o-back"));
+    await cliquer(document.querySelector(".lp-point")); await cliquer(mode("points"));
+    expect(mode("o-back")!.getAttribute("aria-label")).toMatch(/^Point arrière, actif/); // la vraie action
+    await touche("Escape"); await cliquer(mode("__favoris")); await cliquer(mode("__favoris-effacer"));
+    await cliquer(document.querySelector(".lp-point"));
+    expect(mode("__favoris")).toBeUndefined();
+    expect(Object.keys(localStorage).filter(k => k.startsWith("pointzero:point:usage:"))).toEqual([]);
+    expect(Object.keys(localStorage).some(k => /ouvrage|library/i.test(k) && localStorage.getItem(k)?.includes("o-back"))).toBe(false);
+  });
   it("Broder, Importer, Exporter et le retour au dock du bas sont de vraies actions", async () => {
     localStorage.setItem(ESSAI_BLOC_CLE, "1");
     await ouvrir();
@@ -166,7 +191,14 @@ describe("L'essai : les outils sur le bloc", () => {
     const input = container!.querySelector<HTMLInputElement>('input[type="file"][aria-label^="Importer une image"]')!;
     const clic = vi.spyOn(input, "click");
     await cliquer(document.querySelector(".lp-point")); await cliquer(mode("importer"));
-    expect(clic).toHaveBeenCalled();
+    expect(secteurs().map(x => x.dataset.mode)).toEqual(["__retour", "imp-image", "imp-pdf", "imp-projet", "imp-ouvrages", "imp-rosace"]);
+    await cliquer(mode("imp-pdf"));
+    expect(clic).toHaveBeenCalled(); expect(input.accept).toMatch(/pdf/); expect(input.accept).not.toMatch(/image/);
+    await cliquer(document.querySelector(".lp-point")); await cliquer(mode("exporter"));
+    expect(secteurs().map(x => x.dataset.mode)).toEqual(["__retour", "exp-patron", "exp-projet", "exp-partager"]);
+    await touche("Escape"); await cliquer(mode("guide"));
+    expect(secteurs().map(x => x.dataset.mode)).toEqual(["__retour", "guide-visite", "guide-chercher", "guide-aide"]);
+    await touche("Escape"); await touche("Escape");
     await cliquer(document.querySelector(".lp-point")); await cliquer(mode("dock-classique"));
     expect(container!.querySelector(".pzs-bottom")).toBeTruthy();
     expect(localStorage.getItem(ESSAI_BLOC_CLE)).toBeNull();

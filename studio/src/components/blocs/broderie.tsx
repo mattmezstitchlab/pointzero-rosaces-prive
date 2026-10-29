@@ -4,7 +4,7 @@
  * Chaque famille remplace les choix du cercle par ses sous-outils ; chaque feuille appelle la vraie action de l'atelier (rien de simulé).
  * Le registre ne sait rien de la broderie, ce fichier si.
  */
-import { PanelBottom, Settings2, Compass, Download, Eye, FileUp, Grid3x3, Maximize, Palette, Pencil, Search, Shapes, Sparkles, Spool, Square } from "lucide-react";
+import { LayoutGrid, ListChecks, FileJson, FileText, Folder, HelpCircle, Image as ImageIcon, PanelBottom, Settings2, Share2, Compass, Download, Eye, FileUp, Grid3x3, Maximize, Palette, Pencil, Search, Shapes, Sparkles, Spool, Square } from "lucide-react";
 import { enregistrerTypeBloc, typeBloc } from "../../lib/point/registre";
 import type { ModePoint } from "../../lib/point/modes";
 import type { ReactNode } from "react";
@@ -26,7 +26,12 @@ export interface ContexteBroderie {
   grille: "visible" | "masquee"; basculerGrille: () => void;
   loupe: boolean; basculerLoupe: () => void;
   toutVoir: () => void;
-  importer: () => void; exporter: () => void; filsEtToile: () => void; suivi: () => void;
+  /** le sélecteur de fichier, réglé sur un genre (ou tout ce qui s'importe) */
+  importer: (genre?: "image" | "pdf" | "projet") => void;
+  ouvrages: () => void; composer?: () => void;
+  exporter: () => void; enregistrer: () => void; partager: () => void;
+  filsEtToile: () => void; suivi: () => void;
+  aide: () => void; chercher: () => void;
   guide?: () => void;
   /** revenir tout de suite au dock du bas (l'interface classique) */
   dockClassique?: () => void;
@@ -48,13 +53,20 @@ export function commandesBroderie(c: ContexteBroderie): ModePoint[] {
     ({ id: (atelier === "stitch" ? "b-" : "o-") + id, nom, aide: aide ?? nom, groupe: "metier", icone: <ToolIcon tool={id} />, actif: c.outil === id, ouvrir: () => c.choisirOutil(id, atelier) });
   return [
     { id: "loupe", nom: "Loupe", icone: <Search aria-hidden="true" />, aide: "la grille agrandie sous le pointeur ou à la case choisie au clavier", groupe: "socle", actif: c.loupe, ouvrir: c.basculerLoupe },
-    ...(c.guide ? [{ id: "guide", nom: "Guide", icone: <Compass aria-hidden="true" />, aide: "la visite du studio avec Le Point", groupe: "socle", ouvrir: c.guide } satisfies ModePoint] : []),
+    {
+      id: "guide", nom: "Guide", icone: <Compass aria-hidden="true" />, aide: "la visite, l’aide et la recherche", groupe: "socle", ouvrir: () => {},
+      enfants: () => [
+        ...(c.guide ? [{ id: "guide-visite", nom: "Visite", icone: <Compass aria-hidden="true" />, aide: "la visite du studio avec Le Point", groupe: "socle", ouvrir: c.guide } satisfies ModePoint] : []),
+        { id: "guide-chercher", nom: "Chercher", icone: <Search aria-hidden="true" />, aide: "un fil, un outil ou une fonction, par son nom", groupe: "socle", ouvrir: c.chercher },
+        { id: "guide-aide", nom: "Réglages et aide", icone: <HelpCircle aria-hidden="true" />, aide: "les réglages du studio et l’aide", groupe: "socle", ouvrir: c.aide },
+      ],
+    },
     {
       id: "points", nom: "Points", icone: <Pencil aria-hidden="true" />, aide: "la croix, le demi-point, le point arrière, la gomme et tous les outils de dessin", groupe: "metier", ouvrir: () => {},
-      enfants: () => [...POINTS.map(outil("create")), { id: "plus-outils", nom: "Plus d’outils", aide: "remplir, pipette, sélection, quarts, formes…", groupe: "metier", ouvrir: () => {}, enfants: () => PLUS.map(outil("create")) }],
+      enfants: () => [...POINTS.map(outil("create")), { id: "plus-outils", nom: "Plus d’outils", icone: <LayoutGrid aria-hidden="true" />, aide: "remplir, pipette, sélection, quarts, formes…", groupe: "metier", ouvrir: () => {}, enfants: () => PLUS.map(outil("create")) }],
     },
     { id: "broder", nom: "Broder", icone: <Spool aria-hidden="true" />, aide: "cocher ce qui est brodé, défaire, garer l’aiguille, suivre l’avancée", groupe: "metier", ouvrir: () => {},
-      enfants: () => [...BRODER.map(outil("stitch")), { id: "suivi", nom: "Suivi", aide: "l’avancée du patron, fil par fil", groupe: "metier", ouvrir: c.suivi }] },
+      enfants: () => [...BRODER.map(outil("stitch")), { id: "suivi", nom: "Suivi", icone: <ListChecks aria-hidden="true" />, aide: "l’avancée du patron, fil par fil", groupe: "metier", ouvrir: c.suivi }] },
     {
       id: "fils", nom: "Fils", icone: <Palette aria-hidden="true" />, aide: "les fils du motif et le nuancier DMC par familles de couleur", groupe: "metier", ouvrir: () => {},
       enfants: () => [
@@ -72,8 +84,24 @@ export function commandesBroderie(c: ContexteBroderie): ModePoint[] {
         { id: "grille", nom: c.grille === "masquee" ? "Grille masquée" : "Grille visible", icone: <Grid3x3 aria-hidden="true" />, aide: c.grille === "masquee" ? "montrer les lignes de la grille" : "masquer les lignes de la grille", groupe: "metier", actif: c.grille === "visible", resteOuvert: true, ouvrir: c.basculerGrille },
       ],
     },
-    { id: "importer", nom: "Importer", icone: <FileUp aria-hidden="true" />, aide: "une image, un patron PDF ou un projet", groupe: "creation", ouvrir: c.importer },
-    { id: "exporter", nom: "Exporter", icone: <Download aria-hidden="true" />, aide: "le patron en PDF, en image ou en projet", groupe: "creation", ouvrir: c.exporter },
+    {
+      id: "importer", nom: "Importer", icone: <FileUp aria-hidden="true" />, aide: "une image, un patron PDF, un projet, ou un de mes ouvrages", groupe: "creation", ouvrir: () => {},
+      enfants: () => [
+        { id: "imp-image", nom: "Image", icone: <ImageIcon aria-hidden="true" />, aide: "une photo ou un dessin (PNG, JPEG, WebP), transformé en patron", groupe: "creation", ouvrir: () => c.importer("image") },
+        { id: "imp-pdf", nom: "Patron PDF", icone: <FileText aria-hidden="true" />, aide: "un patron imprimé en PDF, lu case par case", groupe: "creation", ouvrir: () => c.importer("pdf") },
+        { id: "imp-projet", nom: "Projet", icone: <FileJson aria-hidden="true" />, aide: "un projet Point Zéro (.json) ou un fichier OXS", groupe: "creation", ouvrir: () => c.importer("projet") },
+        { id: "imp-ouvrages", nom: "Mes ouvrages", icone: <Folder aria-hidden="true" />, aide: "rouvrir un ouvrage rangé sur cet appareil", groupe: "creation", ouvrir: c.ouvrages },
+        ...(c.composer ? [{ id: "imp-rosace", nom: "Composer une rosace", icone: <Sparkles aria-hidden="true" />, aide: "le compositeur de rosaces", groupe: "creation", ouvrir: c.composer } satisfies ModePoint] : []),
+      ],
+    },
+    {
+      id: "exporter", nom: "Exporter", icone: <Download aria-hidden="true" />, aide: "le patron en PDF ou en image, le projet, le partage", groupe: "creation", ouvrir: () => {},
+      enfants: () => [
+        { id: "exp-patron", nom: "Patron PDF ou image", icone: <FileText aria-hidden="true" />, aide: "le studio d’export : PDF à imprimer, image, légende des fils", groupe: "creation", ouvrir: c.exporter },
+        { id: "exp-projet", nom: "Télécharger le projet", icone: <FileJson aria-hidden="true" />, aide: "le fichier du projet, pour le rouvrir ailleurs", groupe: "creation", ouvrir: c.enregistrer },
+        { id: "exp-partager", nom: "Partager en direct", icone: <Share2 aria-hidden="true" />, aide: "inviter à regarder l’ouvrage", groupe: "creation", ouvrir: c.partager },
+      ],
+    },
     ...(c.dockClassique ? [{ id: "dock-classique", nom: "Dock du bas", icone: <PanelBottom aria-hidden="true" />, aide: "revenir au dock classique en bas de l’écran", groupe: "creation", ouvrir: c.dockClassique } satisfies ModePoint] : []),
   ];
 }

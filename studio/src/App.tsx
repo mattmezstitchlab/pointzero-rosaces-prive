@@ -573,7 +573,7 @@ export default function App() {
       onBroder={(p) => { void useImportedPattern(p).then(ok => { if (ok) { setComposer(null); retirerParametreRosace(); } }); }} />}
     {!pdfFile && !promptOpen && !compositionInput && !file && !autoImage && <StudioDocks
       sansPoint={!!composer}
-      grille={grille} onGrille={basculerGrille} onImporter={() => actionImportRef.current?.click()}
+      grille={grille} onGrille={basculerGrille} onImporter={genre => { const el = actionImportRef.current; if (!el) return; el.accept = genre === "image" ? "image/png,image/jpeg,image/webp" : genre === "pdf" ? ".pdf,application/pdf" : genre === "projet" ? ".json,.oxs" : "image/png,image/jpeg,image/webp,.pdf,.json,.oxs"; el.click(); }} onComposer={() => setComposer({})}
       patternName={P.name} saving={saving} workspace={workspace}
       onWorkspace={mode => { chooseWorkspace(mode); setActiveCategory(mode === "stitch" ? "stitch" : "compose"); setShowWelcome(false); }}
       tool={remote ? "hand" : tool} onTool={chooseTool}

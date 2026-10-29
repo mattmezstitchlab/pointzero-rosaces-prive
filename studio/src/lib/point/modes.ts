@@ -28,13 +28,15 @@ export interface ModePoint {
   enfants?: () => ModePoint[];
   /** une couleur : le choix est montré en pastille (fils, nuances) ; le mot reste dit et affiché au centre */
   couleur?: string;
+  /** une valeur courte (« +20 », « 50 % », « 16:9 ») : le choix est montré en pastille à valeur, comme une couleur ; le nom reste dit */
+  valeur?: string;
   /** le menu reste ouvert après ce choix (une bascule qu'on veut voir changer : Symboles, Grille) */
   resteOuvert?: boolean;
   ouvrir: () => void;
 }
 
 /* ——— Navigation progressive ——— */
-export const RETOUR = "__retour", ORIGINE = "__origine", SUITE = "__suite";
+export const RETOUR = "__retour", ORIGINE = "__origine", SUITE = "__suite", FAVORIS = "__favoris";
 /** Au-delà de `parPage` choix, une famille se lit par pages : « Suivantes » ajoute la page d'après (les nuances DMC). */
 export function paginer(items: ModePoint[], page: number, parPage = 16, allerA: (p: number) => void = () => {}): ModePoint[] {
   if (items.length <= parPage) return items;

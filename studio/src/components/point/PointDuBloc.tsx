@@ -36,6 +36,6 @@ export default function PointDuBloc<C>({ type, nom, contexte, selecteur = ".cadr
   const modes = commandesDuBloc(type, contexte);
   if (!pos) return null;
   return <div className="lp-bloc" data-bord={pos.bord} style={{ left: pos.left, top: pos.top }}>
-    <Point contexte={"bloc-" + type} ancrage="autour" guide="point-du-bloc" part={part} etiquette={`outils du bloc ${nom}` + (etiquette ? ", " + etiquette : "")} modes={modes} />
+    <Point contexte={"bloc-" + type} memoire={"bloc-" + type} ancrage="autour" guide="point-du-bloc" part={part} etiquette={`outils du bloc ${nom}` + (etiquette ? ", " + etiquette : "")} modes={modes} />
   </div>;
 }
