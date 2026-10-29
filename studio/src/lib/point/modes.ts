@@ -15,6 +15,8 @@ export interface ModePoint {
   groupe: GroupeMode;
   /** le mode est en cours (loupe ouverte, réglage actif…) : une marque sur le secteur, et le mot « actif » */
   actif?: boolean;
+  /** le mode annonce lui-même ce qui change (une phrase plus précise que « Mode … activé ») */
+  annonceEnPropre?: boolean;
   ouvrir: () => void;
 }
 
@@ -48,14 +50,22 @@ export const tourner = (i: number, n: number, pas: number) => ((i + pas) % n + n
 
 /**
  * La Poignée : le secteur vers lequel on a tiré le Point, ou null si le geste est trop court (c'est alors un simple clic).
- * dx, dy en pixels écran (y vers le bas).
+ * dx, dy en pixels écran (y vers le bas). `decalage` : l'angle du centre du secteur 0 (ex. −45 pour quatre quarts en diagonale).
  */
-export function secteurVise(dx: number, dy: number, n: number, seuil = 28): number | null {
+export function secteurVise(dx: number, dy: number, n: number, seuil = 28, decalage = 0): number | null {
   if (Math.hypot(dx, dy) < seuil || n < 1) return null;
-  const deg = (Math.atan2(dx, -dy) * 180) / Math.PI; // 0 en haut, sens horaire
+  const deg = (Math.atan2(dx, -dy) * 180) / Math.PI - decalage; // 0 en haut, sens horaire ; decalage : où est centré le secteur 0
   const part = 360 / n;
-  return Math.round(((deg + 360) % 360) / part) % n;
+  return Math.round((((deg % 360) + 360) % 360) / part) % n;
 }
 
 /** Le nom accessible d'un secteur : son nom, « actif » s'il l'est, puis ce qu'il fait. */
 export const nomAccessible = (m: ModePoint) => `${m.nom}${m.actif ? ", actif" : ""} : ${m.aide}`;
+
+/**
+ * Où ouvrir l'anneau et les panneaux du Point : dans la boîte de dialogue modale qui le contient (le compositeur),
+ * sinon au niveau de la page. Ainsi aucun dock ne les rogne, et un lecteur d'écran les trouve dans la zone active.
+ */
+export function hotePortail(depuis: Element | null): Element {
+  return depuis?.closest('[role="dialog"][aria-modal="true"]') ?? document.body;
+}

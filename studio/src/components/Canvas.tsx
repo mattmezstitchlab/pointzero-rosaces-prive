@@ -802,11 +802,12 @@ export default function Canvas(props: Props) {
 
   /* la loupe du dock du bas suit la case survolée ou touchée (un événement par case, pas par pixel) */
   const derniereCase = useRef("");
-  const annoncerSurvol = (w: Pt) => {
+  /* même événement pour le pointeur et le clavier : la loupe suit l'un comme l'autre, sans rien modifier */
+  const annoncerSurvol = (w: Pt, source: "pointeur" | "clavier" = "pointeur") => {
     const P = latest.current.pattern, x = Math.floor(w.x), y = Math.floor(w.y);
-    if (x < 0 || y < 0 || x >= P.w || y >= P.h || derniereCase.current === x + "," + y) return;
-    derniereCase.current = x + "," + y;
-    window.dispatchEvent(new CustomEvent("pointzero:survol", { detail: { x, y } }));
+    if (x < 0 || y < 0 || x >= P.w || y >= P.h || derniereCase.current === x + "," + y + source) return;
+    derniereCase.current = x + "," + y + source;
+    window.dispatchEvent(new CustomEvent("pointzero:survol", { detail: { x, y, source } }));
   };
   const updateTip = (p: { x: number; y: number }) => {
     const tip = tipRef.current;
@@ -1071,11 +1072,13 @@ export default function Canvas(props: Props) {
             q.x = clamp(q.x + (e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0), 0, P.w - 1);
             q.y = clamp(q.y + (e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0), 0, P.h - 1);
             hoverPt.current = { x: q.x + .5, y: q.y + .5 };
+            annoncerSurvol(hoverPt.current, "clavier");
             const idx = pickAt(P, hoverPt.current);
             setAnnouncement(`Colonne ${q.x + 1}, rangée ${q.y + 1}, ${idx >= 0 ? `DMC ${FLOSS[idx].code}` : "toile vide"}`); schedule();
           }
           if (e.key === "Enter" || e.key === " ") { e.preventDefault(); beginStroke({ x: q.x + .5, y: q.y + .5 }); endStroke(); }
         }}
+        onFocus={() => { const q = keyCell.current; derniereCase.current = ""; annoncerSurvol({ x: q.x + .5, y: q.y + .5 }, "clavier"); }}
         onPointerLeave={onLeave}
         onContextMenu={(e) => e.preventDefault()}
       />

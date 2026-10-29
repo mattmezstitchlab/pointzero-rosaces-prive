@@ -567,6 +567,7 @@ export default function App() {
     {composer && <ComposerRosace depart={composer.depart} lecture={composer.lecture} onFermer={() => { setComposer(null); retirerParametreRosace(); }}
       onBroder={(p) => { void useImportedPattern(p).then(ok => { if (ok) { setComposer(null); retirerParametreRosace(); } }); }} />}
     {!pdfFile && !promptOpen && !compositionInput && !file && !autoImage && <StudioDocks
+      sansPoint={!!composer}
       patternName={P.name} saving={saving} workspace={workspace}
       onWorkspace={mode => { chooseWorkspace(mode); setActiveCategory(mode === "stitch" ? "stitch" : "compose"); setShowWelcome(false); }}
       tool={remote ? "hand" : tool} onTool={chooseTool}

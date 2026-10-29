@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent as PE } from "react";
 import { createPortal } from "react-dom";
-import { anneau, nomAccessible, positionDe, secteurVise, tourner, type ModePoint } from "../../lib/point/modes";
+import { anneau, hotePortail, nomAccessible, positionDe, secteurVise, tourner, type ModePoint } from "../../lib/point/modes";
 import "./LePoint.css";
 
 /**
@@ -54,7 +54,7 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
   const choisir = (i: number) => {
     const m = liste[i]; if (!m) return;
     setOuvert(false); setOnde(o => o + 1);
-    setAnnonce(`${m.nom}${m.actif ? " refermé" : " ouvert"}.`);
+    if (!m.annonceEnPropre) setAnnonce(`Mode ${m.nom} ${m.actif ? "désactivé" : "activé"}.`);
     m.ouvrir();
   };
   const [pos, setPos] = useState({ left: 8, top: 8 });
@@ -75,6 +75,8 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
   };
 
   const onKeyMenu = (e: KeyboardEvent) => {
+    /* les touches de l'anneau restent à l'anneau : le contexte (compositeur, grille) ne les reçoit pas */
+    e.stopPropagation();
     const pas = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
     if (pas) { e.preventDefault(); setFocus(f => tourner(f, n, pas)); return; }
     if (e.key === "Home") { e.preventDefault(); setFocus(0); }
@@ -114,7 +116,7 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
           style={{ left: x, top: y }} onClick={() => choisir(i)} onFocus={() => setFocus(i)}>
           {m.actif && <span className="lp-marque" aria-hidden="true" />}{m.nom}
         </button>; })}
-    </div>, document.body)}
+    </div>, hotePortail(bouton.current))}
     <span className="lp-annonce" role="status" aria-live="polite">{annonce}</span>
   </div>;
 }

@@ -35,6 +35,13 @@ describe("Le Point · le noyau", () => {
     expect(secteurVise(0, 60, 4)).toBe(2);   // vers le bas
     expect(secteurVise(-60, 0, 4)).toBe(3);  // vers la gauche
   });
+  it("la Poignée du compositeur : quatre quarts en diagonale, le quart 0 en haut à gauche", () => {
+    expect(secteurVise(-50, -50, 4, 36, -45)).toBe(0); // haut gauche
+    expect(secteurVise(50, -50, 4, 36, -45)).toBe(1);  // haut droit
+    expect(secteurVise(50, 50, 4, 36, -45)).toBe(2);   // bas droit
+    expect(secteurVise(-50, 50, 4, 36, -45)).toBe(3);  // bas gauche
+    expect(secteurVise(20, -20, 4, 36, -45)).toBeNull();
+  });
   it("le nom d'un secteur commence par son mot visible et dit s'il est actif", () => {
     expect(nomAccessible(m("Loupe", "socle", true))).toMatch(/^Loupe, actif : /);
   });
@@ -68,7 +75,7 @@ async function ouvrirAtelier() {
 const lePoint = () => container?.querySelector<HTMLButtonElement>(".lp-point");
 const secteurs = () => [...document.querySelectorAll<HTMLButtonElement>('.lp-anneau [role="menuitem"]')];
 const cliquer = async (el: Element | null | undefined) => { expect(el).toBeTruthy(); await act(async () => { el!.dispatchEvent(new MouseEvent("click", { bubbles: true })); }); await attendre(); };
-const touche = async (el: Element | null | undefined, key: string) => { await act(async () => { el!.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true })); }); await attendre(); };
+const touche = async (el: Element | null | undefined, key: string) => { await act(async () => { el!.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true })); }); await attendre(); };
 const panneau = () => document.querySelector<HTMLElement>(".lp-panneau");
 
 beforeEach(() => { localStorage.clear(); });
@@ -141,5 +148,76 @@ describe("Le Point · dans l'atelier", () => {
     expect(container!.querySelector(".pzs-loupe-dock")).toBeTruthy();
     await cliquer(lePoint()); await cliquer(secteurs()[3]);
     expect(container!.querySelector(".pzs-modes")).toBeTruthy();
+  });
+  it("la Loupe suit la case choisie au clavier comme le pointeur, sans rien modifier", async () => {
+    await ouvrirAtelier();
+    await cliquer(lePoint()); await cliquer(secteurs()[1]);
+    const loupe = () => container!.querySelector(".pzs-loupe-dock")?.textContent ?? "";
+    const grille = container!.querySelector<HTMLCanvasElement>('canvas[role="application"]')!;
+    const annuler = [...container!.querySelectorAll<HTMLButtonElement>("button")].find(b => b.getAttribute("aria-label") === "Annuler")!;
+    await act(async () => { grille.focus(); }); await attendre();
+    expect(loupe()).toContain("X 1 · Y 1");
+    expect(loupe()).toContain("choisie au clavier");
+    await touche(grille, "ArrowRight"); await touche(grille, "ArrowRight"); await touche(grille, "ArrowDown");
+    expect(loupe()).toContain("X 3 · Y 2");
+    expect(annuler.disabled).toBe(true); // rien n'a été brodé
+  });
+  it("le menu du haut n'est plus une orbe : c'est le menu AIME, avec toutes ses fonctions", async () => {
+    await ouvrirAtelier();
+    const menu = container!.querySelector<HTMLButtonElement>("#pzs-brand")!;
+    expect(menu.querySelector(".pzs-orb")).toBeNull();
+    expect(menu.getAttribute("aria-label")).toMatch(/^Menu AIME/);
+    await cliquer(menu);
+    const texte = container!.querySelector("#pzs-bloc")?.textContent ?? "";
+    for (const f of ["Accueil Point Zéro", "Réglages et aide", "Revoir la visite avec Le Point", "Débutant", "Intermédiaire", "Expert"]) expect(texte).toContain(f);
+    expect(container!.querySelectorAll(".pzs-orb").length).toBe(0);
+  });
+});
+
+describe("Le même Point dans le compositeur 5D", () => {
+  const ouvrirCompositeur = async () => {
+    await ouvrirAtelier();
+    await cliquer(container!.querySelector(".pz-point-zero-composer"));
+    expect(container!.querySelector(".cr")).toBeTruthy();
+  };
+  it("un seul Point à l'écran : celui du compositeur, avec Confort, Guide et Espace", async () => {
+    await ouvrirCompositeur();
+    expect(document.querySelectorAll(".lp-point").length).toBe(1);
+    expect(document.querySelector(".lp-contexte")?.getAttribute("data-contexte")).toBe("compositeur");
+    await cliquer(lePoint());
+    expect(secteurs().map(s => s.dataset.mode)).toEqual(["confort", "guide", "espace"]);
+    expect(document.activeElement).toBe(secteurs()[0]);
+  });
+  it("Échap referme l'anneau sans fermer le compositeur ; Confort y est le même réglage", async () => {
+    await ouvrirCompositeur();
+    await cliquer(lePoint());
+    await touche(document.activeElement, "Escape");
+    expect(document.querySelector(".lp-anneau")).toBeNull();
+    expect(container!.querySelector(".cr")).toBeTruthy();
+    await cliquer(lePoint()); await cliquer(secteurs()[0]);
+    const mouvement = [...panneau()!.querySelectorAll("label")].find(l => l.textContent?.startsWith("Focus renforcé"))!.querySelector("input")!;
+    await cliquer(mouvement);
+    expect(readPrefs().enhancedFocus).toBe(true);
+    await touche(panneau(), "Escape");
+    expect(panneau()).toBeNull();
+    expect(container!.querySelector(".cr")).toBeTruthy();
+  });
+  it("Espace se coupe et se rallume, et l'annonce le dit ; les images restent toujours choisissables", async () => {
+    await ouvrirCompositeur();
+    const centre = () => container!.querySelector(".cr-centre")!;
+    expect(centre().classList.contains("cr-espace")).toBe(true);
+    await cliquer(lePoint()); await cliquer(secteurs()[2]);
+    expect(centre().classList.contains("cr-espace")).toBe(false);
+    expect(container!.querySelector(".cr [role=status]")?.textContent).toMatch(/Gestes spatiaux désactivés/);
+    await cliquer(container!.querySelector('.cr-reponses [role="radio"]'));
+    expect(container!.querySelector(".cr-sur")?.textContent).toContain("2 / 5");
+  });
+  it("le Guide du compositeur est la même visite, avec ses étapes", async () => {
+    await ouvrirCompositeur();
+    await cliquer(lePoint()); await cliquer(secteurs()[1]);
+    expect(document.querySelector("#og-titre")?.textContent).toBe("Quatre réponses");
+    await touche(document.querySelector(".og-couche"), "Escape");
+    expect(document.querySelector("#og-titre")).toBeNull();
+    expect(container!.querySelector(".cr")).toBeTruthy();
   });
 });

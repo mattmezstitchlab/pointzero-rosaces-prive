@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import OuvragesBloc from "./OuvragesBloc";
 import { ToolIcon } from "./ToolIcons";
-import { ArrowLeft, LayoutGrid, Redo2, Search, Undo2, X } from "lucide-react";
+import { ArrowLeft, LayoutGrid, Menu, Redo2, Search, Undo2, X } from "lucide-react";
 import { GrilleOutils, GROUPES_BRODER, GROUPES_DESSIN, Loupe, Nuancier } from "./DockGrilles";
 import type { Pattern } from "../lib/pattern";
 import { FLOSS } from "../lib/dmc";
@@ -11,8 +11,7 @@ import type { ViewMode } from "./Canvas";
 import { LEVEL_LABELS, type InterfaceLevel } from "../lib/interfaceLevel";
 import { VISIBILITY, VISIBILITY_ORDER, type Visibility } from "../lib/visibility";
 import VisibilityOrb from "./VisibilityOrb";
-import LePoint from "./point/LePoint";
-import PanneauConfort from "./point/PanneauConfort";
+import Point, { ouvrirConfort } from "./point/Point";
 import type { ModePoint } from "../lib/point/modes";
 
 /**
@@ -38,6 +37,8 @@ export interface DockActions {
 }
 
 interface Props {
+  /** un autre contexte (le compositeur) a la main sur le Point : le dock ne le rend pas, un seul Point à l'écran */
+  sansPoint?: boolean;
   patternName: string;
   saving: string;
   workspace: "create" | "stitch";
@@ -120,9 +121,6 @@ export default function StudioDocks(p: Props) {
   const [modes, setModes] = useState(false);
   const [modeBas, setModeBas] = useState<ModeBas>(p.path === "fils" ? "fils" : "reperes");
   const cercleRef = useRef<HTMLButtonElement>(null);
-  const [confort, setConfort] = useState(false);
-  const [annonceConfort, setAnnonceConfort] = useState("");
-  const fermerConfort = () => { setConfort(false); requestAnimationFrame(() => cercleRef.current?.focus()); };
   useEffect(() => { if (p.path === "fils") { setModeBas("fils"); setModes(false); } else setModeBas(m => m === "fils" ? "reperes" : m); }, [p.path]);
   const upRef = useRef<HTMLButtonElement>(null);
   const wasPath = useRef<DockPath>(p.path);
@@ -199,13 +197,13 @@ export default function StudioDocks(p: Props) {
 
   return <>
     <header className="pzs-head" aria-label="En-tête du studio">
-      <button type="button" className="lp-evitement" onClick={() => { setLoupe(false); setConfort(true); }}>Réglages de confort</button>
+      <button type="button" className="lp-evitement" onClick={() => { setLoupe(false); ouvrirConfort(); }}>Réglages de confort</button>
       {bloc && <div className="pzs-voile" aria-hidden="true" onClick={fermer} />}
       <nav className={"pzs-top" + (bloc ? " pzs-ouvert" : "")} aria-label="Dock des outils du studio de broderie" onKeyDown={onKey}>
         <div className="pzs-ligne">
           {aime && <button type="button" className="pzs-tool pzs-icon" aria-label="Revenir sur Le Monde AIME" title="Retour" onClick={retourSite}><ArrowLeft size={18} aria-hidden="true" /></button>}
-          <button id="pzs-brand" data-guide="orbe" type="button" className="pzs-orbe" aria-label="Menu AIME et Point Zéro" aria-expanded={bloc === "menu"} aria-controls="pzs-bloc" onClick={() => ouvrir("menu")}>
-            <span className="pzs-orb" aria-hidden="true" />
+          <button id="pzs-brand" data-guide="orbe" type="button" className="pzs-orbe" aria-label="Menu AIME : accueil, réglages, affichage" title="Menu AIME" aria-expanded={bloc === "menu"} aria-controls="pzs-bloc" onClick={() => ouvrir("menu")}>
+            <Menu size={18} aria-hidden="true" />
           </button>
           <span className="pzs-sep" aria-hidden="true" />
           {aime ? <a className="pzs-tool pzs-marque" href="/" aria-label="AIME, Le Monde AIME">AIME<sup aria-hidden="true">®</sup></a> : <span className="pzs-tool pzs-marque">Point Zéro</span>}
@@ -301,18 +299,16 @@ export default function StudioDocks(p: Props) {
       {!bloc && <p className="pzs-crumbs">{crumbs.map((c, i) => <span key={i}>{i > 0 && <span aria-hidden="true"> › </span>}{i === crumbs.length - 1 ? <strong>{c}</strong> : c}</span>)}</p>}
     </header>
 
-    {confort && <PanneauConfort onFermer={fermerConfort} onAnnonce={setAnnonceConfort} />}
     {loupe && p.pattern && <div className="pzs-loupe-dock"><Loupe pattern={p.pattern} /><button type="button" className="pzs-loupe-fermer" aria-label="Fermer la loupe" onClick={() => setLoupe(false)}><X size={16} aria-hidden="true" /></button></div>}
     <nav className="pzs-bottom" aria-label="Se repérer dans le studio" onKeyDown={e => { if (e.key === "Escape" && loupe) { e.preventDefault(); setLoupe(false); return; } if (e.key === "Escape" && modes) { e.preventDefault(); setModes(false); cercleRef.current?.focus(); } }}>
       {/* Le Point, contrôleur universel : Confort (toujours premier), Loupe, Guide, puis le métier (Broderie : Repères, Fils, Progression) */}
-      <LePoint refBouton={cercleRef} part={prog} teinte={teinte} annonceExterne={annonceConfort}
+      {p.sansPoint ? null : <Point contexte="broderie" refBouton={cercleRef} part={prog} teinte={teinte}
         etiquette={"Dock en mode " + (MODES.find(m => m[0] === modeBas)?.[1] ?? "") + (total ? ", patron brodé à " + Math.round(prog * 100) + " %" : "")}
         modes={[
-          { id: "confort", nom: "Confort", aide: "taille du texte, contraste, thème, mouvement", groupe: "acces", actif: confort, ouvrir: () => { setLoupe(false); setConfort(v => !v); } },
-          { id: "loupe", nom: "Loupe", aide: "la grille agrandie sous le pointeur, sans rien modifier", groupe: "socle", actif: loupe, ouvrir: () => { setConfort(false); setLoupe(v => !v); } },
-          ...(p.actions.visite ? [{ id: "guide", nom: "Guide", aide: "la visite du studio avec Le Point", groupe: "socle", ouvrir: () => { setConfort(false); p.actions.visite!(); } } satisfies ModePoint] : []),
+          { id: "loupe", nom: "Loupe", aide: "la grille agrandie sous le pointeur ou à la case choisie au clavier, sans rien modifier", groupe: "socle", actif: loupe, ouvrir: () => setLoupe(v => !v) },
+          ...(p.actions.visite ? [{ id: "guide", nom: "Guide", aide: "la visite du studio avec Le Point", groupe: "socle", ouvrir: () => p.actions.visite!() } satisfies ModePoint] : []),
           { id: "broderie", nom: "Broderie", aide: "le dock du bas en Repères, Fils DMC ou Progression", groupe: "metier", actif: modes, ouvrir: () => { setModes(v => !v); requestAnimationFrame(() => document.querySelector<HTMLElement>(".pzs-modes [aria-pressed=\"true\"]")?.focus()); } },
-        ]} />
+        ]} />}
       {modes
         ? <div className="pzs-modes" role="group" aria-label="Les modes du dock">
           {MODES.map(([id, nom, halo]) => <button key={id} type="button" className="pzs-btm pzs-halo-mode" aria-pressed={modeBas === id}

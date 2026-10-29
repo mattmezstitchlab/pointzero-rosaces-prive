@@ -6,6 +6,9 @@ import { nomRecette, RECETTES } from "../lib/motif5d/recettes";
 import { cm, duree, mesures } from "../lib/cadre";
 import { FLOSS } from "../lib/dmc";
 import type { Pattern } from "../lib/pattern";
+import Point from "./point/Point";
+import OrbeGuide, { type Etape } from "./OrbeGuide";
+import { secteurVise } from "../lib/point/modes";
 
 /**
  * Composer une rosace : cinq gestes avec Le Point, quatre vrais motifs à chaque étape, sans formulaire.
@@ -44,6 +47,14 @@ function Motif({ pattern, mono, taille, croix = false, label }: { pattern: Patte
   return <canvas ref={ref} className="cr-motif" role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true} />;
 }
 
+/** Le Guide du Point, dans le compositeur : le même composant que la visite de l'atelier, avec ses propres étapes. */
+export const ETAPES_COMPOSITEUR: Etape[] = [
+  { dock: "page", cible: "cr-reponses", titre: "Quatre réponses", texte: "Chaque image est une réponse à la question. Touchez-en une, ou choisissez-la aux flèches puis Entrée. Retour arrière revient à la question précédente." },
+  { dock: "page", cible: "cr-centre", titre: "Le sceau se dessine", texte: "Un anneau par geste : structure, trait, densité, échelle, puis la couleur au cinquième. Avec le mode Espace, tirez le centre vers une image pour la choisir." },
+  { dock: "page", cible: "cr-recettes", titre: "Les douze recettes", texte: "Pour partir d’un motif déjà composé, avec son nom et son code." },
+  { dock: "bas", cible: "point-compositeur", titre: "Le même Point", texte: "Celui de l’atelier, avec les modes d’ici : Confort, ce Guide et Espace. Les flèches tournent, Entrée ouvre, Échap referme." },
+];
+
 const nouvelleGraine = () => 1 + Math.floor(Math.random() * MAX_GRAINE);
 
 export default function ComposerRosace({ depart, lecture = false, onBroder, onFermer }: {
@@ -63,6 +74,9 @@ export default function ComposerRosace({ depart, lecture = false, onBroder, onFe
   const [onde, setOnde] = useState(0);
   const [mur, setMur] = useState(false);
   const [annonce, setAnnonce] = useState("");
+  /* le mode Espace du Point : les gestes spatiaux (tirer le centre vers une image). Un raccourci, jamais le seul chemin. */
+  const [espace, setEspace] = useState(true);
+  const [guide, setGuide] = useState(false);
   const boutons = useRef<(HTMLButtonElement | null)[]>([]);
   const dialogue = useRef<HTMLDivElement>(null);
   const tire = useRef<{ x: number; y: number } | null>(null);
@@ -93,7 +107,8 @@ export default function ComposerRosace({ depart, lecture = false, onBroder, onFe
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [etape]);
   useEffect(() => {
-    const echap = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); if (mur) setMur(false); else onFermer(); } };
+    /* un Échap déjà traité (anneau du Point, Confort, Guide) ne ferme pas le compositeur */
+    const echap = (e: KeyboardEvent) => { if (e.key === "Escape" && !e.defaultPrevented) { e.preventDefault(); if (mur) setMur(false); else onFermer(); } };
     window.addEventListener("keydown", echap); return () => window.removeEventListener("keydown", echap);
   }, [mur, onFermer]);
 
@@ -112,11 +127,12 @@ export default function ComposerRosace({ depart, lecture = false, onBroder, onFe
     if (e.key === "Backspace") { e.preventDefault(); revenir(); }
   };
   // tirer Le Point vers une vignette : la vignette du quart vers lequel on tire est choisie
-  const pointBas = (e: PE<HTMLDivElement>) => { if (etape < 5) { tire.current = { x: e.clientX, y: e.clientY }; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } };
+  const pointBas = (e: PE<HTMLDivElement>) => { if (etape < 5 && espace) { tire.current = { x: e.clientX, y: e.clientY }; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } };
   const pointHaut = (e: PE<HTMLDivElement>) => {
-    const t = tire.current; tire.current = null; if (!t || etape >= 5) return;
-    const dx = e.clientX - t.x, dy = e.clientY - t.y; if (Math.hypot(dx, dy) < 36) return;
-    choisir(dy < 0 ? (dx < 0 ? 0 : 1) : (dx > 0 ? 2 : 3));
+    const t = tire.current; tire.current = null; if (!t || etape >= 5 || !espace) return;
+    /* la Poignée du noyau du Point : quatre quarts en diagonale, le quart 0 en haut à gauche */
+    const q = secteurVise(e.clientX - t.x, e.clientY - t.y, 4, 36, -45);
+    if (q !== null) choisir(q);
   };
   const uneAutre = () => { const g = nouvelleGraine(); setGraine(g); setHistorique(h => [g, ...h.filter(x => x !== g)].slice(0, 10)); setAnnonce(`Nouvelle variante : graine ${g}.`); };
   const ouvrirRecette = (code: string) => { const r = lireCode(code); if (!r) return; setChoix(r.signature); setGraine(r.graine); setHistorique(h => [r.graine, ...h.filter(x => x !== r.graine)].slice(0, 10)); setMur(false); setEtape(5); };
@@ -138,7 +154,7 @@ export default function ComposerRosace({ depart, lecture = false, onBroder, onFe
     </header>
 
     {etape < 5 && !mur && <div className={"cr-cadran" + (petit ? " cr-petit" : "")}>
-      <div className="cr-reponses" role="radiogroup" aria-labelledby="cr-titre">
+      <div className="cr-reponses" data-guide="cr-reponses" role="radiogroup" aria-labelledby="cr-titre">
         {[0, 1, 2, 3].map(r => { const [nom, phrase] = dim.reponses[r];
           return <button key={r} ref={el => { boutons.current[r] = el; }} type="button" role="radio" aria-checked={choix[dim.cle] === r} tabIndex={r === focus ? 0 : -1}
             className={"cr-vignette cr-" + COINS[r]} aria-label={nom} aria-describedby={"cr-phrase-" + r} onClick={() => choisir(r)} onFocus={() => setFocus(r)}>
@@ -147,13 +163,13 @@ export default function ComposerRosace({ depart, lecture = false, onBroder, onFe
             <span className="cr-nom">{nom}</span>
           </button>; })}
       </div>
-      <div className="cr-centre" onPointerDown={pointBas} onPointerUp={pointHaut} onPointerCancel={() => { tire.current = null; }} title="Touchez une image, ou tirez Le Point vers elle">
+      <div className={"cr-centre" + (espace ? " cr-espace" : "")} data-guide="cr-centre" onPointerDown={pointBas} onPointerUp={pointHaut} onPointerCancel={() => { tire.current = null; }} title={espace ? "Touchez une image, ou tirez le centre vers elle" : "Touchez une image"}>
         <Sceau signature={choix} faits={etape} couleurs={couleurs} taille={tailleSceau} onde={onde} />
         <div className="cr-anneaux" aria-label="Revenir à une réponse">{DIMENSIONS.slice(0, etape).map((d, i) => <button key={d.cle} type="button" className="cr-anneau" onClick={() => revenir(i)}>{i + 1}. {d.reponses[choix[d.cle] ?? 0][0]}</button>)}</div>
       </div>
     </div>}
 
-    {etape === 0 && !mur && !lecture && <p className="cr-pied"><button type="button" className="cr-lien" onClick={() => setMur(true)}>Ou partir d’une des 12 recettes</button></p>}
+    {etape === 0 && !mur && !lecture && <p className="cr-pied"><button type="button" className="cr-lien" data-guide="cr-recettes" onClick={() => setMur(true)}>Ou partir d’une des 12 recettes</button></p>}
     {mur && <section className="cr-mur" aria-label="Les douze recettes">
       <ul>{RECETTES.map((r, n) => { const rc = lireCode(r.code)!; return <li key={r.code}><button type="button" onClick={() => ouvrirRecette(r.code)}>
         <Sceau signature={rc.signature} taille={petit ? 84 : 104} couleurs={murCouleurs[n] ?? []} />
@@ -176,5 +192,14 @@ export default function ComposerRosace({ depart, lecture = false, onBroder, onFe
         {final.controle.ajustements.length > 0 && <p className="cr-note">{final.controle.ajustements.join(" ")}</p>}
       </aside>
     </div>}
+    {/* le même Point que l'atelier : ici, Confort, Guide et Espace. Il ne crée rien : les choix restent dans les images. */}
+    <div className="cr-point">
+      <Point contexte="compositeur" guide="point-compositeur" etiquette={etape < 5 ? `Question ${etape + 1} sur 5` : "Votre motif"} modes={[
+        { id: "guide", nom: "Guide", aide: "comment composer, en quatre étapes", groupe: "socle", actif: guide, ouvrir: () => setGuide(v => !v) },
+        { id: "espace", nom: "Espace", aide: espace ? "gestes spatiaux activés : tirer le centre vers une image pour la choisir" : "gestes spatiaux désactivés : on choisit en touchant les images ou aux flèches", groupe: "creation", actif: espace, annonceEnPropre: true,
+          ouvrir: () => { setEspace(v => !v); setAnnonce(espace ? "Gestes spatiaux désactivés : touchez les images, ou utilisez les flèches." : "Gestes spatiaux activés : tirez le centre vers une image pour la choisir."); } },
+      ]} />
+    </div>
+    <OrbeGuide ouverte={guide} onFermer={() => setGuide(false)} onChemin={() => {}} etapes={ETAPES_COMPOSITEUR} cle="pointzero:visite-compositeur:v1" fin="Composer" />
   </div>;
 }

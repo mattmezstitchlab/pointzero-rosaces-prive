@@ -38,7 +38,7 @@ export const GESTES = {
 } as const;
 
 export const ETAPES: Etape[] = [
-  { dock: "haut", cible: "orbe", titre: "Bonjour, je suis Le Point", texte: "Je vous fais faire le tour du studio : en haut, le dock pour travailler ; en bas, celui pour vous repérer, où je vis. Ce carré ouvre le menu AIME : l’accueil, les réglages et l’affichage (débutante, confirmée, experte)." },
+  { dock: "haut", cible: "orbe", titre: "Bonjour, je suis Le Point", texte: "Je vous fais faire le tour du studio : en haut, le dock pour faire ; en bas, celui pour vous repérer, où je vis. Ce carré, ici, ouvre le menu AIME : l’accueil, les réglages et l’affichage (débutante, confirmée, experte)." },
   { dock: "page", cible: "point-zero", titre: "Le point zéro", texte: "Sur une grille vide, tout commence au centre : importez une image, un patron PDF ou un projet, ou glissez-le sur la grille." },
   { dock: "haut", cible: "dessiner", titre: "Dessiner", texte: "Pour composer votre patron case par case. Un clic déplie, sous le dock, la grille de tous les points et de tous les outils." },
   { dock: "haut", cible: "outils", chemin: "dessiner", titre: "Les outils du dessin", texte: "Le fil actif, puis les six outils les plus utilisés. « Tous les points » déplie la grille complète : points, outils, formes, motifs et calques. Choisir replie le dock ; la flèche à gauche remonte d’un niveau." },
@@ -53,7 +53,7 @@ export const ETAPES: Etape[] = [
   { dock: "haut", cible: "historique", titre: "Annuler, rétablir", texte: "Chaque geste se reprend : une croix de trop, un remplissage raté, un clic suffit." },
   { dock: "haut", cible: "chercher", titre: "Chercher", texte: "Un fil, un outil, une fonction : tapez quelques lettres, choisissez, c’est fait." },
   { dock: "haut", cible: "profil", titre: "Mes ouvrages", texte: "Tous vos ouvrages sont rangés ici : rouvrez-en un, déposez un fichier (image, PDF, patron), invitez quelqu’un à rejoindre la grille." },
-  { dock: "bas", cible: "cercle", titre: "Me voici, chez moi", texte: "Mon anneau suit votre avancement. Un clic m’ouvre : Confort en haut (taille du texte, contraste, thème, mouvement), puis la Loupe, ce Guide, et Broderie (Repères, Fils DMC, Progression). Au clavier : les flèches tournent, Entrée ouvre, Échap referme." },
+  { dock: "bas", cible: "cercle", titre: "Le Point, chez lui", texte: "Mon anneau suit votre avancement. Un clic m’ouvre : Confort en haut (taille du texte, contraste, thème, mouvement), puis la Loupe, ce Guide et Broderie (Repères, Fils DMC, Progression). Au clavier : les flèches tournent, Entrée ouvre, Échap referme. Je ne crée rien : je règle le confort, j’inspecte, je guide." },
   { dock: "bas", cible: "symboles", titre: "Picto", texte: "Les symboles par-dessus les couleurs, comme sur un patron papier : utile pour les teintes proches." },
   { dock: "bas", cible: "lectures", titre: "Trois lectures de la grille", texte: "À plat : les couleurs franches. Patron : la grille à suivre, case par case. Réaliste : comme une fois brodé." },
   { dock: "bas", cible: "loupe", titre: "La loupe", texte: "Un clic, et un dock se déplie au-dessus : la grille agrandie case par case, là où vous survolez ou touchez. Elle ne modifie rien." },

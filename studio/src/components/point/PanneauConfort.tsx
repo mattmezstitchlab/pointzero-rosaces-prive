@@ -25,7 +25,7 @@ export default function PanneauConfort({ onFermer, onAnnonce }: { onFermer: () =
   const pc = (x: number) => Math.round(x * 100) + " %";
 
   return <section ref={racine} className="lp-panneau" role="dialog" aria-modal="false" aria-labelledby={titre}
-    onKeyDown={e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); onFermer(); } }}>
+    onKeyDown={e => { e.stopPropagation(); /* flèches, Retour arrière… restent aux réglages, pas au contexte */ if (e.key === "Escape") { e.preventDefault(); onFermer(); } }}>
     <header className="lp-panneau-tete">
       <h2 id={titre}>Confort de lecture</h2>
       <button type="button" className="lp-fermer" onClick={onFermer}>Fermer</button>

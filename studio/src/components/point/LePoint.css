@@ -5,7 +5,7 @@
 .lp-onde { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; border: 2px solid rgba(201,184,255,.9); pointer-events: none; animation: lp-onde .7s ease-out forwards; }
 @keyframes lp-onde { from { transform: scale(.6); opacity: 1; } to { transform: scale(2.2); opacity: 0; } }
 
-.lp-anneau { position: fixed; z-index: 70; border-radius: 50%; background: rgba(11,11,12,.94); box-shadow: 0 0 0 1px #3a3a38, 0 30px 70px rgba(11,11,12,.45); animation: lp-ouvre .18s ease-out; }
+.lp-anneau { position: fixed; z-index: 90; border-radius: 50%; background: rgba(11,11,12,.94); box-shadow: 0 0 0 1px #3a3a38, 0 30px 70px rgba(11,11,12,.45); animation: lp-ouvre .18s ease-out; }
 @keyframes lp-ouvre { from { transform: scale(.9); opacity: 0; } to { transform: none; opacity: 1; } }
 .lp-trace { position: absolute; inset: 0; pointer-events: none; }
 .lp-trace circle { stroke: rgba(255,255,255,.16); stroke-width: 1; stroke-dasharray: 2 4; }
@@ -22,7 +22,7 @@
 
 .lp-annonce { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-.lp-panneau { position: fixed; z-index: 70; left: 50%; bottom: 92px; transform: translateX(-50%); width: min(460px, calc(100vw - 24px)); max-height: calc(100vh - 200px); overflow: auto; box-sizing: border-box;
+.lp-panneau { position: fixed; z-index: 90; left: 50%; bottom: 92px; transform: translateX(-50%); width: min(460px, calc(100vw - 24px)); max-height: calc(100vh - 200px); overflow: auto; box-sizing: border-box;
   padding: 16px 16px 18px; border-radius: 20px; background: #0b0b0c; color: #fff; border: 1px solid #3a3a38; box-shadow: 0 24px 60px rgba(11,11,12,.35); font-size: calc(15px * var(--pz-user-font-scale, 1)); line-height: var(--pz-user-line-height, 1.5); letter-spacing: var(--pz-user-letter-spacing, 0); }
 .lp-panneau-tete { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .lp-panneau h2 { margin: 0; font-size: 1.2em; font-weight: 700; }
@@ -49,3 +49,11 @@
 @media (prefers-reduced-motion: reduce) { .lp-onde, .lp-anneau { animation: none; } .lp-onde { display: none; } }
 html[data-pz-motion="reduce"] .lp-onde { display: none; }
 html[data-pz-motion="reduce"] .lp-anneau { animation: none; }
+
+/* Le Point dans le compositeur 5D : le même, posé en bas à gauche du compositeur */
+.cr-point { position: fixed; left: 16px; bottom: 16px; z-index: 3; padding: 4px; border-radius: 14px; background: #0b0b0c; box-shadow: 0 10px 30px rgba(11,11,12,.25); }
+.cr-point .lp-panneau { bottom: 84px; }
+.cr { padding-bottom: 96px !important; }
+.cr-centre:not(.cr-espace) { cursor: default; }
+/* le menu de marque AIME, en haut : plus une orbe, un menu */
+.pzs-orbe { color: #0b0b0c; }

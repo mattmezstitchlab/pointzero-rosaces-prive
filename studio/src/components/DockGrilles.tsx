@@ -122,14 +122,16 @@ export function Nuancier({ pattern, couleur, onCouleur }: { pattern: Pattern; co
 /** Le mode loupe : la grille agrandie là où l'on survole ou touche, dans le dock du bas. */
 export const SURVOL = "pointzero:survol";
 export function Loupe({ pattern }: { pattern: Pattern }) {
-  const [focus, setFocus] = useState<StitchFocus>({ x: Math.floor(pattern.w / 2), y: Math.floor(pattern.h / 2) });
+  const [focus, setFocus] = useState<StitchFocus & { source?: "pointeur" | "clavier" }>({ x: Math.floor(pattern.w / 2), y: Math.floor(pattern.h / 2) });
   useEffect(() => {
-    const suivre = (e: Event) => { const d = (e as CustomEvent<StitchFocus>).detail; if (d) setFocus({ x: d.x, y: d.y }); };
+    const suivre = (e: Event) => { const d = (e as CustomEvent<StitchFocus & { source?: "pointeur" | "clavier" }>).detail; if (d) setFocus({ x: d.x, y: d.y, source: d.source ?? "pointeur" }); };
     window.addEventListener(SURVOL, suivre);
     return () => window.removeEventListener(SURVOL, suivre);
   }, []);
-  return <div className="dg-loupe" role="region" aria-label="Loupe : la grille agrandie sous le pointeur">
+  return <div className="dg-loupe" role="region" aria-label="Loupe : la grille agrandie sous le pointeur ou à la case choisie au clavier">
     <StitchMagnifier pattern={pattern} focus={focus} rayon={7} className="dg-loupe-vue" />
-    <p className="dg-loupe-aide">Survolez la grille, ou touchez-la : la loupe suit. Elle ne modifie rien.</p>
+    <p className="dg-loupe-aide">{focus.source === "clavier"
+      ? "La loupe suit la case choisie au clavier (flèches sur la grille). Elle ne modifie rien."
+      : "Survolez la grille, touchez-la, ou choisissez une case aux flèches : la loupe suit. Elle ne modifie rien."}</p>
   </div>;
 }

@@ -236,7 +236,7 @@ describe("POINTZERO : atelier unique sans assistant", () => {
     const send=vi.spyOn(window,"dispatchEvent");
     // la loupe déplie un dock : la grille agrandie sous le pointeur, qui suit la case survolée
     await click(inBottom("Loupe : la grille agrandie sous le pointeur"));
-    expect(container?.querySelector('[aria-label="Loupe : la grille agrandie sous le pointeur"][role="region"]')).toBeTruthy();
+    expect(container?.querySelector('[aria-label="Loupe : la grille agrandie sous le pointeur ou à la case choisie au clavier"][role="region"]')).toBeTruthy();
     await act(async () => { window.dispatchEvent(new CustomEvent("pointzero:survol", { detail: { x: 12, y: 7 } })); });
     expect(container?.querySelector(".pzs-loupe-dock")?.textContent).toContain("X 13 · Y 8");
     await click(button("Fermer la loupe"));
