@@ -12,17 +12,19 @@ import type { ModePoint } from "../../lib/point/modes";
 import { codeDeCreation, complete, creation, dimensionDe, graineDe, nbChoix, OFFERTE_CLE, PROVISOIRE, reponseDe, signatureDe, useCreation } from "./creation";
 import { peindre, rosaceDe, type Rosace } from "./rosace";
 import { mouvementReduit } from "./defilement";
+import { ORIGINE, remplir, useContenus, type Contenus } from "./contenus";
 
 /* ——— Les mots de l'Orbe, liés aux chapitres et aux cinq dimensions exactes du moteur ——— */
 export interface Rencontre { cle: keyof Signature; num: number; id: string; titre: string; question: string; reaction: (rep: string) => string }
-export const RENCONTRES: Rencontre[] = [
-  { cle: "structure", num: 1, id: "or-forme", titre: "La forme", question: "Ces étoffes répètent leurs motifs, encore et encore. Et vous, quelle forme aimeriez-vous donner à votre création ?", reaction: r => `${r} : votre création existe déjà. Elle vous suivra pendant toute la visite.` },
-  { cle: "trace", num: 2, id: "or-lignes", titre: "Les lignes", question: "À Mulhouse, on gravait les motifs dans le bois, ligne après ligne. Quelles lignes pour la vôtre ?", reaction: r => `${r} : les lignes sont posées.` },
-  { cle: "echelle", num: 3, id: "or-finesse", titre: "La finesse", question: "Les brodeuses choisissaient la finesse de leurs points. Grands aplats ou dentelle ?", reaction: r => `${r} : votre motif a trouvé sa finesse.` },
-  { cle: "palette", num: 4, id: "or-couleurs", titre: "Les couleurs", question: "Certaines couleurs traversent les siècles. Et vous, quelles couleurs aimeriez-vous retrouver dans votre création ?", reaction: r => `${r} : voilà, votre création vient de prendre ses couleurs.` },
-  { cle: "densite", num: 5, id: "or-plein", titre: "Le plein", question: "Dernier geste : laisser respirer la toile, ou la remplir ?", reaction: r => `${r} : votre rosace est complète. Elle vous attend, un peu plus bas.` },
+/* l'ordre, les clés et les ancres restent dans le code ; les mots viennent des contenus (Bureau éditorial) */
+const ORDRE: { cle: keyof Signature; id: string }[] = [
+  { cle: "structure", id: "or-forme" }, { cle: "trace", id: "or-lignes" }, { cle: "echelle", id: "or-finesse" }, { cle: "palette", id: "or-couleurs" }, { cle: "densite", id: "or-plein" },
 ];
-const rencontreDe = (cle: keyof Signature) => RENCONTRES.find(r => r.cle === cle)!;
+export const rencontresDe = (c: Contenus): Rencontre[] => ORDRE.map((o, k) => { const m = c.rencontres[o.cle];
+  return { ...o, num: k + 1, titre: m.titre, question: m.question, reaction: rep => remplir(m.reaction, { reponse: rep }) }; });
+export const RENCONTRES: Rencontre[] = rencontresDe(ORIGINE);
+export function useRencontres() { const c = useContenus(); return useMemo(() => rencontresDe(c), [c]); }
+const rencontreDe = (liste: Rencontre[], cle: keyof Signature) => liste.find(r => r.cle === cle)!;
 
 /** La sphère nacrée de l'Orbe : la même que le centre du Point. */
 export function Orbe({ taille = 64, parle }: { taille?: number; parle?: boolean }) {
@@ -65,7 +67,7 @@ function Reponses({ cle, variante, children }: { cle: keyof Signature; variante:
 
 /** Une rencontre avec l'Orbe : la question, quatre réponses visibles, la réaction. Variantes : cartes, loupes, écheveaux, curseur. */
 export function RencontreOrbe({ cle, variante, sombre, compacte }: { cle: keyof Signature; variante: "cartes" | "loupes" | "echeveaux" | "curseur"; sombre?: boolean; compacte?: boolean }) {
-  const c = useCreation(), r = rencontreDe(cle), choisi = c.choix[cle];
+  const c = useCreation(), r = rencontreDe(useRencontres(), cle), choisi = c.choix[cle];
   const titre = useId();
   const reaction = choisi !== undefined ? r.reaction(reponseDe(cle, choisi)[0]) : "";
   return <section id={r.id} className={"or-rencontre" + (sombre ? " or-sombre" : "") + (compacte ? " or-compacte" : "")} aria-labelledby={titre} data-rencontre={cle}>
@@ -106,6 +108,7 @@ export function MaRosace({ aller, guide }: { aller: (id: string) => void; guide:
   const c = useCreation(), n = nbChoix(c), s = signatureDe(c), ro = useMemo(() => rosaceDe(s, graineDe(c)), [s.structure, s.trace, s.densite, s.echelle, s.palette, c.graine]); // eslint-disable-line react-hooks/exhaustive-deps
   const [ouvert, setOuvert] = useState(false), [recommencer, setRecommencer] = useState(false);
   const bouton = useRef<HTMLButtonElement>(null), panneau = useRef<HTMLDivElement>(null), id = useId();
+  const RENCONTRES = useRencontres();
   useEffect(() => { if (ouvert) panneau.current?.querySelector<HTMLElement>("h2")?.focus(); }, [ouvert]);
   if (!n) return null;
   const fermer = () => { setOuvert(false); setRecommencer(false); bouton.current?.focus(); };
@@ -119,7 +122,7 @@ export function MaRosace({ aller, guide }: { aller: (id: string) => void; guide:
           <span className="or-choix-val">{k === undefined ? <>pas encore choisi <small>(aperçu provisoire : {reponseDe(r.cle, PROVISOIRE[r.cle])[0].toLowerCase()})</small></> : reponseDe(r.cle, k)[0]}</span>
           <button type="button" className="or-lien" onClick={() => { fermer(); aller(r.id); }}>{k === undefined ? "Choisir" : "Modifier"}</button></li>; })}</ul>
       {c.historique.length > 0 && <details className="or-histoire"><summary>Notre conversation ({c.historique.length})</summary>
-        <ol>{c.historique.map((e, i) => <li key={i}><span>L’Orbe : {rencontreDe(e.cle).titre.toLowerCase()} ?</span><b>Vous : {reponseDe(e.cle, e.k)[0]}</b></li>)}</ol></details>}
+        <ol>{c.historique.map((e, i) => <li key={i}><span>L’Orbe : {rencontreDe(RENCONTRES, e.cle).titre.toLowerCase()} ?</span><b>Vous : {reponseDe(e.cle, e.k)[0]}</b></li>)}</ol></details>}
       <div className="or-actions">
         {suivante ? <button type="button" className="or-btn" onClick={() => { fermer(); aller(suivante.id); }}>Reprendre : {suivante.titre.toLowerCase()}</button>
           : <button type="button" className="or-btn" onClick={() => { fermer(); aller("ed-cadeau"); }}>Voir mon cadeau</button>}
@@ -143,6 +146,7 @@ export function Cadeau({ aller, appareils }: { aller: (id: string) => void; appa
   const c = useCreation(), s = signatureDe(c), n = nbChoix(c), fini = complete(c), code = codeDeCreation(c);
   const ro = useMemo(() => rosaceDe(s, graineDe(c)), [s.structure, s.trace, s.densite, s.echelle, s.palette, c.graine]); // eslint-disable-line react-hooks/exhaustive-deps
   const grand = useRef<HTMLCanvasElement>(null);
+  const RENCONTRES = useRencontres(), T = useContenus().cadeau;
   const [telecharge, setTelecharge] = useState("");
   useEffect(() => { peindre(grand.current, ro); const f = () => peindre(grand.current, ro); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, [ro]);
   const manquent = RENCONTRES.filter(r => c.choix[r.cle] === undefined);
@@ -159,16 +163,16 @@ export function Cadeau({ aller, appareils }: { aller: (id: string) => void; appa
         <canvas ref={grand} className="cd-rosace" role="img" aria-label={`Votre rosace : ${DIMENSIONS.map(d => d.reponses[s[d.cle]][0].toLowerCase()).join(", ")}. ${ro.fils} fils DMC, ${ro.w} × ${ro.h} points.`} />
       </div>
       <div className="cd-texte">
-        <p className="ed-num">07 · Le cadeau</p>
+        <p className="ed-num">{T.kicker}</p>
         {fini ? <>
-          <h2 id="ed-cadeau-titre" tabIndex={-1}>Cette rosace est la vôtre.</h2>
-          <p className="cd-orbe"><Orbe taille={22} />Vous venez de créer votre première rosace POINT ZÉRO. Nous vous l’offrons.</p>
-          <p>Vous pouvez la modifier, changer ses couleurs, la broder… ou simplement la conserver comme une création artistique.</p>
+          <h2 id="ed-cadeau-titre" tabIndex={-1}>{T.titreFini}</h2>
+          <p className="cd-orbe"><Orbe taille={22} />{T.orbeFini}</p>
+          <p>{T.texteFini}</p>
         </> : <>
-          <h2 id="ed-cadeau-titre" tabIndex={-1}>{n ? "Votre rosace vous attend." : "Et si nous imaginions la vôtre ?"}</h2>
-          <p className="cd-orbe"><Orbe taille={22} />{n ? `Il reste ${manquent.length} choix. Vous pouvez les faire, ou me laisser choisir pour vous.` : "Ces motifs ont traversé les siècles. Cinq choix suffisent pour créer le vôtre."}</p>
+          <h2 id="ed-cadeau-titre" tabIndex={-1}>{n ? T.titreEnCours : T.titreVide}</h2>
+          <p className="cd-orbe"><Orbe taille={22} />{n ? remplir(T.orbeEnCours, { n: manquent.length }) : T.orbeVide}</p>
           <ul className="cd-manque">{manquent.map(r => <li key={r.cle}><button type="button" className="or-lien" onClick={() => aller(r.id)}>{r.titre}</button></li>)}</ul>
-          <button type="button" className="or-btn" onClick={() => creation.completer()}>{n ? `Choisir pour moi les ${manquent.length} restants` : "Choisir pour moi"}</button>
+          <button type="button" className="or-btn" onClick={() => creation.completer()}>{n ? remplir(T.boutonReste, { n: manquent.length }) : T.boutonVide}</button>
         </>}
         <p className="cd-recette"><code>{code}</code> · {ro.fils} fils DMC · {ro.w} × {ro.h} points</p>
         {fini && <div className="cd-actions">
@@ -177,10 +181,9 @@ export function Cadeau({ aller, appareils }: { aller: (id: string) => void; appa
         </div>}
         <span className="ed-cache" role="status" aria-live="polite">{telecharge}</span>
         <div className="cd-usages">
-          <div><p className="cd-usage-titre">Une œuvre à regarder</p><p>Vous ne brodez pas ? Ce n’est pas grave. Une rosace peut aussi être une œuvre à regarder, à partager, bientôt à exposer à la Galerie des Vivants.</p></div>
-          <div><p className="cd-usage-titre">Un ouvrage à broder</p><p>Le jour où vous le souhaitez : son patron, ses fils DMC, ses symboles, le suivi de vos points.</p></div>
+          {T.usages.map(u => <div key={u.titre}><p className="cd-usage-titre">{u.titre}</p><p>{u.texte}</p></div>)}
         </div>
-        <p className="cd-note">Ouverte dans l’atelier, votre rosace rejoint Mes ouvrages, enregistrée dans ce navigateur, sur cet appareil, sans compte. Elle peut disparaître en navigation privée, si les données du navigateur sont effacées, ou sur un autre appareil : pour la garder à coup sûr, téléchargez son projet (Exporter). Rien n’est publié sans votre accord.</p>
+        <p className="cd-note">{T.note}</p>
       </div>
     </div>
     {appareils}

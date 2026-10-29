@@ -16,10 +16,11 @@ import { FAMILLES, filsParFamille, familleDe, hsl } from "../../lib/famillesFils
 import { etapeDe, lisse, mouvementReduit, suivreScene } from "./defilement";
 import { dessinerRosace, ETAPES_ROSACE, rosaceDe, SEUILS_ROSACE } from "./rosace";
 import Histoire, { CHAPITRES_HISTOIRE } from "./Histoire";
-import { Cadeau, MaRosace, Orbe, RENCONTRES, RencontreOrbe, useCommandesTrace } from "./Participation";
+import { Cadeau, MaRosace, Orbe, RencontreOrbe, useCommandesTrace, useRencontres } from "./Participation";
 import { codeDeCreation, creation, graineDe, nbChoix, reponseDe, signatureDe, useCreation } from "./creation";
 import "./Participation.css";
 import Appareil from "./Appareil";
+import { adresse, ContexteContenus, ORIGINE, useContenus, type Contenus } from "./contenus";
 import "./Edition.css";
 import "./Histoire.css";
 
@@ -86,6 +87,7 @@ function RosaceNait() {
   const rosace = useMemo(() => rosaceDe(sig, graine), [sig.structure, sig.trace, sig.densite, sig.echelle, sig.palette, graine]); // eslint-disable-line react-hooks/exhaustive-deps
   const code = codeDeCreation(c);
   const nom = RECETTES.find(r => r.code === code)?.nom;
+  const T = useContenus().rosace;
 
   const dessiner = useRef(() => {});
   dessiner.current = () => {
@@ -116,14 +118,14 @@ function RosaceNait() {
   return <section ref={scene} id="ed-rosace" className="ed-scene ed-rosace" aria-labelledby="ed-rosace-titre" data-etape={etape}>
     <div className="ed-plateau">
       <div className="ed-texte">
-        <p className="ed-num">06 · Créez maintenant</p>
-        <h2 id="ed-rosace-titre" tabIndex={-1}>{nbChoix(c) ? "Votre rosace naît." : "Et si c’était votre rosace ?"}</h2>
+        <p className="ed-num">{T.kicker}</p>
+        <h2 id="ed-rosace-titre" tabIndex={-1}>{nbChoix(c) ? T.titreApres : T.titreAvant}</h2>
         <ol className="ed-phrases ed-phrases-5">{ETAPES_ROSACE.map((t, k) => <li key={t} aria-current={k === etape ? "step" : undefined}>{t}</li>)}</ol>
         <p className="ed-recette"><b>{nom ?? (nbChoix(c) ? "Ma rosace" : "Aperçu")}</b> <code>{code}</code> · {rosace.fils} fils DMC · {rosace.w} × {rosace.h} points{nbChoix(c) < 5 && <> · <i>{5 - nbChoix(c)} choix encore provisoires</i></>}</p>
       </div>
       <figure className="ed-toile-rosace">
         <canvas ref={toile} role="img" aria-label={`Votre rosace, par le moteur 5D : ${DIMENSIONS.map(d => (c.choix[d.cle] === undefined ? "provisoire " : "") + d.reponses[sig[d.cle]][0].toLowerCase()).join(", ")}. ${rosace.fils} fils.`} />
-        <figcaption>Motif réel du moteur 5D, rendu à l’écran (simulation de broderie).</figcaption>
+        <figcaption>{T.legende}</figcaption>
         <RencontreOrbe cle="densite" variante="curseur" sombre compacte />
       </figure>
       <div className="ed-scene-disque">
@@ -135,7 +137,7 @@ function RosaceNait() {
 
 /* ——— Rencontre 2 · Les lignes : dans le disque, le même Point ——— */
 function RencontreDisque() {
-  const c = useCreation(), r = RENCONTRES[1], modes = useCommandesTrace(), choisi = c.choix.trace;
+  const c = useCreation(), r = useRencontres()[1], modes = useCommandesTrace(), choisi = c.choix.trace;
   return <section id={r.id} className="or-rencontre or-sombre or-disque" aria-labelledby="or-lignes-titre" data-rencontre="trace">
     <div className="or-tete">
       <Orbe taille={64} parle={choisi === undefined} />
@@ -188,13 +190,13 @@ function NuageFils() {
     enfants: () => (parFamille.get(f.id) ?? []).map((i): ModePoint => ({ id: "dmc-" + FLOSS[i].code, nom: "DMC " + FLOSS[i].code, aide: FLOSS[i].name, couleur: FLOSS[i].hex, groupe: "metier", actif: i === fil, resteOuvert: true, ouvrir: () => setFil(i) })),
   }));
   const F = FLOSS[fil], famille = FAMILLES.find(x => x.id === familleDe(F.hex));
-  const etapes = ["Les fils apparaissent autour du centre", "Une famille de couleurs", "Ses nuances, du clair au foncé", "Un numéro DMC"];
+  const T = useContenus().fils, etapes = T.etapes;
   return <section ref={scene} id="ed-fils" className="ed-scene ed-fils" aria-labelledby="ed-fils-titre" data-etape={etape}>
     <div className="ed-plateau">
       <div className="ed-texte">
-        <p className="ed-num">05 · Aujourd’hui</p>
-        <h2 id="ed-fils-titre" tabIndex={-1}>489 fils, un seul geste.</h2>
-        <p className="ed-chapeau">Le même amour des couleurs, maintenant dans vos mains : explorez les fils du nuancier, famille par famille.</p>
+        <p className="ed-num">{T.kicker}</p>
+        <h2 id="ed-fils-titre" tabIndex={-1}>{T.titre}</h2>
+        <p className="ed-chapeau">{T.chapeau}</p>
         <ol className="ed-phrases">{etapes.map((t, k) => <li key={t} aria-current={k === etape ? "step" : undefined}>{t}</li>)}</ol>
       </div>
       <div className="ed-scene-disque ed-nuancier">
@@ -215,11 +217,16 @@ function NuageFils() {
   </section>;
 }
 
-export default function Edition({ actions }: { actions: Actions }) {
-  const fichier = useFichier(actions.importer);
+/** L'édition. contenus : la version publiée, déjà validée (validerContenus) ; sans elle, les textes d'origine. */
+export default function Edition({ actions, contenus = ORIGINE }: { actions: Actions; contenus?: Contenus }) {
+  return <ContexteContenus.Provider value={contenus}><Corps actions={actions} /></ContexteContenus.Provider>;
+}
+
+function Corps({ actions }: { actions: Actions }) {
+  const fichier = useFichier(actions.importer), A = useContenus().appareils;
   return <div className="ed" data-edition="c">
     <Histoire Disque={Disque} actions={{ ouvrir: actions.ouvrir, visite: actions.visite, choisirFichier: fichier.choisir, aller }}
-      objet={<div className="hi-objet"><Appareil type="ipad" src="atelier-ipad-patron.webp" alt="L’atelier Point Zéro sur iPad : une rosace en lecture Patron, symboles et grille" /></div>} entre={{
+      objet={<div className="hi-objet"><Appareil type="ipad" src={adresse(A.ipad.src)} alt={A.ipad.alt} /></div>} entre={{
       "hi-indiennes": <RencontreOrbe cle="structure" variante="cartes" />,
       "hi-mulhouse": <RencontreDisque />,
       "hi-brodeuses": <RencontreOrbe cle="echelle" variante="loupes" />,
@@ -228,9 +235,9 @@ export default function Edition({ actions }: { actions: Actions }) {
     <RencontreOrbe cle="palette" variante="echeveaux" />
     <RosaceNait />
     <Cadeau aller={aller} appareils={<div className="cd-appareils">
-      <Appareil type="ordinateur" src="atelier-ordinateur.webp" alt="L’atelier Point Zéro sur ordinateur : la rosace offerte dans son cadre, les docks de l’atelier" />
-      <Appareil type="iphone" src="atelier-iphone-fils.webp" alt="L’atelier sur iPhone : le Point du bloc ouvert sur les nuances DMC" className="cd-iphone" />
-      <p className="cd-appareils-legende">L’atelier, sur ordinateur, tablette et téléphone. Captures de l’atelier actuel.</p>
+      <Appareil type="ordinateur" src={adresse(A.ordinateur.src)} alt={A.ordinateur.alt} />
+      <Appareil type="iphone" src={adresse(A.iphone.src)} alt={A.iphone.alt} className="cd-iphone" />
+      <p className="cd-appareils-legende">{A.legende}</p>
     </div>} />
     <MaRosace aller={aller} guide={actions.visite} />
     {fichier.champ}

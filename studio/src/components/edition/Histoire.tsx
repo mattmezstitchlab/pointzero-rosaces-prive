@@ -9,8 +9,9 @@ import { BookOpen, Compass, FileText, FileUp, Folder, Image as ImageIcon, Palett
 import type { ModePoint } from "../../lib/point/modes";
 import { FLOSS } from "../../lib/dmc";
 import Brode, { type Broderie } from "./Brode";
+import { adresse, useContenus } from "./contenus";
+import { Riche, TitreEt } from "./Riche";
 
-const IMG = import.meta.env.BASE_URL + "images/histoire/";
 export const CHAPITRES_HISTOIRE = [
   { id: "hi-origine", num: "01", titre: "L’origine" },
   { id: "hi-indiennes", num: "02", titre: "Les indiennes" },
@@ -41,6 +42,7 @@ function Fil({ idx, nom, texte }: { idx: number | null; nom: string; texte: Reac
 }
 
 export default function Histoire({ actions, Disque, entre = {}, objet }: { entre?: Record<string, ReactNode>; objet?: ReactNode; actions: ActionsHistoire; Disque: (p: { contexte: string; modes: ModePoint[]; etiquette: string; max?: number }) => ReactNode }) {
+  const C = useContenus().histoire;
   const [loupe, setLoupe] = useState(0);
   const [rouge, setRouge] = useState<number | null>(null), [bleu, setBleu] = useState<number | null>(null);
   const modes: ModePoint[] = [
@@ -68,15 +70,13 @@ export default function Histoire({ actions, Disque, entre = {}, objet }: { entre
   return <div className="hi">
     <section id="hi-origine" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-origine-titre">
       <div className="ed-plateau hi-plateau">
-        <Brode src={IMG + "reconstitution-pigments.webp"} cols={84} maxFils={16} loupeDemandee={loupe}
-          alt="Reconstitution : poudres de garance et d’indigo, racines, feuilles et une étoffe imprimée, rendues en broderie"
-          legende="Reconstitution générée (pigments, racines, étoffe), rendue en broderie par la conversion du studio. Pas une photographie d’époque." />
+        <Brode src={adresse(C.origine.media.src)} cols={84} maxFils={16} loupeDemandee={loupe} alt={C.origine.media.alt} legende={C.origine.media.legende} />
         <div className="hi-texte">
-          <p className="ed-num">01 · L’origine</p>
-          <h2 id="hi-origine-titre" tabIndex={-1}>Garance <span className="hi-et">&</span> indigo</h2>
-          <p className="hi-sous">Des couleurs qui traversent les siècles.</p>
-          <p className="hi-corps">Avant les fils, il y eut des plantes, des voyages et des mains expertes : la racine de garance pour le rouge, les feuilles d’indigotier pour le bleu.</p>
-          <p className="hi-geste">Passez la souris, le doigt, ou Tab puis les flèches : la loupe voit à travers la broderie, jusqu’à la grille et aux symboles.</p>
+          <p className="ed-num">{C.origine.kicker}</p>
+          <h2 id="hi-origine-titre" tabIndex={-1}><TitreEt t={C.origine.titre} /></h2>
+          <p className="hi-sous">{C.origine.sous}</p>
+          <p className="hi-corps"><Riche t={C.origine.corps} /></p>
+          <p className="hi-geste">{C.origine.geste}</p>
         </div>
         <div className="hi-disque"><Disque contexte="edition-histoire" modes={modes} etiquette="Le Point de Point Zéro : l’histoire, la loupe, le nuancier, l’atelier" max={1} /></div>
       </div>
@@ -86,22 +86,18 @@ export default function Histoire({ actions, Disque, entre = {}, objet }: { entre
     <section id="hi-indiennes" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-indiennes-titre">
       <div className="ed-plateau hi-plateau hi-deux">
         <div className="hi-moitie hi-moitie-rouge">
-          <Brode src={IMG + "met-palampore-2010-337.webp"} cols={84} maxFils={18} surFils={b => setRouge(dominant(b, "rouge"))}
-            alt="Palampore de la côte de Coromandel : un grand arbre fleuri, rouges de garance et bleus, rendu en broderie"
-            legende="Palampore, côte de Coromandel (Inde), pour le marché sri-lankais, premier quart du XVIIIᵉ siècle. The Metropolitan Museum of Art, 2010.337, domaine public. Rendu en broderie par le studio." />
-          <Fil idx={rouge} nom="Garance" texte="La racine de Rubia tinctorum. Un rouge qu’un mordant fixe sur le coton." />
+          <Brode src={adresse(C.indiennes.rouge.media.src)} cols={84} maxFils={18} surFils={b => setRouge(dominant(b, "rouge"))} alt={C.indiennes.rouge.media.alt} legende={C.indiennes.rouge.media.legende} />
+          <Fil idx={rouge} nom={C.indiennes.rouge.nom} texte={<Riche t={C.indiennes.rouge.texte} />} />
         </div>
         <div className="hi-moitie hi-moitie-bleue">
-          <Brode src={IMG + "met-reserve-bleue-40-128.webp"} cols={56} maxFils={10} surFils={b => setBleu(dominant(b, "bleu"))}
-            alt="Panneau à réserve bleue : oiseaux et feuillages en bleus d’indigo, rendu en broderie"
-            legende="Panneau de rideau à réserve bleue, vers 1725–1775. The Met, 40.128, domaine public. Rendu en broderie par le studio." />
-          <Fil idx={bleu} nom="Indigo" texte="Les feuilles de l’indigotier. Un bleu profond, posé autour de réserves qui protègent le fond." />
+          <Brode src={adresse(C.indiennes.bleu.media.src)} cols={56} maxFils={10} surFils={b => setBleu(dominant(b, "bleu"))} alt={C.indiennes.bleu.media.alt} legende={C.indiennes.bleu.media.legende} />
+          <Fil idx={bleu} nom={C.indiennes.bleu.nom} texte={<Riche t={C.indiennes.bleu.texte} />} />
         </div>
         <div className="hi-texte">
-          <p className="ed-num">02 · Les indiennes</p>
-          <h2 id="hi-indiennes-titre" tabIndex={-1}>Indiennes</h2>
-          <p className="hi-sous">Des étoffes venues d’Inde, un savoir-faire inégalé.</p>
-          <p className="hi-corps">Peintes et imprimées sur coton, fixées par des mordants, elles portaient des rouges et des bleus qui résistaient au temps. L’Europe s’en éprend ; la France en interdit l’importation et la fabrication de 1686 à 1759.</p>
+          <p className="ed-num">{C.indiennes.kicker}</p>
+          <h2 id="hi-indiennes-titre" tabIndex={-1}><TitreEt t={C.indiennes.titre} /></h2>
+          <p className="hi-sous">{C.indiennes.sous}</p>
+          <p className="hi-corps"><Riche t={C.indiennes.corps} /></p>
         </div>
       </div>
     </section>
@@ -109,43 +105,35 @@ export default function Histoire({ actions, Disque, entre = {}, objet }: { entre
 
     <section id="hi-mulhouse" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-mulhouse-titre">
       <div className="ed-plateau hi-plateau">
-        <Brode src={IMG + "reconstitution-atelier.webp"} cols={150} maxFils={16}
-          alt="Reconstitution : un artisan imprime une étoffe à la planche de bois, rendue en broderie"
-          legende="Reconstitution générée d’un atelier d’impression à la planche, rendue en broderie. Pas un document d’époque." />
+        <Brode src={adresse(C.mulhouse.media.src)} cols={150} maxFils={16} alt={C.mulhouse.media.alt} legende={C.mulhouse.media.legende} />
         <div className="hi-texte">
-          <p className="ed-num">03 · Mulhouse, 1746</p>
-          <h2 id="hi-mulhouse-titre" tabIndex={-1}>Mulhouse</h2>
-          <p className="hi-sous">Une manufacture, un nouveau chapitre.</p>
-          <p className="hi-corps">En 1746, Samuel Koechlin, Jean-Jacques Schmaltzer, Jean-Henri Dollfus et Jean-Jacques Feer lancent l’impression de cotonnades à la planche. La ville n’est pas encore française : une république alliée aux cantons suisses, qui rejoint la France en 1798. De la lignée Dollfus naîtra Dollfus-Mieg et Compagnie : DMC.</p>
+          <p className="ed-num">{C.mulhouse.kicker}</p>
+          <h2 id="hi-mulhouse-titre" tabIndex={-1}><TitreEt t={C.mulhouse.titre} /></h2>
+          <p className="hi-sous">{C.mulhouse.sous}</p>
+          <p className="hi-corps"><Riche t={C.mulhouse.corps} /></p>
         </div>
-        <p className="hi-aparte" aria-hidden="true">1746<br />Mulhouse</p>
+        <p className="hi-aparte" aria-hidden="true">{C.mulhouse.aparte[0]}<br />{C.mulhouse.aparte[1]}</p>
       </div>
     </section>
     {entre["hi-mulhouse"]}
 
     <section id="hi-brodeuses" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-brodeuses-titre">
       <div className="ed-plateau hi-plateau">
-        <Brode src={IMG + "reconstitution-ouvrages.webp"} cols={120} maxFils={18}
-          alt="Reconstitution : des ouvrages anciens ouverts sur des motifs brodés, des écheveaux et des ciseaux, rendus en broderie"
-          legende="Reconstitution générée (ouvrages, écheveaux), rendue en broderie. Couvertures et étiquettes imaginées." />
+        <Brode src={adresse(C.brodeuses.media.src)} cols={120} maxFils={18} alt={C.brodeuses.media.alt} legende={C.brodeuses.media.legende} />
         <div className="hi-texte">
-          <p className="ed-num">04 · Les brodeuses</p>
-          <h2 id="hi-brodeuses-titre" tabIndex={-1}>Brodeuses</h2>
-          <p className="hi-sous">Des gestes transmis de génération en génération.</p>
-          <p className="hi-corps">Elles ont fait vivre ces motifs, les ont adaptés, enseignés, enrichis. En 1884, Thérèse de Dillmont commence à travailler avec DMC ; en 1886 paraît son <i>Encyclopédie des ouvrages de dames</i>, qui diffuse les points bien au-delà de l’Alsace.</p>
+          <p className="ed-num">{C.brodeuses.kicker}</p>
+          <h2 id="hi-brodeuses-titre" tabIndex={-1}><TitreEt t={C.brodeuses.titre} /></h2>
+          <p className="hi-sous">{C.brodeuses.sous}</p>
+          <p className="hi-corps"><Riche t={C.brodeuses.corps} /></p>
         </div>
         {objet}
       </div>
     </section>
     {entre["hi-brodeuses"]}
     <details className="hi-sources">
-      <summary>Sources de cette séquence</summary>
+      <summary>{C.sources.titre}</summary>
       <ul>
-        <li><a href="https://www.metmuseum.org/art/collection/search/75909" target="_blank" rel="noreferrer">Palampore, 2010.337 — The Met</a></li>
-        <li><a href="https://www.metmuseum.org/art/collection/search/13797" target="_blank" rel="noreferrer">Curtain panel, blue-resist textile, 40.128 — The Met</a></li>
-        <li><a href="https://en.wikipedia.org/wiki/Indienne" target="_blank" rel="noreferrer">Indienne — Wikipédia (mordants, garance, indigo ; interdiction 1686–1759)</a></li>
-        <li><a href="https://www.universalis.fr/encyclopedie/mulhouse/" target="_blank" rel="noreferrer">Mulhouse — Encyclopædia Universalis (1746, alliance suisse, réunion de 1798)</a></li>
-        <li><a href="https://en.wikipedia.org/wiki/Th%C3%A9r%C3%A8se_de_Dillmont" target="_blank" rel="noreferrer">Thérèse de Dillmont — Wikipédia (DMC dès 1884, Encyclopédie, 1886)</a></li>
+        {C.sources.liens.map(l => <li key={l.url}><a href={l.url} target="_blank" rel="noreferrer">{l.libelle}</a></li>)}
       </ul>
     </details>
   </div>;

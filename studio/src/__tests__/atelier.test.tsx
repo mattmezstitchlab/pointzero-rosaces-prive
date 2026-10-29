@@ -233,7 +233,7 @@ describe("POINTZERO : atelier unique sans assistant", () => {
 
   it("relie le dock du bas au zoom et au recentrage, et le dock du haut à l’import et à l’export", async () => {
     await mount();
-    const send=vi.spyOn(window,"dispatchEvent");
+    vi.spyOn(window,"dispatchEvent");
     // la loupe déplie un dock : la grille agrandie sous le pointeur, qui suit la case survolée
     await click(inBottom("Loupe : la grille agrandie sous le pointeur"));
     expect(container?.querySelector('[aria-label="Loupe : la grille agrandie sous le pointeur ou à la case choisie au clavier"][role="region"]')).toBeTruthy();
