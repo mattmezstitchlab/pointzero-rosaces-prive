@@ -27,6 +27,7 @@ const contenus = (await import('../../api/contenus.mjs')).default;
 const comptes = (await import('../../api/comptes.mjs')).default;
 const ouvrages = (await import('../../api/ouvrages.mjs')).default;   /* le studio range ses ouvrages quand une session existe */
 const preferences = (await import('../../api/preferences.mjs')).default;   /* les préférences du Point dans le compte */
+const galerie = (await import('../../api/galerie.mjs')).default;   /* la Galerie des Vivants */
 const liens = new Map();
 A._envoyeur(async m => { const u = /https?:\/\/\S+\/lien\/[A-Za-z0-9_-]+\/[a-z0-9-]+/.exec(m.text || '')?.[0]; if (u) liens.set(String(m.to).toLowerCase(), u); });
 
@@ -52,12 +53,14 @@ http.createServer(async (req, res) => {
     if (u.pathname === '/__test/lien') { res.setHeader('Content-Type', 'application/json'); return res.end(JSON.stringify({ lien: liens.get(String(u.searchParams.get('email')).toLowerCase()) || null })); }
     if (u.pathname === '/__test/menage') { res.setHeader('Content-Type', 'application/json'); return res.end(JSON.stringify(await menage())); }
     if (u.pathname === '/bureau') { res.statusCode = 307; res.setHeader('Location', '/studio/bureau'); return res.end(); }
+    if (u.pathname === '/galerie') { res.statusCode = 307; res.setHeader('Location', '/studio/galerie' + u.search); return res.end(); }
     if (u.pathname === '/' || u.pathname === '/studio') { res.statusCode = 307; res.setHeader('Location', '/studio/' + u.search); return res.end(); }
     if (u.pathname.startsWith('/lien/')) { req.url = '/api/comptes?__lien=' + encodeURIComponent(u.pathname.slice(6)); return await comptes(req, res); }
     if (u.pathname.startsWith('/api/auth/')) return await comptes(req, res);
     if (u.pathname === '/api/contenus') return await contenus(req, res);
     if (u.pathname === '/api/ouvrages') return await ouvrages(req, res);
     if (u.pathname === '/api/preferences') return await preferences(req, res);
+    if (u.pathname === '/api/galerie') return await galerie(req, res);
     if (u.pathname.startsWith('/studio/')) return await fichier(res, u.pathname.slice('/studio/'.length) || 'index.html');
     res.statusCode = 404; res.end('introuvable');
   } catch (e) { console.error(e); if (!res.headersSent) { res.statusCode = 500; res.end('erreur'); } }
