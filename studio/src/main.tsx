@@ -2,6 +2,7 @@ import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import "./design/pointzero.css";
+import { appliquerApercuAime } from "./design/aimeStudio";
 import App from "./App";
 import StorageRecoveryNotice from "./components/StorageRecoveryNotice";
 import AccessibilityShell from "./components/AccessibilityShell";
@@ -18,6 +19,8 @@ const bureau = /\/bureau\/?$/.test(window.location.pathname);
 const essaiCarte = /\/essai-carte\/?$/.test(window.location.pathname);
 /* essai privé : le socle visuel AIME, Jour et Nuit */
 const essaiAime = /\/essai-aime\/?$/.test(window.location.pathname);
+
+appliquerApercuAime();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
