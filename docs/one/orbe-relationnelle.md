@@ -112,7 +112,7 @@ Rule: **an illustrative animation never says "it worked."** Only a data signal c
 - **A — file selected.** The Orbe offers actions (Différences, Lister…) and states "contenu non lu". It **never** claims to know the content. `lu` becomes true only after a real read (diff or audio analysis).
 - **B — Git changes.** Event point + impulse + "Un événement demande votre attention." on a separate line. "Voir les différences" shows the **real diff** at the centre (added or removed lines).
 - **C — Envoyer.** No local bridge, so a refusal: "Le pont local n'existe pas encore : rien n'a été envoyé ni récupéré. Vos fichiers et votre dépôt restent tels quels." **Nothing is simulated.**
-- **D — audio analysis finished.** Waveform at the centre, the Orbe retreats, and the echo shows the metadata re-read ("métadonnées lues : WAV PCM, 0:04, 48 kHz").
+- **D — audio analysis finished.** Waveform at the centre, the Orbe retreats, and the echo shows the metadata re-read ("métadonnées lues : WAV, 0 min 03 s, 22050 Hz" on the test file).
 
 ## 9. Test results (30/10/2026)
 
