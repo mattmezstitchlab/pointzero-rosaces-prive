@@ -16,7 +16,7 @@ export const NOMS_STATUTS: Record<StatutUnivers, string> = { disponible: "Dispon
 export type Publication = "publie" | "brouillon";
 
 /** ce que montre le centre du Disque */
-export type TypeCentre = "ouvrage" | "dossiers" | "carte" | "media" | "programme" | "scene" | "oeuvre" | "creation" | "personne" | "produit" | "cadran" | "service";
+export type TypeCentre = "ouvrage" | "dossiers" | "carte" | "media" | "programme" | "scene" | "oeuvre" | "creation" | "personne" | "produit" | "cadran" | "service" | "contexte";
 
 /** les trois présentations d'un même objet ; le contenu choisit celle qui lui convient (un tableau dense : « etendu ») */
 export type Presentation = "point" | "disque" | "etendu";
@@ -25,7 +25,7 @@ export type Presentation = "point" | "disque" | "etendu";
 export type Icone = "aiguille" | "anneaux" | "note" | "livre" | "palette" | "reseau" | "dossier" | "sac" | "horloge" | "lecture" | "carte"
   | "prise" | "fils" | "points" | "loupe" | "oeil" | "import" | "export" | "personnes" | "lumiere" | "son" | "regie" | "document" | "agenda"
   | "visite" | "outils" | "matiere" | "formats" | "galerie" | "nouveau" | "chercher" | "ranger" | "partager" | "categories" | "panier"
-  | "jalons" | "cadrage" | "reglages" | "favoris" | "autorisations" | "raccourcis" | "plante" | "presentation" | "infos";
+  | "jalons" | "cadrage" | "reglages" | "favoris" | "autorisations" | "raccourcis" | "plante" | "presentation" | "infos" | "terminal" | "git" | "historique" | "executer";
 
 /** un média de présentation : toujours crédité ; une reconstitution est annoncée comme telle */
 export interface MediaUnivers {

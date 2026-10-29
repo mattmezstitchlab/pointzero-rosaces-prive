@@ -15,6 +15,7 @@ const Tambour = lazy(() => import("./tambour/Tambour"));
 const EssaiTraversee = lazy(() => import("./essais/EssaiTraversee"));
 const PremiereRencontre = lazy(() => import("./one/PremiereRencontre"));
 const Mosaique = lazy(() => import("./one/Mosaique"));
+const Terminal = lazy(() => import("./one/Terminal"));
 
 /* essai privé : le bloc Image, piloté par le même Point (aucune autre application) */
 const essaiImage = /\/essai-image\/?$/.test(window.location.pathname);
@@ -31,6 +32,7 @@ const tambour = /\/tambour\/?$/.test(window.location.pathname);
 /* essai privé (phase E, une scène) : le Point traverse la page */
 /* .0NE (branche privée one-universel) : la Première rencontre et la mosaïque des univers */
 const onePremiere = /\/one\/premiere-rencontre\/?$/.test(window.location.pathname);
+const oneTerminal = /\/one\/terminal\/?$/.test(window.location.pathname);
 const oneUnivers = /\/one(\/univers)?\/?$/.test(window.location.pathname);
 const essaiTraversee = /\/essai-traversee\/?$/.test(window.location.pathname);
 
@@ -44,6 +46,7 @@ createRoot(document.getElementById("root")!).render(
       : galerie ? <Suspense fallback={null}><Galerie /></Suspense>
       : tambour ? <AccessibilityShell><Suspense fallback={null}><Tambour /></Suspense></AccessibilityShell>
       : onePremiere ? <AccessibilityShell><Suspense fallback={null}><PremiereRencontre /></Suspense></AccessibilityShell>
+      : oneTerminal ? <AccessibilityShell><Suspense fallback={null}><Terminal /></Suspense></AccessibilityShell>
       : oneUnivers ? <AccessibilityShell><Suspense fallback={null}><Mosaique /></Suspense></AccessibilityShell>
       : essaiTraversee ? <AccessibilityShell><Suspense fallback={null}><EssaiTraversee /></Suspense></AccessibilityShell>
       : essaiImage ? <AccessibilityShell><Suspense fallback={null}><EssaiImage /></Suspense></AccessibilityShell>

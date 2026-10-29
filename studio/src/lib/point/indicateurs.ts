@@ -82,7 +82,7 @@ export function decorer(modes: ModePoint[], liste: Indicateur[], consulter?: (id
   if (!liste.length) return modes;
   return modes.map(m => {
     const e = etatDe(m, liste);
-    return { ...m, indicateur: e ?? undefined,
+    return { ...m, indicateur: e ?? m.indicateur,   /* un état déclaré par le module (ex. « pont nécessaire ») reste, sauf événement plus récent */
       ouvrir: e && !e.herite && consulter ? () => { consulter(e.id); m.ouvrir(); } : m.ouvrir,
       enfants: m.enfants ? () => decorer(m.enfants!(), liste, consulter) : undefined };
   });
