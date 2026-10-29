@@ -1,13 +1,17 @@
-import { StrictMode } from "react";
+import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import "./design/pointzero.css";
 import App from "./App";
 import StorageRecoveryNotice from "./components/StorageRecoveryNotice";
 import AccessibilityShell from "./components/AccessibilityShell";
+const EssaiImage = lazy(() => import("./essais/EssaiImage"));
+
+/* essai privé : le bloc Image, piloté par le même Point (aucune autre application) */
+const essaiImage = /\/essai-image\/?$/.test(window.location.pathname);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AccessibilityShell><StorageRecoveryNotice/><App /></AccessibilityShell>
+    {essaiImage ? <AccessibilityShell><Suspense fallback={null}><EssaiImage /></Suspense></AccessibilityShell> : <AccessibilityShell><StorageRecoveryNotice/><App /></AccessibilityShell>}
   </StrictMode>
 );
