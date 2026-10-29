@@ -3,10 +3,11 @@ La preuve demandée, SANS le dock du haut : ouvrir le Bureau, retrouver un ouvra
 modifier une couleur (remplacement confirmé), enregistrer (sauvegarde réelle, confirmée), retourner au Bureau,
 passer à un autre ouvrage, revenir, et retrouver exactement le même ouvrage — aussi après rechargement de la page.
 Et : retour possible à la navigation classique ; sur téléphone, le contenu étendu d'abord (la couronne à la demande, préférence retenue).
-Usage : cd studio && npx vite build && npx vite preview --port 4620, puis  python3 tests/e2e/navigation0.py   (CAPTURES=<dossier>)"""
+Usage : cd studio && npx vite build --mode essai && npx vite preview --port 4621 (l'essai privé : .0 par défaut),
+  et la construction de production (npx vite build) servie sur 4620 ; puis  python3 tests/e2e/navigation0.py   (CAPTURES=<dossier>)"""
 import os, json, re, tempfile
 from playwright.sync_api import sync_playwright
-B = os.environ.get('BASE', 'http://localhost:4620'); CAP = os.environ.get('CAPTURES')
+B = os.environ.get('BASE', 'http://localhost:4621'); PROD = os.environ.get('PROD', 'http://localhost:4620'); CAP = os.environ.get('CAPTURES')
 res, erreurs = [], []
 def ok(c, t): res.append(bool(c)); print(('OK ' if c else 'ÉCHEC ') + t, flush=True)
 def cap(pg, nom):
@@ -35,10 +36,9 @@ with sync_playwright() as p:
         ctx.add_init_script("localStorage.setItem('pointzero:visite-docks:v1', 'vue')")
         pg = ctx.new_page(); pg.set_default_timeout(10000); pg.on('pageerror', lambda e: erreurs.append(str(e)))
         pg.goto(B + '/atelier?offerte=5D-12342.g21.v0.1'); pg.wait_for_selector('.cadre[data-pret]', timeout=20000); pg.wait_for_timeout(5500)
-        # activer l'essai depuis le menu AIME (classique)
-        pg.get_by_role('button', name='Menu AIME : accueil, réglages, affichage').click(); pg.get_by_role('button', name='Essai : Navigation intégrale .0').click(); pg.wait_for_timeout(400)
-        ok(not pg.locator('.pzs-ligne').is_visible() and pg.locator('.pzs-ouvrir-tambour').is_visible(), '.0 : le dock du haut s’efface ; le Point et le Tambour restent (dock accroché)')
-        pg.locator('.pzs-ouvrir-tambour').click(); pg.wait_for_selector('.pzt'); pg.wait_for_timeout(400)
+        # l'essai privé : .0 par défaut, le disque ouvert dès l'arrivée
+        ok(not pg.locator('.pzs-ligne').is_visible() and pg.locator('.pzt').count() == 1 and pg.locator('.pzs-bottom').count() == 1, 'essai privé : .0 par défaut — pas de dock du haut, le disque est ouvert dès l’arrivée')
+        pg.wait_for_selector(MENU); pg.wait_for_timeout(300)
         ids = pg.evaluate(f"() => [...document.querySelectorAll('{MENU} [role=menuitem]')].map(e => e.dataset.mode)")
         ok(all(i in ids for i in ['confort', 'bureau', 'creer', 'broder', 'fils', 'affichage', 'importer', 'galerie', 'partager', 'guide', 'reglages']), f'.0 : la racine du disque — {", ".join(i for i in ids)}')
         cap(pg, '1-racine')
@@ -86,18 +86,28 @@ with sync_playwright() as p:
         pg.reload(); pg.wait_for_selector('.cadre[data-pret]', timeout=20000); pg.wait_for_timeout(1500)
         ok(not pg.locator('.pzs-ligne').is_visible() and SANS_DATE(enregistrement(pg, 'Ma rosace offerte')) == SANS_DATE(apres), 'après rechargement : toujours en .0, et l’ouvrage est intact')
         # retour à la navigation classique
-        pg.locator('.pzs-ouvrir-tambour').click(); pg.wait_for_selector('.pzt'); chemin(pg, 'reglages', 'nav-classique'); pg.wait_for_timeout(500)
+        ok(pg.locator('.pzt').count() == 1, 'après rechargement : le disque est rouvert d’emblée')
+        pg.wait_for_selector(MENU); chemin(pg, 'reglages', 'nav-classique'); pg.wait_for_timeout(500)
         ok(pg.locator('.pzs-ligne').is_visible() and pg.locator('.pzt').count() == 0, 'Réglages › Navigation classique : le dock du haut revient')
+        pg.reload(); pg.wait_for_selector('.cadre[data-pret]', timeout=20000); pg.wait_for_timeout(1200)
+        ok(pg.locator('.pzs-ligne').is_visible() and pg.locator('.pzt').count() == 0, 'le choix « classique » est retenu après rechargement')
+        pg.get_by_role('button', name='Menu AIME : accueil, réglages, affichage').click(); pg.get_by_role('button', name='Essai : Navigation intégrale .0').click(); pg.wait_for_timeout(400)
+        ok(not pg.locator('.pzs-ligne').is_visible(), 'et le menu AIME ramène .0 immédiatement')
+        ctx.close()
+        # la construction de production : inchangée (navigation classique)
+        ctx = b.new_context(viewport={'width': 1440, 'height': 900}, reduced_motion='reduce')
+        ctx.add_init_script("localStorage.setItem('pointzero:visite-docks:v1', 'vue')")
+        pg = ctx.new_page(); pg.goto(PROD + '/atelier?offerte=5D-12342.g21.v0.1'); pg.wait_for_selector('.cadre[data-pret]', timeout=20000); pg.wait_for_timeout(1500)
+        ok(pg.locator('.pzs-ligne').is_visible() and pg.locator('.pzt').count() == 0, 'construction de production : la navigation classique, inchangée')
         ctx.close()
 
         # téléphone : le contenu étendu d'abord ; la couronne à la demande ; la préférence est retenue
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, has_touch=True, is_mobile=True, reduced_motion='reduce')
-        ctx.add_init_script("localStorage.setItem('pointzero:visite-docks:v1', 'vue'); localStorage.setItem('pointzero:essai:cadre-tambour', '1')")
+        ctx.add_init_script("localStorage.setItem('pointzero:visite-docks:v1', 'vue')")
         pg = ctx.new_page(); pg.on('pageerror', lambda e: erreurs.append(str(e)))
-        pg.goto(B + '/atelier?offerte=5D-12342.g21.v0.1'); pg.wait_for_selector('.cadre[data-pret]', timeout=20000); pg.wait_for_timeout(1500)
-        pg.locator('.pzs-ouvrir-tambour').tap(); pg.wait_for_selector('.pzt'); pg.wait_for_timeout(400)
+        pg.goto(B + '/atelier?offerte=5D-12342.g21.v0.1'); pg.wait_for_selector('.cadre[data-pret]', timeout=20000); pg.wait_for_selector('.pzt'); pg.wait_for_timeout(1500)
         r = pg.evaluate("parseFloat(getComputedStyle(document.querySelector('.pzt')).getPropertyValue('--pzt-r'))")
-        ok(pg.locator('.pzt-deployer').count() == 1 and pg.locator(MENU).count() == 0 and r > 150, f'téléphone : le contenu étendu d’abord (toile r={round(r)} px), les outils à la demande')
+        ok(pg.locator('.pzt-deployer').count() == 1 and pg.locator(MENU).count() == 0 and r > 150, f'téléphone, .0 par défaut : le contenu étendu d’abord (toile r={round(r)} px), les outils à la demande')
         cap(pg, '4-mobile-etendu')
         pg.locator('.pzt-deployer').tap(); pg.wait_for_timeout(400); ok(pg.locator(MENU).count() == 1, 'téléphone : la couronne se déploie au toucher')
         pg.locator(f'{MENU} [data-mode="retracter"]').tap(); pg.wait_for_timeout(300)

@@ -172,6 +172,12 @@ function useAccroche(ref: { current: HTMLElement | null }, actif: boolean) {
   }, [ref, actif]);
 }
 
+/* « Navigation intégrale .0 » : par défaut seulement dans la construction d'essai privée (--mode essai, VITE_POINTZERO_NAV0=1) ;
+   la construction de production garde la navigation classique. Le choix de la personne (Réglages › Navigation classique) est retenu. */
+const NAV0_CLE = "pointzero:essai:navigation-0";
+export const NAV0_PAR_DEFAUT = import.meta.env.VITE_POINTZERO_NAV0 === "1";
+export function lireNav0(): boolean { try { const v = localStorage.getItem(NAV0_CLE); return v === "1" || (v === null && NAV0_PAR_DEFAUT); } catch { return NAV0_PAR_DEFAUT; } }
+
 export default function StudioDocks(p: Props) {
   const rangHaut = useDefile(), rangBas = useDefile();
   const navBas = useRef<HTMLElement | null>(null);
@@ -181,11 +187,12 @@ export default function StudioDocks(p: Props) {
   /* essai : les outils sur le bloc (le Point posé sur le Cadre) au lieu du dock du bas ; réversible depuis le menu */
   const [essaiBloc, setEssaiBloc] = useState(lireEssaiBloc);
   /* essai : le Cadre-Tambour (le dock du bas accroché sous le format ; le tambour, cercle d'outils posé sur l'ouvrage) */
-  const [cadreTambour, setCadreTambour] = useState(() => lireCadreTambour() && !lireEssaiBloc());
-  const [tambourOuvert, setTambourOuvert] = useState(false);
+  const [cadreTambour, setCadreTambour] = useState(() => (lireCadreTambour() || lireNav0()) && !lireEssaiBloc());
+  /* en .0, le disque est la navigation : il est ouvert dès l'arrivée */
+  const [tambourOuvert, setTambourOuvert] = useState(() => lireNav0() && !lireEssaiBloc());
   /* essai « Navigation intégrale .0 » : le dock du haut s'efface, le disque devient la navigation (retour possible par Réglages) */
-  const [nav0, setNav0] = useState(() => { try { return localStorage.getItem("pointzero:essai:navigation-0") === "1"; } catch { return false; } });
-  const changerNav0 = (v: boolean) => { setNav0(v); try { if (v) localStorage.setItem("pointzero:essai:navigation-0", "1"); else localStorage.removeItem("pointzero:essai:navigation-0"); } catch { /* rien */ }
+  const [nav0, setNav0] = useState(lireNav0);
+  const changerNav0 = (v: boolean) => { setNav0(v); try { localStorage.setItem(NAV0_CLE, v ? "1" : "0"); } catch { /* rien */ }
     if (v) { ecrireCadreTambour(true); setCadreTambour(true); ecrireEssaiBloc(false); setEssaiBloc(false); } setBloc(null); };
   useLayoutEffect(() => { document.documentElement.classList.toggle("pz-nav0", nav0 && cadreTambour); return () => document.documentElement.classList.remove("pz-nav0"); }, [nav0, cadreTambour]);
   const tambourBouton = useRef<HTMLButtonElement>(null);
