@@ -16,7 +16,7 @@ import { handleUpload } from '@vercel/blob/client';
 import { estAdmin } from './_projets.mjs';
 import { depotPg, nettoyerMedia, pageOk, TAILLES, TYPES_MEDIA, validerPage } from './_contenus.mjs';
 
-function json(res, code, o, cache) { res.statusCode = code; res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.setHeader('Cache-Control', cache || 'no-store'); res.end(JSON.stringify(o)); }
+function json(res, code, o, cache) { res.statusCode = code; res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.setHeader('Cache-Control', cache || 'no-store'); if (cache === PUBLIC) res.setHeader('CDN-Cache-Control', 'max-age=10'); res.end(JSON.stringify(o)); }
 async function corps(req) {
   if (req.body && typeof req.body === 'object') return req.body;
   let s = ''; for await (const c of req) { s += c; if (s.length > 200000) throw new Error('trop long'); }
@@ -25,7 +25,8 @@ async function corps(req) {
 const param = (url, k) => { try { return new URL(url || '/', 'http://x').searchParams.get(k); } catch { return null; } };
 const absente = e => e && (e.code === '42P01' || /relation "(contenus_versions|contenus_journal|medias)" does not exist/.test(String(e.message)));
 const idOk = v => /^[1-9]\d{0,15}$/.test(String(v ?? ''));
-const PUBLIC = 'public, max-age=0, s-maxage=30, stale-while-revalidate=300';
+/* le public : le navigateur revalide toujours (une publication se voit au rechargement) ; le CDN garde la réponse 10 secondes au plus */
+const PUBLIC = 'public, max-age=0, must-revalidate';
 
 /* Le cœur, testable : depot (contrat de depotPg, ou null), moi() (la personne de la session, ou null), admins (AIME_ADMIN). */
 export async function traiter(req, res, { depot, moi, admins, envoi }) {

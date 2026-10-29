@@ -21,7 +21,7 @@ import { codeDeCreation, creation, graineDe, nbChoix, reponseDe, signatureDe, us
 import "./Participation.css";
 import Appareil from "./Appareil";
 import { adresse, ContexteContenus, ORIGINE, useContenus, type Contenus } from "./contenus";
-import { useContenusPublies } from "./useContenusPublies";
+import { useContenusPublies, useSelectionBureau } from "./useContenusPublies";
 import "./Edition.css";
 import "./Histoire.css";
 
@@ -220,7 +220,8 @@ function NuageFils() {
 
 /** L'édition en ligne : la version publiée (ou l'aperçu d'une version, pour l'administration), sinon les textes d'origine. */
 export function EditionEnLigne({ actions }: { actions: Actions }) {
-  const { contenus, apercu, refus } = useContenusPublies();
+  const { contenus, apercu, refus, bureau } = useContenusPublies();
+  useSelectionBureau(bureau);
   return <>
     {(apercu || refus) && <p className="ed-apercu" role="status">{apercu
       ? <>Aperçu de la version {apercu.id} : elle n’est pas publiée.{apercu.ecarts ? ` ${apercu.ecarts} champ(s) refusé(s) par la validation montrent le texte d’origine.` : ""}</>

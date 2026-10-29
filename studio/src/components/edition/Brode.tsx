@@ -35,7 +35,13 @@ function chargerBroderie(src: string, cols: number, maxFils: number) {
 /** Les fils les plus présents d'une broderie, rangés : pour dire « le rouge de cette étoffe est proche de DMC … ». */
 export function filsDominants(b: Broderie, n = 3) { return b.palette.slice(0, n); }
 
-export default function Brode({ src, cols: colsBase = 110, maxFils = 14, alt, legende, depart = 0.12, fin = 0.7, surFils, loupeDemandee }: {
+export interface Point { x: number; y: number }
+export interface Cadrage { ordinateur: Point; mobile: Point }
+const CENTRE: Point = { x: 50, y: 50 };
+/* même seuil que la mise en page de l'édition (Histoire.css) : au-dessous, c'est le cadrage mobile */
+const estMobile = () => typeof window !== "undefined" && !!window.matchMedia?.("(max-width: 820px)").matches;
+
+export default function Brode({ src, cols: colsBase = 110, maxFils = 14, alt, legende, depart = 0.12, fin = 0.7, surFils, loupeDemandee, cadrage }: {
   src: string; cols?: number; maxFils?: number;
   /** ce que montre l'image (lu par le lecteur d'écran) */
   alt: string;
@@ -47,6 +53,8 @@ export default function Brode({ src, cols: colsBase = 110, maxFils = 14, alt, le
   surFils?: (b: Broderie) => void;
   /** un geste ailleurs (le disque) pose la loupe au centre ; le nombre change à chaque demande */
   loupeDemandee?: number;
+  /** le point de l'image qui reste visible quand elle est recadrée (en %), sur ordinateur et sur mobile ; le centre par défaut */
+  cadrage?: Cadrage;
 }) {
   /* la finesse suit l'écran : des points plus nombreux sur un grand écran, moins sur un téléphone (même taille de croix à l'œil) */
   const [cols] = useState(() => Math.round(colsBase * Math.min(1.6, Math.max(0.7, (typeof window !== "undefined" ? window.innerWidth : 1280) / 1280))));
@@ -56,6 +64,9 @@ export default function Brode({ src, cols: colsBase = 110, maxFils = 14, alt, le
   const [dit, setDit] = useState("");
   const image = useRef(0);
   const surFilsRef = useRef(surFils); surFilsRef.current = surFils;
+  const [mobile, setMobile] = useState(estMobile);
+  const point = (mobile ? cadrage?.mobile : cadrage?.ordinateur) ?? CENTRE;
+  const pointRef = useRef(point); pointRef.current = point;
 
   /*
    * Trois couches, pour que le défilement ne coûte rien : la photographie (une image, cadrée en CSS),
@@ -68,7 +79,8 @@ export default function Brode({ src, cols: colsBase = 110, maxFils = 14, alt, le
     e.W = W; e.H = H; e.dpr = dpr;
     for (const c of [cv, vr]) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
     const { cols, rows, cross } = e.b, s = Math.max(W / cols, H / rows);
-    e.s = s; e.ox = (W - cols * s) / 2; e.oy = (H - rows * s) / 2;
+    /* recadrée comme la photographie (object-fit: cover ; object-position: x% y%) : le même point reste visible */
+    e.s = s; e.ox = (W - cols * s) * pointRef.current.x / 100; e.oy = (H - rows * s) * pointRef.current.y / 100;
     const bx = cv.getContext("2d"); if (!bx) return;
     bx.setTransform(dpr, 0, 0, dpr, 0, 0);
     bx.fillStyle = "#eeebe3"; bx.fillRect(0, 0, W, H);
@@ -149,11 +161,14 @@ export default function Brode({ src, cols: colsBase = 110, maxFils = 14, alt, le
     const scene = fig.current?.closest<HTMLElement>(".ed-scene");
     const fin_ = scene ? suivreScene(scene) : undefined; // --p sur la scène : le CSS fait le reste
     let attente = 0;
-    const r = () => { window.clearTimeout(attente); attente = window.setTimeout(() => { if (etat.current.b) { preparer(); demander(); } }, 150); };
+    const r = () => { window.clearTimeout(attente); setMobile(estMobile()); attente = window.setTimeout(() => { if (etat.current.b) { preparer(); demander(); } }, 150); };
     window.addEventListener("resize", r);
     return () => { vivant = false; io?.disconnect(); fin_?.(); window.clearTimeout(attente); window.removeEventListener("resize", r); if (image.current) cancelAnimationFrame(image.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src, cols, maxFils]);
+
+  /* un nouveau cadrage (Bureau éditorial) redessine la broderie au même endroit que la photographie */
+  useEffect(() => { if (etat.current.b) { preparer(); demander(); } }, [point.x, point.y]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const caseDe = (x: number, y: number) => { const e = etat.current; if (!e.b) return null; const c = Math.floor((x - e.ox) / e.s), r = Math.floor((y - e.oy) / e.s);
     if (c < 0 || r < 0 || c >= e.b.cols || r >= e.b.rows) return null; return { c, r, f: e.b.cross[r * e.b.cols + c] }; };
@@ -181,7 +196,7 @@ export default function Brode({ src, cols: colsBase = 110, maxFils = 14, alt, le
         const n = ev.shiftKey ? 10 : 1, l = e.loupe ?? { x: e.W / 2, y: e.H / 2 };
         poser(Math.max(0, Math.min(e.W - 1, l.x + pas[0] * n * e.s)), Math.max(0, Math.min(e.H - 1, l.y + pas[1] * n * e.s)));
       }}>
-      <img className="ed-brode-photo" src={src} alt="" aria-hidden="true" decoding="async" loading="lazy" />
+      <img className="ed-brode-photo" src={src} alt="" aria-hidden="true" decoding="async" loading="lazy" style={point.x !== 50 || point.y !== 50 ? { objectPosition: `${point.x}% ${point.y}%` } : undefined} />
       <canvas ref={toile} className="ed-brode-toile" aria-hidden="true" />
       <canvas ref={verre} className="ed-brode-verre" aria-hidden="true" />
       {fil && etat.current.loupe && <span className="ed-brode-fil" aria-hidden="true" style={{ left: etat.current.loupe.x, top: etat.current.loupe.y }}><i style={{ background: fil.hex }} />DMC {fil.code}</span>}

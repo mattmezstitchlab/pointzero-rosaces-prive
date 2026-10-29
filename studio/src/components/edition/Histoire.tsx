@@ -70,7 +70,7 @@ export default function Histoire({ actions, Disque, entre = {}, objet }: { entre
   return <div className="hi">
     <section id="hi-origine" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-origine-titre">
       <div className="ed-plateau hi-plateau">
-        <Brode src={adresse(C.origine.media.src)} cols={84} maxFils={16} loupeDemandee={loupe} alt={C.origine.media.alt} legende={C.origine.media.legende} />
+        <Brode src={adresse(C.origine.media.src)} cols={84} maxFils={16} loupeDemandee={loupe} alt={C.origine.media.alt} legende={C.origine.media.legende} cadrage={C.origine.media.cadrage} />
         <div className="hi-texte">
           <p className="ed-num">{C.origine.kicker}</p>
           <h2 id="hi-origine-titre" tabIndex={-1}><TitreEt t={C.origine.titre} /></h2>
@@ -86,11 +86,11 @@ export default function Histoire({ actions, Disque, entre = {}, objet }: { entre
     <section id="hi-indiennes" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-indiennes-titre">
       <div className="ed-plateau hi-plateau hi-deux">
         <div className="hi-moitie hi-moitie-rouge">
-          <Brode src={adresse(C.indiennes.rouge.media.src)} cols={84} maxFils={18} surFils={b => setRouge(dominant(b, "rouge"))} alt={C.indiennes.rouge.media.alt} legende={C.indiennes.rouge.media.legende} />
+          <Brode src={adresse(C.indiennes.rouge.media.src)} cols={84} maxFils={18} surFils={b => setRouge(dominant(b, "rouge"))} alt={C.indiennes.rouge.media.alt} legende={C.indiennes.rouge.media.legende} cadrage={C.indiennes.rouge.media.cadrage} />
           <Fil idx={rouge} nom={C.indiennes.rouge.nom} texte={<Riche t={C.indiennes.rouge.texte} />} />
         </div>
         <div className="hi-moitie hi-moitie-bleue">
-          <Brode src={adresse(C.indiennes.bleu.media.src)} cols={56} maxFils={10} surFils={b => setBleu(dominant(b, "bleu"))} alt={C.indiennes.bleu.media.alt} legende={C.indiennes.bleu.media.legende} />
+          <Brode src={adresse(C.indiennes.bleu.media.src)} cols={56} maxFils={10} surFils={b => setBleu(dominant(b, "bleu"))} alt={C.indiennes.bleu.media.alt} legende={C.indiennes.bleu.media.legende} cadrage={C.indiennes.bleu.media.cadrage} />
           <Fil idx={bleu} nom={C.indiennes.bleu.nom} texte={<Riche t={C.indiennes.bleu.texte} />} />
         </div>
         <div className="hi-texte">
@@ -105,7 +105,7 @@ export default function Histoire({ actions, Disque, entre = {}, objet }: { entre
 
     <section id="hi-mulhouse" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-mulhouse-titre">
       <div className="ed-plateau hi-plateau">
-        <Brode src={adresse(C.mulhouse.media.src)} cols={150} maxFils={16} alt={C.mulhouse.media.alt} legende={C.mulhouse.media.legende} />
+        <Brode src={adresse(C.mulhouse.media.src)} cols={150} maxFils={16} alt={C.mulhouse.media.alt} legende={C.mulhouse.media.legende} cadrage={C.mulhouse.media.cadrage} />
         <div className="hi-texte">
           <p className="ed-num">{C.mulhouse.kicker}</p>
           <h2 id="hi-mulhouse-titre" tabIndex={-1}><TitreEt t={C.mulhouse.titre} /></h2>
@@ -119,7 +119,7 @@ export default function Histoire({ actions, Disque, entre = {}, objet }: { entre
 
     <section id="hi-brodeuses" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-brodeuses-titre">
       <div className="ed-plateau hi-plateau">
-        <Brode src={adresse(C.brodeuses.media.src)} cols={120} maxFils={18} alt={C.brodeuses.media.alt} legende={C.brodeuses.media.legende} />
+        <Brode src={adresse(C.brodeuses.media.src)} cols={120} maxFils={18} alt={C.brodeuses.media.alt} legende={C.brodeuses.media.legende} cadrage={C.brodeuses.media.cadrage} />
         <div className="hi-texte">
           <p className="ed-num">{C.brodeuses.kicker}</p>
           <h2 id="hi-brodeuses-titre" tabIndex={-1}><TitreEt t={C.brodeuses.titre} /></h2>

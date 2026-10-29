@@ -45,7 +45,7 @@ test('contenus : la migration est un ajout pur, réversible, et la base porte le
 });
 
 test('contenus : sans base ni publication, le public reçoit null et garde les textes d’origine', async () => {
-  let r = await appel(null); assert.equal(r.code, 200); assert.equal(r.j.contenus, null); assert.match(r.cache, /s-maxage/);
+  let r = await appel(null); assert.equal(r.code, 200); assert.equal(r.j.contenus, null); assert.match(r.cache, /must-revalidate/); assert.doesNotMatch(r.cache, /stale-while-revalidate/, 'une publication ne doit jamais être masquée par une réponse périmée');
   r = await appel(memoire()); assert.equal(r.j.contenus, null);
   const absente = { publie: async () => { const e = new Error('relation "contenus_versions" does not exist'); e.code = '42P01'; throw e; } };
   r = await appel(absente); assert.equal(r.code, 200); assert.equal(r.j.contenus, null);

@@ -27,6 +27,8 @@ export interface Media {
   reconstitution: boolean;
   /** provenance (musée, numéro d'inventaire, page) ; vide si sans objet */
   provenance: string;
+  /** les grands fonds : le point qui reste visible au recadrage, sur ordinateur et sur mobile (en %) */
+  cadrage?: { ordinateur: { x: number; y: number }; mobile: { x: number; y: number } };
 }
 export interface TexteScene { kicker: string; titre: string; sous: string; corps: string }
 

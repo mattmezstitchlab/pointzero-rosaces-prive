@@ -90,3 +90,6 @@ html[data-pz-motion="reduce"] .ed-grandit .lp-anneau > .lp-secteur { opacity: 1;
 
 /* l'aperçu d'une version non publiée (Bureau éditorial) : annoncé, impossible à confondre avec la page publique */
 .ed-apercu { position: sticky; top: 0; z-index: 50; margin: 0; padding: 10px 16px; background: #fff3c4; color: #0b0b0c; font-size: 14px; font-weight: 600; text-align: center; box-shadow: 0 1px 0 rgba(11,11,12,.12); }
+
+/* dans le cadre du Bureau éditorial : la section choisie est cernée, chaque section se montre au survol */
+.ed [data-bureau-choisi] { outline: 3px solid #e8b86a; outline-offset: -3px; }

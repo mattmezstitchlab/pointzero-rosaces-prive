@@ -66,6 +66,11 @@
       "source": "/studio",
       "destination": "/studio/",
       "permanent": false
+    },
+    {
+      "source": "/bureau",
+      "destination": "/studio/bureau",
+      "permanent": false
     }
   ],
   "crons": [

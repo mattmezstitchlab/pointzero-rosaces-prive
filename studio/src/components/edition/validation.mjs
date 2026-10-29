@@ -4,7 +4,8 @@
  *
  * L'origine (contenus.origine.json) est le texte actuel, le secours ET le schéma : une version est fondue sur elle,
  * champ par champ. Une version ne peut ni ajouter un champ, ni changer la forme d'un champ, ni la longueur d'une liste.
- * Seuls des textes, des adresses d'images vérifiées et des drapeaux sont acceptés ; jamais de code ni de balisage.
+ * Seuls des textes, des adresses d'images vérifiées, des drapeaux et des points de cadrage (0 à 100 %) sont acceptés ;
+ * jamais de code ni de balisage.
  */
 export const LIMITES = { titre: 140, court: 400, long: 1600 };
 export const LICENCES = ['domaine-public', 'reconstitution', 'capture', 'autorise'];
@@ -38,6 +39,8 @@ function fondre(origine, brut, chemin, ecarts) {
     return brut;
   }
   if (typeof origine === 'boolean') return typeof brut === 'boolean' ? brut : ecart('oui ou non attendu');
+  /* un nombre : un point de cadrage, en pour cent (0 à 100), arrondi au dixième */
+  if (typeof origine === 'number') return typeof brut === 'number' && Number.isFinite(brut) && brut >= 0 && brut <= 100 ? Math.round(brut * 10) / 10 : ecart('un nombre entre 0 et 100 est attendu');
   if (Array.isArray(origine)) {
     if (!Array.isArray(brut) || brut.length !== origine.length) return ecart(`une liste de ${origine.length} éléments est attendue`);
     return origine.map((o, i) => fondre(o, brut[i], `${chemin}[${i}]`, ecarts));
