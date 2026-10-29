@@ -118,3 +118,9 @@
   .bu-sections { position: static; max-height: none; }
   .bu-note { width: 100%; }
 }
+
+/* l'état du lien avec l'aperçu en direct */
+.bu-direct { font-size: 12.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; }
+.bu-direct-ok { color: #9be3a8; }
+.bu-direct-attente { color: var(--bu-doux); }
+.bu-direct-muet { color: #fff; background: #6e2c22; }

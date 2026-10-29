@@ -73,6 +73,8 @@ function Editeur() {
   const [confirmer, setConfirmer] = useState<null | { action: "publier" | "restaurer"; id: string }>(null);
   const [mediatheque, setMediatheque] = useState<(string | number)[] | null>(null);
   const cadre = useRef<HTMLIFrameElement>(null), hote = useRef<HTMLDivElement>(null), [echelle, setEchelle] = useState(1);
+  /* le lien avec l'aperçu en direct : « attente » au chargement, « ok » quand il accuse réception, « muet » s'il ne répond plus */
+  const [direct, setDirect] = useState<"attente" | "ok" | "muet">("attente"), [cleCadre, setCleCadre] = useState(0), silence = useRef(0), pretVu = useRef(false);
 
   const json = JSON.stringify(brouillon), modifie = !enregistre || enregistre.json !== json;
   const ecarts = useMemo(() => [...validerContenus(brouillon).ecarts, ...ecartsServeur], [brouillon, ecartsServeur]);
@@ -93,14 +95,25 @@ function Editeur() {
     const recevoir = (e: MessageEvent) => {
       if (e.origin !== window.location.origin || e.source !== cadre.current?.contentWindow) return;
       const d = e.data as { type?: string; cle?: string };
-      if (d?.type === "pz-bureau:pret") { envoyer({ type: "pz-bureau:contenus", contenus: brouillonRef.current }); envoyer({ type: "pz-bureau:selection", cle: choisieRef.current }); }
+      if (d?.type === "pz-bureau:pret") { pretVu.current = true; envoyer({ type: "pz-bureau:contenus", contenus: brouillonRef.current }); envoyer({ type: "pz-bureau:selection", cle: choisieRef.current }); }
+      if (d?.type === "pz-bureau:recu") { window.clearTimeout(silence.current); setDirect("ok"); }
       if (d?.type === "pz-bureau:section" && d.cle && sectionDe(d.cle)) { setChoisie(d.cle); setPanneau("inspecteur"); }
     };
     window.addEventListener("message", recevoir); return () => window.removeEventListener("message", recevoir);
   }, [envoyer]);
   const brouillonRef = useRef(brouillon); brouillonRef.current = brouillon;
   const choisieRef = useRef(choisie); choisieRef.current = choisie;
-  useEffect(() => { const t = setTimeout(() => envoyer({ type: "pz-bureau:contenus", contenus: brouillon }), 120); return () => clearTimeout(t); }, [brouillon, envoyer]);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      envoyer({ type: "pz-bureau:contenus", contenus: brouillon });
+      /* l'aperçu a déjà parlé mais n'accuse pas réception en 3 s : on le dit (pendant son chargement, on attend) */
+      if (pretVu.current) { window.clearTimeout(silence.current); silence.current = window.setTimeout(() => setDirect("muet"), 3000); }
+    }, 120);
+    return () => clearTimeout(t);
+  }, [brouillon, envoyer]);
+  const recharger = () => { pretVu.current = false; setDirect("attente"); setCleCadre(k => k + 1); };
+  /* un aperçu qui ne s'est jamais annoncé en 12 s ne répond pas */
+  useEffect(() => { if (direct !== "attente") return; const t = window.setTimeout(() => { if (!pretVu.current) setDirect("muet"); }, 12000); return () => window.clearTimeout(t); }, [direct, cleCadre]);
   useEffect(() => { envoyer({ type: "pz-bureau:selection", cle: choisie }); }, [choisie, vue, envoyer]);
   useEffect(() => {
     const el = hote.current; if (!el) return;
@@ -166,10 +179,12 @@ function Editeur() {
       <section className="bu-apercu" aria-label="Aperçu en direct de la landing">
         <div className="bu-vues" role="group" aria-label="Taille de l’aperçu">
           {(["ordinateur", "mobile"] as const).map(v => <button key={v} type="button" aria-pressed={vue === v} onClick={() => setVue(v)}>{v === "ordinateur" ? "Ordinateur" : "Mobile"}</button>)}
-          <span className="bu-aide">Aperçu en direct du brouillon, non public. Cliquez une section pour l’inspecter.</span>
+          <span className={"bu-direct bu-direct-" + direct} role="status">{direct === "ok" ? "● En direct" : direct === "attente" ? "Connexion à l’aperçu…" : "L’aperçu ne répond pas"}</span>
+          {direct === "muet" && <button type="button" className="bu-btn" onClick={recharger}>Recharger l’aperçu</button>}
+          <span className="bu-aide">Brouillon non public. Cliquez une section dans l’aperçu pour l’inspecter.</span>
         </div>
         <div ref={hote} className={"bu-cadre bu-cadre-" + vue} style={{ height: (vue === "ordinateur" ? 800 : 844) * echelle }}>
-          <iframe ref={cadre} title="Aperçu en direct de la landing (brouillon)" src={`${BASE}?edition&bureau`}
+          <iframe key={cleCadre} ref={cadre} title="Aperçu en direct de la landing (brouillon)" src={`${BASE}?edition&bureau`}
             style={{ width: vue === "ordinateur" ? 1280 : 390, height: vue === "ordinateur" ? 800 : 844, transform: `scale(${echelle})` }} />
         </div>
       </section>

@@ -49,6 +49,8 @@ with sync_playwright() as p:
     ok(pg.url.endswith('/studio/bureau'), 'le lien de connexion ramène au Bureau (/bureau → /studio/bureau)')
     cadre = pg.frame_locator('iframe[title^="Aperçu en direct"]')
     expect(cadre.locator('#hi-origine h2')).to_have_text('Garance & indigo', timeout=20000)
+    expect(pg.locator('.bu-direct')).to_have_text('● En direct', timeout=10000)
+    ok(True, 'le Bureau affiche « En direct » : l’aperçu accuse réception du brouillon')
     capture(pg, '1-arrivee')
 
     # 1. modifier un titre : l'aperçu en direct suit
@@ -131,8 +133,10 @@ with sync_playwright() as p:
     item.get_by_role('button', name='Restaurer…').click(); item.get_by_role('button', name='Confirmer : restaurer et publier').click()
     pg.wait_for_selector(f'text=Version {v1} restaurée', timeout=15000)
     ok(titre_public(pub) == T1, f'Restaurer : la version {v1} est de nouveau publique')
-    n = pg.locator('.bu-historique li').count()
-    ok(n == 3 and pg.locator('.bu-historique li[data-etat="publie"]').count() == 1, f'historique : trois versions, une seule publiée, rien d’effacé ({n})')
+    # la base de test peut contenir d'autres versions (les essais de Matt sur l'aperçu privé) : on ne compte que celles de ce test
+    vr = re.search(r'publiée comme version (\d+)', pg.locator('.bu-statut-general').inner_text()).group(1)
+    miennes = [pg.locator('.bu-historique li', has_text=re.compile(rf'Version {v} · ')).count() for v in (v1, v2, vr)]
+    ok(miennes == [1, 1, 1] and pg.locator('.bu-historique li[data-etat="publie"]').count() == 1, f'historique : les trois versions du test sont là, une seule version publiée, rien d’effacé ({miennes})')
     capture(pg, '6-historique')
     ok(not manque, f'aucune ressource introuvable {manque[:3]}')
     b.close()

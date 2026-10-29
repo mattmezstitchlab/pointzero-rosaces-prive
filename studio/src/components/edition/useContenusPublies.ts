@@ -31,11 +31,17 @@ export function useContenusPublies(): { contenus: Contenus; apercu: Apercu | nul
     const recevoir = (e: MessageEvent) => {
       if (e.origin !== window.location.origin || e.source !== window.parent) return;   /* seulement le Bureau qui encadre cette page */
       const d = e.data as { type?: string; contenus?: unknown } | null;
-      if (d?.type === "pz-bureau:contenus") setEtat(x => ({ ...x, contenus: validerContenus(d.contenus).contenus }));
+      if (d?.type === "pz-bureau:contenus") {
+        recu = true; setEtat(x => ({ ...x, contenus: validerContenus(d.contenus).contenus }));
+        window.parent.postMessage({ type: "pz-bureau:recu" }, window.location.origin);   /* l'accusé de réception : le Bureau sait que l'aperçu suit */
+      }
     };
+    let recu = false, essais = 0;
     window.addEventListener("message", recevoir);
-    window.parent.postMessage({ type: "pz-bureau:pret" }, window.location.origin);
-    return () => window.removeEventListener("message", recevoir);
+    /* « prête » jusqu'à la première réception : si un message s'est perdu (Bureau pas encore à l'écoute), il est redemandé */
+    const dire = () => { if (recu || essais++ > 20) return; window.parent.postMessage({ type: "pz-bureau:pret" }, window.location.origin); minuterie = window.setTimeout(dire, 800); };
+    let minuterie = 0; dire();
+    return () => { window.removeEventListener("message", recevoir); window.clearTimeout(minuterie); };
   }, [bureau]);
   useEffect(() => {
     if (bureau || !apiContenus()) return;
