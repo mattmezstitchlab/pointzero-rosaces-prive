@@ -6,13 +6,12 @@
  * Tout est construit avec design/aime.css et design/aime-composants.css ; les couleurs vives n'appartiennent qu'au contenu d'un univers.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, ChevronDown, Compass, FileUp, FolderOpen, Grid3x3, Monitor, Moon, Palette, PenLine, Scissors, Sun, SunMoon, Smartphone, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ChevronDown, Compass, FileUp, FolderOpen, SlidersHorizontal, Monitor, Moon, Palette, PenLine, Scissors, Sun, SunMoon, Smartphone, X } from "lucide-react";
 import "../design/aime-composants.css";
 import "./EssaiAime.css";
 import { CHOIX_THEMES, useTheme, type Theme } from "../design/theme";
 import { Disque } from "../components/edition/Edition";
 import type { ModePoint } from "../lib/point/modes";
-import { chargerImage, tramer, type ModeTrame, type OptionsTrame } from "../design/trame";
 
 const IMG = import.meta.env.BASE_URL + "images/";
 const TOKENS: [string, string][] = [
@@ -184,20 +183,11 @@ function MegaMenu() {
   </div>;
 }
 
-/* ——— la une : un grand visuel sobre, la trame qui gagne les bords, un grand titre blanc, de l'air ——— */
+/* ——— la une : un grand visuel sobre, un grand titre blanc, de l'air ——— */
 function LaUne({ themeChoix }: { themeChoix: React.ReactNode }) {
-  const toile = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    let image: HTMLImageElement | null = null, vivant = true;
-    const dessiner = () => { if (image && toile.current) tramer(image, toile.current, { mode: "bayer", pas: 5, luminosite: 10, niveaux: 3, gris: 1 }); };
-    chargerImage(IMG + "une/mariee-cosmos.webp").then(i => { if (vivant) { image = i; dessiner(); } }).catch(() => {});
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(dessiner) : null; if (toile.current) ro?.observe(toile.current);
-    return () => { vivant = false; ro?.disconnect(); };
-  }, []);
   return <section className="ea-une" data-aime="nuit" aria-labelledby="ea-une-titre">
     <div className="ea-une-visuel" aria-hidden="true">
       <img className="ea-une-image" src={IMG + "une/mariee-cosmos.webp"} alt="" />
-      <canvas ref={toile} className="ea-une-trame" />
     </div>
     <div className="ea-une-haut">
       <p className="ea-marque ea-marque-photo"><span className="aime-point" aria-hidden="true" />AIME<sup>®</sup></p>
@@ -211,28 +201,27 @@ function LaUne({ themeChoix }: { themeChoix: React.ReactNode }) {
         <div className="ea-ligne"><a className="aime-btn ea-blanc" href="#point">Commencer <span aria-hidden="true">→</span></a><a className="aime-btn aime-btn--contour ea-contour-photo" href="#composants">Les composants</a></div>
       </div>
     </div>
-    <p className="ea-une-legende">Visuel fourni par Matt · trame calculée dans la page</p>
+    <p className="ea-une-legende">Visuel fourni par Matt</p>
   </section>;
 }
 
-/* ——— le panneau Trame : un vrai outil, local (l'image choisie ne quitte pas l'appareil) ——— */
-function OutilTrame() {
-  const toile = useRef<HTMLCanvasElement>(null), fichier = useRef<HTMLInputElement>(null);
-  const [o, setO] = useState<OptionsTrame>({ mode: "croix", pas: 6, luminosite: 20, niveaux: 7 }), [image, setImage] = useState<HTMLImageElement | null>(null);
-  useEffect(() => { chargerImage(IMG + "landing/peinture-roses.webp").then(setImage).catch(() => {}); }, []);
-  useEffect(() => { if (image && toile.current) tramer(image, toile.current, o); }, [image, o]);
-  const nombre = (k: "pas" | "luminosite" | "niveaux", nom: string, min: number, max: number) => <div className="aime-reglage">
-    <label htmlFor={`ea-t-${k}`}>{nom}</label>
-    <div className="aime-reglage-valeur"><input id={`ea-t-${k}`} type="number" min={min} max={max} value={o[k]} onChange={e => setO({ ...o, [k]: Math.min(max, Math.max(min, Number(e.target.value) || min)) })} />
+/* ——— le panneau d'outil : régler une image (local, l'image choisie ne quitte pas l'appareil) ——— */
+function OutilImage() {
+  const fichier = useRef<HTMLInputElement>(null);
+  const [o, setO] = useState({ luminosite: 100, contraste: 100, saturation: 100 }), [cadrage, setCadrage] = useState("centre"), [src, setSrc] = useState(IMG + "une/mariee-cosmos.webp");
+  useEffect(() => () => { if (src.startsWith("blob:")) URL.revokeObjectURL(src); }, [src]);
+  const nombre = (k: keyof typeof o, nom: string, min: number, max: number) => <div className="aime-reglage">
+    <label htmlFor={`ea-o-${k}`}>{nom}</label>
+    <div className="aime-reglage-valeur"><input id={`ea-o-${k}`} type="number" min={min} max={max} value={o[k]} onChange={e => setO({ ...o, [k]: Math.min(max, Math.max(min, Number(e.target.value) || min)) })} />
       <input type="range" min={min} max={max} value={o[k]} aria-label={nom} onChange={e => setO({ ...o, [k]: Number(e.target.value) })} /></div></div>;
-  const ouvrir = (f?: File) => { if (!f) return; const u = URL.createObjectURL(f); chargerImage(u).then(i => { setImage(i); URL.revokeObjectURL(u); }).catch(() => URL.revokeObjectURL(u)); };
-  return <section className="aime-outil" aria-labelledby="ea-trame-titre">
-    <div className="aime-outil-tete"><span className="aime-outil-icone" aria-hidden="true"><Grid3x3 size={17} /></span><h3 id="ea-trame-titre">Trame</h3></div>
-    <div className="aime-outil-apercu"><canvas ref={toile} role="img" aria-label="Aperçu de l’image tramée" /></div>
-    <div className="aime-reglage"><label htmlFor="ea-t-mode">Mode</label><select id="ea-t-mode" value={o.mode} onChange={e => setO({ ...o, mode: e.target.value as ModeTrame })}>
-      <option value="croix">Point de croix</option><option value="bayer">Bayer 4×4</option><option value="points">Demi-teinte</option></select></div>
-    {nombre("pas", "Taille du point", 3, 24)}{nombre("luminosite", "Luminosité", -60, 60)}{nombre("niveaux", "Niveaux", 2, 8)}
-    <input ref={fichier} type="file" accept="image/*" hidden onChange={e => ouvrir(e.target.files?.[0])} />
+  const pos = { haut: "50% 15%", centre: "50% 50%", bas: "50% 85%" }[cadrage];
+  return <section className="aime-outil" aria-labelledby="ea-outil-titre">
+    <div className="aime-outil-tete"><span className="aime-outil-icone" aria-hidden="true"><SlidersHorizontal size={17} /></span><h3 id="ea-outil-titre">Image</h3></div>
+    <div className="aime-outil-apercu"><img src={src} alt="Aperçu de l’image réglée" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: pos, filter: `brightness(${o.luminosite}%) contrast(${o.contraste}%) saturate(${o.saturation}%)` }} /></div>
+    <div className="aime-reglage"><label htmlFor="ea-o-cadrage">Cadrage</label><select id="ea-o-cadrage" value={cadrage} onChange={e => setCadrage(e.target.value)}>
+      <option value="haut">Haut</option><option value="centre">Centre</option><option value="bas">Bas</option></select></div>
+    {nombre("luminosite", "Luminosité", 50, 150)}{nombre("contraste", "Contraste", 50, 150)}{nombre("saturation", "Saturation", 0, 200)}
+    <input ref={fichier} type="file" accept="image/*" hidden onChange={e => { const f = e.target.files?.[0]; if (f) setSrc(URL.createObjectURL(f)); }} />
     <button type="button" className="aime-btn aime-btn--plein" onClick={() => fichier.current?.click()}>Ajouter une image</button>
     <p className="ea-note">L’image reste sur votre appareil.</p>
   </section>;
@@ -358,9 +347,9 @@ export default function EssaiAime() {
     </section>
 
     <section id="panneaux" className="ea-section">
-      <EnteteSection sur="Panneaux et menus" titre={<>Des outils posés,<br /><span className="aime-fondu">des menus qui respirent.</span></>} chapo="Le panneau Trame est un vrai outil : choisissez une image, elle se redessine en points, sans quitter votre appareil." />
+      <EnteteSection sur="Panneaux et menus" titre={<>Des outils posés,<br /><span className="aime-fondu">des menus qui respirent.</span></>} chapo="Le panneau Image est un vrai outil : choisissez une image et réglez-la, sans qu’elle quitte votre appareil." />
       <div className="ea-panneaux">
-        <div className="ea-panneaux-trame" data-aime="nuit"><OutilTrame /></div>
+        <div className="ea-panneaux-outil" data-aime="nuit"><OutilImage /></div>
         <div className="ea-panneaux-menus">{(["nuit", "jour"] as Theme[]).map(t => <MenuMobile key={t} theme={t} basculer={() => choisir(theme === "nuit" ? "jour" : "nuit")} />)}</div>
       </div>
     </section>
