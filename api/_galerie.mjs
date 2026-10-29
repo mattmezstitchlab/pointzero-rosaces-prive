@@ -14,7 +14,9 @@ export const AUTORISATIONS = Object.freeze({ edition_cartes: false, tirage: fals
 export const RAISONS_SIGNALEMENT = ['droits', 'contenu', 'autre'];
 /* les champs d'un ouvrage (studio/src/lib/pattern.ts toObject) qu'une œuvre exposée garde ; tout le reste est privé */
 export const CHAMPS_MOTIF = ['v', 'name', 'w', 'h', 'count', 'strands', 'cross', 'fwd', 'bwd', 'q0', 'q1', 'q2', 'q3', 'back', 'long', 'knots', 'palette', 'flossCodes', 'recette', 'composition', 'fabric', 'symbolMap', 'beadMap'];
-const TIERS = ['pdf', 'oxs'];
+/* jamais exposables : les imports de patrons tiers, les œuvres reprises de la galerie, les motifs de démonstration ;
+   une création « originale » (dessin libre, photo convertie, rosace du moteur 5D) l'est, même marquée « usage personnel » par le moteur */
+const TIERS = ['pdf', 'oxs', 'galerie', 'demo'];
 
 const ligne = (v, n) => String(v ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
 const texte = (v, n) => String(v ?? '').replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, n);
@@ -34,8 +36,8 @@ export function nettoyerExposition(b) {
   let o; try { o = JSON.parse(b.contenu); } catch { return { raison: 'Motif illisible.' }; }
   if (!o || typeof o !== 'object' || Array.isArray(o)) return { raison: 'Motif illisible.' };
   const prov = o.provenance && typeof o.provenance === 'object' ? o.provenance : null;
-  if (prov && (prov.personalOnly === true || TIERS.includes(prov.kind)))
-    return { raison: 'Ce motif vient d’un patron importé (PDF, OXS ou usage personnel) : il ne peut pas être exposé.', code: 422 };
+  if (prov && (TIERS.includes(prov.kind) || (prov.personalOnly === true && prov.kind !== 'original')))
+    return { raison: 'Ce motif vient d’un patron importé, d’une œuvre de la galerie ou d’une démonstration : il est pour votre usage personnel et ne peut pas être exposé.', code: 422 };
   const w = Math.trunc(Number(o.w)), h = Math.trunc(Number(o.h));
   if (!(w >= 1 && w <= LIMITES.cote && h >= 1 && h <= LIMITES.cote)) return { raison: `Grille trop grande pour la galerie (au plus ${LIMITES.cote} × ${LIMITES.cote}).` };
   if (!Array.isArray(o.cross) || o.cross.length !== w * h || !o.cross.every(n => Number.isInteger(n) && n >= -1 && n < 2000)) return { raison: 'Points du motif invalides.' };

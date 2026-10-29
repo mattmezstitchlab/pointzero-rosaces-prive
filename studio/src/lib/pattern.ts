@@ -18,7 +18,7 @@ export interface FabricSettings {
   units: "cm" | "in";
 }
 export interface Provenance {
-  kind: "original" | "image" | "pdf" | "oxs" | "demo";
+  kind: "original" | "image" | "pdf" | "oxs" | "demo" | "galerie";
   source: string;
   author: string;
   license: string;

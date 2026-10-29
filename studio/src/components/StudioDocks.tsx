@@ -39,6 +39,8 @@ export interface DockActions {
   nouveau: () => void;
   /** relancer la visite de l'orbe */
   visite?: () => void;
+  /** exposer une copie de l'ouvrage dans la Galerie des Vivants (feuille « Exposer ») */
+  exposer?: () => void;
 }
 
 interface Props {
@@ -195,6 +197,7 @@ export default function StudioDocks(p: Props) {
   </>;
   else if (p.path === "partager") items = <>
     <Tool_ onClick={p.actions.share}>Inviter à regarder</Tool_>
+    {p.actions.exposer && <Tool_ onClick={p.actions.exposer}>Exposer</Tool_>}
     <Tool_ haspopup count={4} onClick={() => p.onPath("visibilite")}><VisibilityOrb value={p.visibility} size={20} />Visibilité · {VISIBILITY[p.visibility].label}</Tool_>
     <Tool_ onClick={p.actions.exportPanel}>Exporter</Tool_>
     <Tool_ onClick={p.actions.save}>Enregistrer</Tool_>
@@ -208,7 +211,7 @@ export default function StudioDocks(p: Props) {
     <Tool_ guide="dessiner" verbe haspopup count={DRAW.length + DRAW_MORE.length} pressed={p.workspace === "create"} onClick={() => { p.onWorkspace("create"); p.onPath("dessiner"); setBloc("outils"); }}><Pencil aria-hidden="true" /><span className="pzs-lib">Dessiner</span></Tool_>
     <Tool_ guide="broder" verbe haspopup count={STITCH.length + 1} pressed={p.workspace === "stitch"} onClick={() => { p.onWorkspace("stitch"); p.onPath("broder"); setBloc("outils"); }}><Spool aria-hidden="true" /><span className="pzs-lib">Broder</span></Tool_>
     <Tool_ guide="fils" verbe haspopup count={2} onClick={() => { p.onPath("fils"); setBloc("nuancier"); }}><Palette aria-hidden="true" /><span className="pzs-lib">Fils</span></Tool_>
-    <Tool_ guide="partager" verbe haspopup count={5} onClick={() => p.onPath("partager")}><Share2 aria-hidden="true" /><span className="pzs-lib">Partager</span></Tool_>
+    <Tool_ guide="partager" verbe haspopup count={p.actions.exposer ? 6 : 5} onClick={() => p.onPath("partager")}><Share2 aria-hidden="true" /><span className="pzs-lib">Partager</span></Tool_>
   </>;
 
   const ql = sansAccents(q.trim());
@@ -269,6 +272,7 @@ export default function StudioDocks(p: Props) {
                 <li><button type="button" onClick={() => { setBloc(null); p.actions.home(); }}>Accueil Point Zéro</button></li>
                 <li><button type="button" onClick={() => setBloc("inviter")}>Mes ouvrages</button></li>
                 <li><button type="button" onClick={() => setBloc("chercher")}>Chercher</button></li>
+                <li><a href={import.meta.env.BASE_URL + "galerie"}>Galerie des Vivants</a></li>
                 <li><button type="button" aria-pressed={essaiBloc} onClick={() => { const v = !essaiBloc; ecrireEssaiBloc(v); setEssaiBloc(v); setBloc(null); }}>{essaiBloc ? "Revenir au dock du bas" : "Essai : les outils sur le bloc"}</button></li>
                 <li><button type="button" onClick={() => { setBloc(null); p.actions.settings(); }}>Réglages et aide</button></li>
                 {p.actions.visite && <li><button type="button" onClick={() => { setBloc(null); p.actions.visite!(); }}>Revoir la visite avec Le Point</button></li>}

@@ -58,10 +58,12 @@ test('exposer demande un compte et les deux cases cochées (jamais précochées)
 
 test('un import tiers (PDF, OXS, usage personnel) ne peut pas être exposé', async () => {
   const d = memoire();
-  for (const prov of [{ kind: 'pdf', personalOnly: false }, { kind: 'oxs', personalOnly: false }, { kind: 'image', personalOnly: true }]) {
+  for (const prov of [{ kind: 'pdf', personalOnly: false }, { kind: 'oxs', personalOnly: false }, { kind: 'image', personalOnly: true }, { kind: 'galerie', personalOnly: true }, { kind: 'demo', personalOnly: false }]) {
     const r = await appel(d, POST(expo({ contenu: motif({ provenance: prov }) }), LISE)); assert.equal(r.code, 422, JSON.stringify(prov));
   }
   assert.equal(d._oeuvres.size, 0);
+  /* une rosace du moteur 5D (création originale, marquée « usage personnel » par le moteur) peut être exposée */
+  assert.equal((await appel(d, POST(expo({ contenu: motif({ provenance: { kind: 'original', personalOnly: true } }) }), LISE))).code, 200);
 });
 
 test('la copie exposée ne garde que le motif : ni notes, ni photo, ni progression, ni stock, ni séances', async () => {

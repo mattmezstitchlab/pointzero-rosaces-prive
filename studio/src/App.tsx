@@ -4,7 +4,7 @@ import { readInterfaceLevel, INTERFACE_LEVEL_KEY, type InterfaceLevel } from "./
 import { EVENEMENT_NIVEAU } from "./lib/point/profils";
 import CrossStitchHome, { type StitchEntry } from "./components/CrossStitchHome";
 import {writeStoredJSON} from "./lib/storageSafety";
-import { useCallback, useDeferredValue, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useDeferredValue, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { BASE_FLOSS, FLOSS, flossIndex } from "./lib/dmc";
 import { blankPattern, initState, loadStored, reducer, saveStored } from "./lib/store";
 import { clonePattern, compositePattern, computeStats, createPattern, ensurePalette, toObject, fromObject, type Pattern, type Supply } from "./lib/pattern";
@@ -44,6 +44,8 @@ import { formatParDefaut, generer } from "./lib/motif5d/generer";
 import { OFFERTE_CLE } from "./components/edition/creation";
 import Sceau from "./components/Sceau";
 import { lireCode } from "./lib/motif5d/code";
+import { lireContenu } from "./galerie/api";
+const Exposer = lazy(() => import("./galerie/Exposer"));
 
 /** Après avoir ouvert une recette partagée, l'adresse redevient celle de l'atelier. */
 const retirerParametreRosace = () => { try { const u = new URL(window.location.href); if (u.searchParams.has("rosace")) { u.searchParams.delete("rosace"); window.history.replaceState(window.history.state, "", u.pathname + u.search + u.hash); } } catch { /* rien */ } };
@@ -512,6 +514,25 @@ export default function App() {
   /* Le cadeau de la landing : « ?offerte=<recette> » ouvre la rosace du visiteur dans son cadre, une seule fois.
      La recette passe, pas une image : le même moteur, à la même taille que le compositeur, redonne le même motif ;
      l'ouvrage rejoint Mes ouvrages (stockage de cet appareil), avec sa recette pour pouvoir y revenir. */
+  /* la Galerie des Vivants : la feuille « Exposer », et « Ouvrir dans mon atelier » (?galerie=<id>) qui copie une œuvre exposée */
+  const [exposerOuvert, setExposerOuvert] = useState(false);
+  const galerieVue = useRef(false);
+  useEffect(() => {
+    if (galerieVue.current) return; galerieVue.current = true;
+    let id: string | null = null;
+    try { id = new URLSearchParams(window.location.search).get("galerie"); } catch { return; }
+    if (!id || !/^[a-z0-9]{12}$/.test(id)) return;
+    try { const u = new URL(window.location.href); u.searchParams.delete("galerie"); window.history.replaceState(window.history.state, "", u.pathname + u.search + u.hash); } catch { /* rien */ }
+    void lireContenu(id).then(r => {
+      if (!r.ok) { notify(r.raison); return; }
+      let p: Pattern | null = null; try { p = fromObject(JSON.parse(r.contenu)); } catch { p = null; }
+      if (!p) { notify("Cette œuvre n’a pas pu être ouverte."); return; }
+      p.name = `${r.titre} (d’après ${r.pseudo})`;
+      p.provenance = { kind: "galerie", source: "Galerie des Vivants", author: r.pseudo, license: "Usage personnel", personalOnly: true };
+      void useImportedPattern(p).then(ok => { if (ok) notify(`« ${r.titre} », de ${r.pseudo}, est dans votre atelier : une copie pour votre usage personnel.`); });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const offerteVue = useRef(false);
   useEffect(() => {
     if (offerteVue.current) return; offerteVue.current = true;
@@ -639,6 +660,7 @@ export default function App() {
         drawSettings: () => { setActiveCategory("compose"); openRightPanel("edit"); },
         layers: () => { if (mobileInspectorOpen && rightSection === "properties") setMobileInspectorOpen(false); else openRightPanel("properties"); },
         visite: () => setVisite(true),
+        exposer: () => { setDockPath(null); setExposerOuvert(true); },
         nouveau: () => { if (remote) return; setTracer(true); setShowWelcome(false); setDockPath(null); },
       }}
       zoom={{
@@ -717,6 +739,7 @@ export default function App() {
         />
       </ErrorBoundary>
     )}
+    {exposerOuvert && <Suspense fallback={null}><Exposer pattern={P} onFermer={() => setExposerOuvert(false)} /></Suspense>}
     {promptOpen && <PromptStudio initialPrompt={promptText} onClose={() => setPromptOpen(false)} onImport={p => { void useImportedPattern(p, true); }} embedded /> }
     {compositionInput && (
       <ErrorBoundary label="Le moteur de composition" onReset={() => setCompositionInput(null)}>
