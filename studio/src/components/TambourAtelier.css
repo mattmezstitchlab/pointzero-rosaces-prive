@@ -98,3 +98,19 @@ html.pz-dock-accroche:not(.pz-tambour-ouvert) .toast-in { top: auto !important; 
 /* Navigation intégrale .0 (essai) : la rangée du dock du haut s'efface ; ses panneaux (Mes ouvrages, Chercher…) restent, ouverts depuis le disque */
 html.pz-nav0 .pzs-ligne { display: none; }
 html.pz-nav0 .pzs-top:not(:has(#pzs-bloc)) { display: none; }
+
+/* — le suivi dans le cercle : l'avancée de la couleur active sur le bois (dite aussi dans le cartouche), et le prochain point — */
+.pzt-suivi { position: fixed; z-index: 3; pointer-events: none; overflow: visible; }
+.pzt-suivi-piste { fill: none; stroke: rgba(0, 0, 0, .14); stroke-width: 4; }
+.pzt-suivi-arc { fill: none; stroke-width: 4; stroke-linecap: round; filter: drop-shadow(0 0 1px rgba(0, 0, 0, .55)); transition: stroke-dasharray .4s ease; }
+.pzt-pastille { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px rgba(0, 0, 0, .4); }
+.pzt-prochain { position: fixed; z-index: 4; pointer-events: none; transform: translate(-50%, -50%); border-radius: 50%; box-sizing: border-box;
+  border: 2.5px solid #fff; box-shadow: 0 0 0 2px #7c5cff, 0 0 12px 2px rgba(124, 92, 255, .6); animation: pzt-prochain 1.6s ease-in-out infinite; }
+@keyframes pzt-prochain { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.25); } }
+.pzt-prochain-fleche { position: fixed; z-index: 6; transform: translate(-50%, -50%); width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  background: #7c5cff; color: #fff; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); cursor: pointer; padding: 0; pointer-events: auto; }
+.pzt-prochain-fleche svg { width: 16px; height: 16px; }
+.pzt-prochain-fleche:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .pzt-prochain { animation: none; } .pzt-suivi-arc { transition: none; } }
+html[data-pz-motion="reduce"] .pzt-prochain { animation: none; }
+.pzt-cartouche-ligne b, .pzt-cartouche-ligne b + span { display: inline; }

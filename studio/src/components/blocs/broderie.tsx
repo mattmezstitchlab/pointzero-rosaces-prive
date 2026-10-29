@@ -4,7 +4,7 @@
  * Chaque famille remplace les choix du cercle par ses sous-outils ; chaque feuille appelle la vraie action de l'atelier (rien de simulé).
  * Le registre ne sait rien de la broderie, ce fichier si.
  */
-import { Camera, Check, Lightbulb, ListTodo, Replace, Undo2, LayoutGrid, ListChecks, FileJson, FileText, Folder, HelpCircle, Image as ImageIcon, PanelBottom, Settings2, Share2, Compass, Download, Eye, FileUp, Grid3x3, Maximize, Palette, Pencil, Search, Shapes, Sparkles, Spool, Square } from "lucide-react";
+import { Camera, Check, Lightbulb, ListTodo, Replace, Undo2, LayoutGrid, ListChecks, FileJson, FileText, Folder, HelpCircle, Image as ImageIcon, PanelBottom, Settings2, Share2, Compass, Download, Eye, FileUp, Grid3x3, Maximize, Palette, Pencil, Search, Shapes, Sparkles, Spool, Square, Crosshair } from "lucide-react";
 import { enregistrerTypeBloc, typeBloc } from "../../lib/point/registre";
 import type { ModePoint } from "../../lib/point/modes";
 import type { ReactNode } from "react";
@@ -43,6 +43,8 @@ export interface ContexteBroderie {
   remplacement?: { attente: { de: number; vers: number } | null; preparer: (de: number, vers: number) => void; confirmer: () => void; annuler: () => void };
   /** le Tambour vivant : filmer sa vraie toile et y poser ce patron (essai du Cadre-Tambour) */
   surMaToile?: () => void;
+  /** le suivi dans le cercle : le prochain point de la couleur active (le montrer recentre la toile, rien n'est coché à la place de la personne) */
+  prochain?: { code: string; reste: number; montrer: () => void };
 }
 
 /* les outils de dessin : les quatre premiers d'abord (le parcours le plus fréquent), le reste dans « Plus d'outils » */
@@ -83,7 +85,7 @@ export function commandesBroderie(c: ContexteBroderie): ModePoint[] {
       enfants: () => [
         ...(c.guide ? [{ id: "guide-visite", nom: "Visite", icone: <Compass aria-hidden="true" />, aide: "la visite du studio avec Le Point", groupe: "socle", ouvrir: c.guide } satisfies ModePoint] : []),
         { id: "guide-chercher", nom: "Chercher", icone: <Search aria-hidden="true" />, aide: "un fil, un outil ou une fonction, par son nom", groupe: "socle", ouvrir: c.chercher },
-        ...(c.suggestions ? [{ id: "guide-suggestions", nom: c.suggestions.actives ? "Suggestions : oui" : "Suggestions : non", icone: <Lightbulb aria-hidden="true" />, aide: c.suggestions.actives ? "un point violet indique la prochaine étape conseillée ; toucher pour les retirer" : "montrer la prochaine étape conseillée par un point violet", groupe: "socle" as const, actif: c.suggestions.actives, resteOuvert: true, ouvrir: c.suggestions.basculer } satisfies ModePoint] : []),
+        ...(c.suggestions ? [{ id: "guide-suggestions", nom: c.suggestions.actives ? "Suggestions : oui" : "Suggestions : non", icone: <Lightbulb aria-hidden="true" />, aide: c.suggestions.actives ? "un point violet indique la prochaine étape conseillée ; en broderie, un anneau montre le prochain point ; toucher pour les retirer" : "montrer la prochaine étape conseillée (un point violet) et, en broderie, le prochain point", groupe: "socle" as const, actif: c.suggestions.actives, resteOuvert: true, ouvrir: c.suggestions.basculer } satisfies ModePoint] : []),
         { id: "guide-aide", nom: "Réglages et aide", icone: <HelpCircle aria-hidden="true" />, aide: "les réglages du studio et l’aide", groupe: "socle", ouvrir: c.aide },
       ],
     },
@@ -92,7 +94,9 @@ export function commandesBroderie(c: ContexteBroderie): ModePoint[] {
       enfants: () => [...POINTS.map(outil("create")), { id: "plus-outils", nom: "Plus d’outils", icone: <LayoutGrid aria-hidden="true" />, aide: "remplir, pipette, sélection, quarts, formes…", groupe: "metier", ouvrir: () => {}, enfants: () => PLUS.map(outil("create")) }],
     },
     { id: "broder", nom: "Broder", icone: <Spool aria-hidden="true" />, aide: "cocher ce qui est brodé, défaire, garer l’aiguille, suivre l’avancée", groupe: "metier", ouvrir: () => {},
-      enfants: () => [...BRODER.map(outil("stitch")), { id: "suivi", nom: "Suivi", icone: <ListChecks aria-hidden="true" />, aide: "l’avancée du patron, fil par fil", groupe: "metier", ouvrir: c.suivi },
+      enfants: () => [...(c.prochain ? [{ id: "prochain-point", nom: "Prochain point", icone: <Crosshair aria-hidden="true" />, groupe: "metier" as const,
+          aide: `DMC ${c.prochain.code} : ${c.prochain.reste} point${c.prochain.reste > 1 ? "s" : ""} à broder ; le prochain est amené au centre de la toile`, ouvrir: c.prochain.montrer } satisfies ModePoint] : []),
+        ...BRODER.map(outil("stitch")), { id: "suivi", nom: "Suivi", icone: <ListChecks aria-hidden="true" />, aide: "l’avancée du patron, fil par fil", groupe: "metier", ouvrir: c.suivi },
         ...(c.avancee && c.avancee.length ? [{ id: "a-broder", nom: "Couleurs à broder", icone: <ListTodo aria-hidden="true" />, groupe: "metier" as const, ouvrir: () => {},
           aide: (() => { const r = c.avancee!.filter(x => x.done < x.cells).length; return r ? `${r} couleur${r > 1 ? "s" : ""} à terminer, de la plus longue à la plus courte` : "toutes les couleurs sont brodées"; })(),
           enfants: () => [...c.avancee!].filter(x => x.cells > 0).sort((a, b) => (b.cells - b.done) - (a.cells - a.done)).map((x): ModePoint => {

@@ -11,13 +11,16 @@
  * Aucune logique du Cadre ni de la grille ne change : ce composant se pose par-dessus.
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Bell, Camera, ChevronsDownUp, Ellipsis, Minimize2 } from "lucide-react";
+import { ArrowUp, Bell, Camera, ChevronsDownUp, Ellipsis, Minimize2 } from "lucide-react";
 import { aVoir, decorer, MOT_ETAT, trier, type Indicateur, type Indicateurs } from "../lib/point/indicateurs";
 import Point from "./point/Point";
 import { commandesDuBloc } from "../lib/point/registre";
 import type { ModePoint } from "../lib/point/modes";
 import type { ContexteBroderie } from "./blocs/broderie";
 import { geometrieDisque, type Disque } from "../lib/tambour/disque";
+import { prochainPoint } from "../lib/tambour/suivi";
+import type { Pattern } from "../lib/pattern";
+import type { VueCadre } from "./Canvas";
 import "./blocs/broderie";
 import "./TambourAtelier.css";
 
@@ -44,7 +47,10 @@ function rectCadre(): Rect | null {
   return Number.isFinite(v("--fx0")) && v("--fw") > 0 ? { x: v("--fx0"), y: v("--fy0"), w: v("--fw"), h: v("--fh") } : null;
 }
 
-export default function TambourAtelier({ contexte, retracter, part, etiquette, ouvrage, indicateurs, racine }: { contexte: ContexteBroderie; retracter: () => void; part?: number; etiquette?: string; ouvrage?: string; indicateurs?: Indicateurs; /** une autre racine (Navigation intégrale .0) ; sinon les commandes du bloc broderie */ racine?: ModePoint[] }) {
+/** le suivi de la couleur active, dans le cercle : son avancée (l'arc sur le bois, dit aussi en toutes lettres) et le prochain point */
+export interface SuiviCercle { code: string; hex: string; cells: number; done: number; /** le vrai motif, la couleur active, et le dernier point coché (null : on part du centre de la toile) */ motif: Pattern; couleur: number; depuis: number | null; /** montrer le prochain point dans la toile (le Guide est actif, on brode) */ montrer: boolean }
+
+export default function TambourAtelier({ contexte, retracter, part, etiquette, ouvrage, indicateurs, racine, suivi }: { contexte: ContexteBroderie; retracter: () => void; part?: number; etiquette?: string; ouvrage?: string; indicateurs?: Indicateurs; /** une autre racine (Navigation intégrale .0) ; sinon les commandes du bloc broderie */ racine?: ModePoint[]; suivi?: SuiviCercle }) {
   /* les points lumineux : la liste réelle (publiée par les modules), lue ici ; le disque n'invente aucun statut */
   const [indic, setIndic] = useState<Indicateur[]>([]);
   useEffect(() => indicateurs?.abonner(l => setIndic(l.filter(i => !i.resolu))), [indicateurs]);
@@ -123,7 +129,8 @@ export default function TambourAtelier({ contexte, retracter, part, etiquette, o
 
   const c = g.Ro + 2, fin = phase === "ouvert";
   /* le cartouche dit ce qui se passe : la commande visée d'abord (geste de la personne), sinon l'information la plus importante */
-  const haut = trier(indic.filter(i => !i.consulte || i.etat === "action" || i.etat === "erreur" || i.etat === "encours"))[0];
+  /* (les informations de routine, priorité négative — la sauvegarde ordinaire — gardent leur point mais ne prennent pas le cartouche) */
+  const haut = trier(indic.filter(i => (i.priorite ?? 0) >= 0 && (!i.consulte || i.etat === "action" || i.etat === "erreur" || i.etat === "encours")))[0];
   const cadre = depart.current!.cadre, dock = depart.current!.dock;
   /* le contour qui se transforme : le Cadre (rectangle) au départ, le bois (cercle) à l'arrivée */
   const rond = { left: g.cx - g.rb, top: g.cy - g.rb, width: 2 * g.rb, height: 2 * g.rb };
@@ -136,6 +143,11 @@ export default function TambourAtelier({ contexte, retracter, part, etiquette, o
     onPointerOver={e => { surCouronne(e); viser(e); }} onPointerOut={horsCouronne} onFocus={e => { surCouronne(e); viser(e); }}>
     <div className="pzt-voile" aria-hidden="true" />
     <div className="pzt-bois" aria-hidden="true" style={bois} />
+    {fin && suivi && <svg className="pzt-suivi" aria-hidden="true" width={2 * g.rb + 4} height={2 * g.rb + 4} style={{ left: g.cx - g.rb - 2, top: g.cy - g.rb - 2 }}>
+      <circle cx={g.rb + 2} cy={g.rb + 2} r={g.rb - 4} className="pzt-suivi-piste" />
+      <circle cx={g.rb + 2} cy={g.rb + 2} r={g.rb - 4} className="pzt-suivi-arc" stroke={suivi.hex} pathLength={100} strokeDasharray={`${(100 * suivi.done / suivi.cells).toFixed(2)} 100`} transform={`rotate(-90 ${g.rb + 2} ${g.rb + 2})`} />
+    </svg>}
+    {fin && suivi?.montrer && suivi.done < suivi.cells && <ProchainPoint motif={suivi.motif} couleur={suivi.couleur} depuis={suivi.depuis} code={suivi.code} cx={g.cx} cy={g.cy} r={g.r} rb={g.rb} />}
     {!replie && <>
       <svg className="pzt-anneau" width={2 * c} height={2 * c} aria-hidden="true">
         <defs><linearGradient id="pzt-corps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#262626" /><stop offset=".55" stopColor="#141414" /><stop offset="1" stopColor="#0c0c0c" /></linearGradient></defs>
@@ -149,11 +161,41 @@ export default function TambourAtelier({ contexte, retracter, part, etiquette, o
           centre={{ nom: "Sur ma toile", aide: "filmer votre vraie toile et y poser ce patron", icone: <Camera aria-hidden="true" />, ouvrir: surMaToile }} />
       </div>
       {/* le cartouche : le nom et l'aide de la commande visée (une nuance DMC : son numéro et son nom, jamais la couleur seule) */}
-      <p className="pzt-cartouche" aria-hidden="true" data-etat={!carte && haut ? haut.etat : undefined}>{carte ? <><b>{carte.nom}</b>{carte.aide && !carte.nom.includes(carte.aide) && <span>{carte.aide}</span>}</>
-        : haut ? <><i className="lp-indic" data-etat={haut.etat} aria-hidden="true" /><b>{haut.libelle}</b></> : <span>{g.etiquettes === "cartouche" ? "Touchez une commande : son nom s’affiche ici." : "Survolez une commande : ce qu’elle fait s’affiche ici."}</span>}</p>
     </>}
+    {(!replie || haut || suivi) && <p className={"pzt-cartouche" + (!carte && !haut && suivi ? " pzt-cartouche-ligne" : "")} aria-hidden="true" data-etat={!carte && haut ? haut.etat : undefined}>{carte && !replie ? <><b>{carte.nom}</b>{carte.aide && !carte.nom.includes(carte.aide) && <span>{carte.aide}</span>}</>
+        : haut ? <><i className="lp-indic" data-etat={haut.etat} aria-hidden="true" /><b>{haut.libelle}</b></> : suivi ? <><i className="pzt-pastille" style={{ background: suivi.hex }} aria-hidden="true" /><b>DMC {suivi.code}</b><span> · {suivi.done >= suivi.cells ? "couleur terminée" : `${suivi.cells - suivi.done} point${suivi.cells - suivi.done > 1 ? "s" : ""} à broder sur ${suivi.cells}`}</span></>
+          : <span>{g.etiquettes === "cartouche" ? "Touchez une commande : son nom s’affiche ici." : "Survolez une commande : ce qu’elle fait s’affiche ici."}</span>}</p>}
     <span className="sr-only" role="status" aria-live="polite">{annonce}</span>
     {replie && <button type="button" className="pzt-deployer" aria-label="Déployer les outils du tambour" title="Déployer les outils" onClick={() => setReplie(false)}
       style={{ left: g.cx + (g.rb - 4) * Math.SQRT1_2, top: g.cy + (g.rb - 4) * Math.SQRT1_2 }}><span className="lp-centre" /><Ellipsis aria-hidden="true" /></button>}
   </div>;
+}
+
+/**
+ * Le prochain point, montré dans la toile (le geste, pas l'action) : un anneau sur la case, qui laisse passer les clics ;
+ * hors du cercle, une flèche sur le bois qui indique la direction et, touchée, amène ce point au centre (la vue seulement).
+ * La position suit la vue réelle de la grille (l'événement que chaque image publie), sans rien changer au moteur.
+ */
+function ProchainPoint({ motif, couleur, depuis, code, cx, cy, r, rb }: { motif: Pattern; couleur: number; depuis: number | null; code: string; cx: number; cy: number; r: number; rb: number }) {
+  const [v, setV] = useState<VueCadre | null>(null);
+  useEffect(() => {
+    const f = (e: Event) => { const d = (e as CustomEvent<VueCadre>).detail; setV(o => o && o.s === d.s && o.ox === d.ox && o.oy === d.oy && o.left === d.left && o.top === d.top ? o : d); };
+    window.addEventListener("pointzero:vue", f); window.dispatchEvent(new CustomEvent("pointzero:canvas", { detail: { action: "redraw" } }));
+    return () => window.removeEventListener("pointzero:vue", f);
+  }, []);
+  /* sans point coché : la case au centre de la toile (on part de ce qu'on voit) */
+  const centre = v ? Math.max(0, Math.min(motif.h - 1, Math.floor((cy - v.top - v.oy) / v.s))) * motif.w + Math.max(0, Math.min(motif.w - 1, Math.floor((cx - v.left - v.ox) / v.s))) : null;
+  const prochain = useMemo(() => prochainPoint(motif, couleur, depuis ?? centre), [motif, couleur, depuis ?? centre]);
+  const ecran = v && prochain && { x: v.left + v.ox + (prochain.x + .5) * v.s, y: v.top + v.oy + (prochain.y + .5) * v.s };
+  const montrer = useCallback(() => {
+    if (!v || !ecran) return;
+    window.dispatchEvent(new CustomEvent("pointzero:canvas", { detail: { action: "ancrer", x: (cx - ecran.x) / v.s, y: (cy - ecran.y) / v.s } }));
+  }, [v, ecran?.x, ecran?.y, cx, cy]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { window.addEventListener("pointzero:prochain-point", montrer); return () => window.removeEventListener("pointzero:prochain-point", montrer); }, [montrer]);
+  if (!v || !ecran || !prochain) return null;
+  const dx = ecran.x - cx, dy = ecran.y - cy, d = Math.hypot(dx, dy), cote = Math.max(v.s + 8, 18);
+  if (d <= r - v.s / 2) return <span className="pzt-prochain" aria-hidden="true" data-x={prochain.x} data-y={prochain.y} style={{ left: ecran.x, top: ecran.y, width: cote, height: cote }} />;
+  const a = Math.atan2(dy, dx);
+  return <button type="button" className="pzt-prochain-fleche" aria-label={`Le prochain point de DMC ${code} est hors du cercle : l’amener au centre`} title="Amener le prochain point au centre"
+    onClick={montrer} style={{ left: cx + Math.cos(a) * (rb - 6), top: cy + Math.sin(a) * (rb - 6) }}><ArrowUp aria-hidden="true" style={{ transform: `rotate(${a * 180 / Math.PI + 90}deg)` }} /></button>;
 }

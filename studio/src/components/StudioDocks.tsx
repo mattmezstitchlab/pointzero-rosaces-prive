@@ -21,6 +21,7 @@ import TambourAtelier, { ecrireCadreTambour, lireCadreTambour } from "./TambourA
 import { aVoir, Indicateurs, trier, type Indicateur } from "../lib/point/indicateurs";
 import { suggestion } from "./blocs/guideBroderie";
 import { replaceColor } from "../lib/editing";
+import { dernierCoche } from "../lib/tambour/suivi";
 import type { ModePoint } from "../lib/point/modes";
 
 /**
@@ -290,6 +291,15 @@ export default function StudioDocks(p: Props) {
   /* — Scénario A : le Guide lumineux, des règles explicites sur l'état réel (il ne fait rien à la place de la personne) — */
   const couleurs = p.progression?.couleurs ?? [];
   const active = couleurs.find(c => c.idx === p.couleur);
+  /* — le suivi dans le cercle : le prochain point de la couleur active, près du dernier point coché (calculé seulement quand le tambour est ouvert) — */
+  const dernierPoint = useRef<number | null>(null), motifPrecedent = useRef<Pattern | null>(null);
+  const depuis = useMemo(() => {
+    if (!cadreTambour || !tambourOuvert || !p.pattern || p.couleur == null) { motifPrecedent.current = p.pattern ?? null; return null; }
+    if (motifPrecedent.current && (motifPrecedent.current.w !== p.pattern.w || motifPrecedent.current.h !== p.pattern.h)) dernierPoint.current = null;
+    const d = dernierCoche(motifPrecedent.current, p.pattern, p.couleur); if (d != null) dernierPoint.current = d;
+    motifPrecedent.current = p.pattern;
+    return dernierPoint.current;
+  }, [cadreTambour, tambourOuvert, p.pattern, p.couleur]);
   const conseil = suggestion({ points: total, brodes: p.progression?.done ?? 0, filChoisi, outilEnMain: p.path === "dessiner" || p.path === "broder", couleurTerminee: !!active && active.cells > 0 && active.done >= active.cells });
   useEffect(() => {
     if (!suggestions || !conseil) { indicateurs.retirer("guide"); return; }
@@ -364,6 +374,7 @@ export default function StudioDocks(p: Props) {
       exporter: p.actions.exportPanel, enregistrer: exporterProjet, partager: p.actions.share, remplacement,
       suggestions: { actives: suggestions, basculer: basculerSuggestions },
       avancee: (p.progression?.couleurs ?? []).map(c => ({ idx: c.idx, code: c.code, cells: c.cells, done: c.done })),
+      prochain: cadreTambour && tambourOuvert && active && active.done < active.cells ? { code: active.code, reste: active.cells - active.done, montrer: () => window.dispatchEvent(new CustomEvent("pointzero:prochain-point")) } : undefined,
       filsEtToile: p.actions.threadsSettings, suivi: p.actions.follow,
       aide: p.actions.settings, chercher: () => setBloc("chercher"),
       guide: p.actions.visite,
@@ -552,7 +563,7 @@ export default function StudioDocks(p: Props) {
       <button type="button" data-guide="loupe" className="pzs-btm pzs-loupe-btn" aria-pressed={loupe} aria-label="Loupe : la grille agrandie sous le pointeur" title="Loupe" onClick={() => setLoupe(v => !v)}><Search size={17} aria-hidden="true" /><span className="pzs-loupe-txt">Loupe</span></button>
         </>}
     </nav>
-    {cadreTambour && tambourOuvert && !p.sansPoint && <TambourAtelier racine={nav0 ? racine0() : undefined} indicateurs={indicateurs} ouvrage={p.pattern?.id} contexte={contexteBroderie} retracter={retracterTambour} part={prog} etiquette={total ? "patron brodé à " + Math.round(prog * 100) + " %" : undefined} />}
+    {cadreTambour && tambourOuvert && !p.sansPoint && <TambourAtelier racine={nav0 ? racine0() : undefined} indicateurs={indicateurs} ouvrage={p.pattern?.id} contexte={contexteBroderie} retracter={retracterTambour} suivi={active && active.cells > 0 && p.pattern && p.couleur != null ? { code: active.code, hex: active.hex, cells: active.cells, done: active.done, motif: p.pattern!, couleur: p.couleur!, depuis, montrer: suggestions && (p.workspace === "stitch" || conseil?.commande === "broder") } : undefined} part={prog} etiquette={total ? "patron brodé à " + Math.round(prog * 100) + " %" : undefined} />}
     </>}
   </>;
 }
