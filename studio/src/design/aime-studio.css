@@ -1,6 +1,6 @@
 /*
- * Le studio (l'atelier) sur le socle AIME — APERÇU, activé seulement à la demande (html[data-aime-studio="jour"|"nuit"]),
- * par ?aime=jour ou ?aime=nuit (retenu sur l'appareil ; ?aime=off pour revenir). Rien ne change par défaut.
+ * Le studio (l'atelier) sur le socle AIME, Jour et Nuit (html[data-aime-studio="jour"|"nuit"]) : le thème suit le Confort
+ * du Point (Clair → Jour, Sombre → Nuit, ou l'appareil) ; ?aime=jour|nuit pour forcer, ?aime=off pour revenir au Confort.
  * Ne touche ni au Point (disque, noyau), ni au moteur 5D, ni au Cadre, ni à la toile dessinée par l'outil :
  * seulement le chrome (dock du haut, menus, panneau Ouvrages, boutons du point zéro), et la typographie.
  */
