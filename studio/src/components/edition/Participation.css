@@ -6,13 +6,13 @@
 @keyframes or-respire { 50% { box-shadow: inset -6px -8px 14px rgba(70,52,140,.35), inset 4px 5px 10px rgba(255,255,255,.55), 0 0 54px rgba(201,184,255,.75); } }
 
 /* une rencontre : pleine largeur, la question en grand, les quatre réponses */
-.or-rencontre { position: relative; padding: clamp(72px, 10vw, 140px) clamp(16px, 5vw, 80px); background: #f1ede4; color: #15120e; }
-.or-sombre { background: #14110d; color: #f6f1e7; }
+.or-rencontre { position: relative; padding: clamp(72px, 10vw, 140px) clamp(16px, 5vw, 80px); background: #ececea; color: #0e0e10; }
+.or-sombre { background: #0e0e10; color: #f3f3f1; }
 .or-tete { display: flex; gap: 22px; align-items: flex-start; max-width: 1100px; margin: 0 auto 40px; }
 .or-kicker { margin: 4px 0 10px !important; font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; opacity: .72; }
-.or-question { margin: 0 !important; font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; font-style: italic; font-size: clamp(24px, 2.8vw, 40px); line-height: 1.18; letter-spacing: -.01em; max-width: 30ch; }
+.or-question { margin: 0 !important; font-family: inherit; font-weight: 300; letter-spacing: -.02em; font-size: clamp(24px, 2.8vw, 40px); line-height: 1.18; letter-spacing: -.01em; max-width: 30ch; }
 .or-aide-disque { margin-top: 12px !important; font-size: 14px; opacity: .72; }
-.or-reaction { max-width: 1100px; margin: 28px auto 0 !important; min-height: 1.6em; font-family: "Iowan Old Style", Palatino, Georgia, serif; font-style: italic; font-size: 20px; }
+.or-reaction { max-width: 1100px; margin: 28px auto 0 !important; min-height: 1.6em; font-family: inherit; font-weight: 300; letter-spacing: -.02em; font-size: 20px; }
 .or-reponses { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(10px, 2vw, 28px); max-width: 1240px; margin: 0 auto; }
 .or-reponse { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 44px; padding: 0 0 8px; border: 0; background: transparent; color: inherit; font: inherit; text-align: center; cursor: pointer; }
 .or-reponse:focus-visible { outline: 3px solid currentColor !important; outline-offset: 6px; border-radius: 8px; }
@@ -23,16 +23,16 @@
 .or-carte { display: block; width: 100%; aspect-ratio: 1; transition: transform .25s ease, box-shadow .25s ease; box-shadow: 0 18px 40px rgba(20,14,8,.18); }
 .or-carte .or-apercu { display: block; width: 100%; height: 100%; }
 .or-reponse:hover .or-carte { transform: translateY(-4px); }
-.or-reponse[aria-checked="true"] .or-carte { box-shadow: 0 0 0 3px #15120e, 0 18px 40px rgba(20,14,8,.22); }
+.or-reponse[aria-checked="true"] .or-carte { box-shadow: 0 0 0 3px #0e0e10, 0 18px 40px rgba(20,14,8,.22); }
 /* loupes : le motif vu de près, dans un rond */
 .or-lentille { display: block; width: min(100%, 230px); aspect-ratio: 1; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 3px rgba(255,255,255,.9), 0 0 0 4px rgba(20,14,8,.25), 0 20px 40px rgba(20,14,8,.2); }
 .or-lentille .or-apercu { display: block; width: 100%; height: 100%; transform: scale(2.4); }
-.or-reponse[aria-checked="true"] .or-lentille { box-shadow: 0 0 0 4px #15120e, 0 20px 40px rgba(20,14,8,.25); }
+.or-reponse[aria-checked="true"] .or-lentille { box-shadow: 0 0 0 4px #0e0e10, 0 20px 40px rgba(20,14,8,.25); }
 /* écheveaux : les fils du motif en bandes, et sa miniature */
 .or-fils { display: grid; grid-template-columns: repeat(6, 1fr) 1.6fr; gap: 3px; width: 100%; height: 150px; align-items: stretch; }
 .or-fils i { border-radius: 10px 10px 3px 3px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08), inset 6px 0 10px rgba(255,255,255,.25), inset -6px 0 10px rgba(0,0,0,.12); }
 .or-mini { width: 100%; height: 100%; display: block; }
-.or-reponse[aria-checked="true"] .or-fils { outline: 3px solid #15120e; outline-offset: 4px; }
+.or-reponse[aria-checked="true"] .or-fils { outline: 3px solid #0e0e10; outline-offset: 4px; }
 /* curseur : du léger au plein, sous la grande rosace */
 .or-compacte { padding: 18px 0 0; background: transparent; color: inherit; }
 .or-compacte .or-tete { margin: 0 0 14px; gap: 14px; }
@@ -51,11 +51,11 @@
 /* Ma rosace : discrète, en bas à droite, au-dessus du dock des sections */
 .or-ma { position: fixed; right: 16px; bottom: 86px; z-index: 45; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 .or-pastille { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 5px 14px 5px 5px; border: 0; border-radius: 999px; background: rgba(20,17,13,.92); color: #fff; font: inherit; cursor: pointer; box-shadow: 0 12px 30px rgba(0,0,0,.28); }
-.or-pastille:focus-visible { outline: 3px solid #fff !important; outline-offset: 2px; box-shadow: 0 0 0 5px #14110d; }
+.or-pastille:focus-visible { outline: 3px solid #fff !important; outline-offset: 2px; box-shadow: 0 0 0 5px #0e0e10; }
 .or-pastille-apercu { width: 42px; height: 42px; border-radius: 50%; display: block; }
 .or-pastille-sceau { display: inline-flex; }
 .or-pastille-mot { font-size: 14px; white-space: nowrap; } .or-pastille-mot b { margin-left: 4px; }
-.or-panneau { width: min(380px, calc(100vw - 32px)); max-height: calc(100vh - 180px); overflow: auto; box-sizing: border-box; padding: 18px; border-radius: 20px; background: #14110d; color: #f6f1e7; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+.or-panneau { width: min(380px, calc(100vw - 32px)); max-height: calc(100vh - 180px); overflow: auto; box-sizing: border-box; padding: 18px; border-radius: 20px; background: #0e0e10; color: #f3f3f1; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
 .or-panneau-tete { display: flex; align-items: center; gap: 10px; }
 .or-panneau h2 { margin: 0; flex: 1; font-size: 20px; font-weight: 700; } .or-panneau h2:focus { outline: none; }
 .or-fermer { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,.3); background: transparent; color: #fff; font-size: 22px; cursor: pointer; }
@@ -68,13 +68,13 @@
 .or-histoire { margin-top: 12px; font-size: 13.5px; } .or-histoire summary { cursor: pointer; min-height: 40px; display: flex; align-items: center; font-weight: 700; }
 .or-histoire ol { margin: 0; padding-left: 18px; display: grid; gap: 4px; } .or-histoire li span { display: block; opacity: .7; }
 .or-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-.or-btn { min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: #f6f1e7; color: #14110d; font: inherit; font-weight: 700; cursor: pointer; }
+.or-btn { min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: #f3f3f1; color: #0e0e10; font: inherit; font-weight: 700; cursor: pointer; }
 .or-btn-clair { background: transparent; color: inherit; box-shadow: inset 0 0 0 1px currentColor; }
 .or-btn:focus-visible { outline: 3px solid currentColor !important; outline-offset: 2px; }
 .or-note { margin-top: 12px !important; font-size: 12px; opacity: .7; }
 
 /* le cadeau : le décor s'efface, il reste l'Orbe et la rosace */
-.ed-cadeau { position: relative; padding: clamp(96px, 12vw, 180px) clamp(16px, 5vw, 80px); background: radial-gradient(ellipse at 50% 30%, #2a2230 0%, #120f0b 60%); color: #f6f1e7; overflow: hidden; }
+.ed-cadeau { position: relative; padding: clamp(96px, 12vw, 180px) clamp(16px, 5vw, 80px); background: radial-gradient(ellipse at 50% 30%, #2a2230 0%, #0a0a0b 60%); color: #f3f3f1; overflow: hidden; }
 .cd-scene { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(32px, 5vw, 80px); align-items: center; }
 .cd-objet { position: relative; display: grid; place-items: center; }
 .cd-objet > .or-sphere { position: absolute; top: -40px; left: 50%; transform: translateX(-50%); z-index: 2; }
@@ -83,11 +83,11 @@
 .cd-texte h2:focus { outline: none; }
 .cd-texte p { max-width: 34rem; font-size: 17px; line-height: 1.55; }
 .cd-texte p + p { margin-top: 12px !important; }
-.cd-orbe { display: flex; gap: 12px; align-items: flex-start; font-family: "Iowan Old Style", Palatino, Georgia, serif; font-style: italic; font-size: 21px !important; line-height: 1.35 !important; }
+.cd-orbe { display: flex; gap: 12px; align-items: flex-start; font-family: inherit; font-weight: 300; letter-spacing: -.02em; font-size: 21px !important; line-height: 1.35 !important; }
 .cd-recette { margin-top: 18px !important; font-size: 13px !important; opacity: .7; } .cd-recette code { color: #e4dcff; }
 .cd-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 22px; }
-.ed-cadeau .ed-cta { margin-top: 0; background: #f6f1e7; color: #14110d !important; }
-.ed-cadeau .ed-cta:focus-visible { outline-color: #f6f1e7 !important; }
+.ed-cadeau .ed-cta { margin-top: 0; background: #f3f3f1; color: #0e0e10 !important; }
+.ed-cadeau .ed-cta:focus-visible { outline-color: #f3f3f1 !important; }
 .cd-manque { list-style: none; margin: 10px 0 14px; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .cd-usages { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 32px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.18); }
 .cd-usages p { font-size: 14.5px !important; opacity: .86; }
@@ -113,6 +113,6 @@ html[data-pz-motion="reduce"] .or-parle { animation: none; }
 
 /* la page d'accueil remet couleur et police des boutons à « inherit » : on les redonne ici */
 .cross-stitch-home .or-pastille, .cross-stitch-home .or-fermer { color: #fff; }
-.cross-stitch-home .or-btn { color: #14110d; } .cross-stitch-home .or-btn-clair { color: inherit; }
+.cross-stitch-home .or-btn { color: #0e0e10; } .cross-stitch-home .or-btn-clair { color: inherit; }
 .cross-stitch-home .or-panneau :is(button, a):focus-visible, .cross-stitch-home .or-pastille:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 .cross-stitch-home .or-sombre :is(button):focus-visible, .cross-stitch-home .ed-cadeau :is(button):focus-visible { outline-color: #fff; }

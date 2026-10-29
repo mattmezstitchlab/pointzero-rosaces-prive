@@ -60,13 +60,13 @@
 .hi-objet .ap-ipad { width: min(420px, 34vw); }
 #hi-brodeuses .hi-texte { right: 40%; }
 
-.hi-sources { max-width: 1280px; margin: 0 auto; padding: 20px clamp(16px, 4vw, 56px); font-size: 13px; color: #55534d; }
+.hi-sources { max-width: 1280px; margin: 0 auto; padding: 20px clamp(16px, 4vw, 56px); font-size: 13px; color: #55555a; }
 .hi-sources summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
 .hi-sources ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
 .hi-sources a { text-decoration: underline !important; text-underline-offset: 3px; }
 
 /* le reste de l'édition, ajusté à la séquence */
-.ed-chapeau { margin: -12px 0 24px !important; max-width: 28rem; font-size: 17px; line-height: 1.5; color: #3a3a38; }
+.ed-chapeau { margin: -12px 0 24px !important; max-width: 28rem; font-size: 17px; line-height: 1.5; color: #3a3a3d; }
 .ed-cta { display: inline-flex; align-items: center; min-height: 52px; margin-top: 28px; padding: 0 26px; border: 0; border-radius: 999px; background: #0b0b0c; color: #fff !important; font-size: 17px; font-weight: 700; cursor: pointer; }
 .ed-cta:focus-visible { outline: 3px solid #0b0b0c !important; outline-offset: 3px; }
 
@@ -75,13 +75,14 @@
   .hi-plateau { position: relative; height: auto; min-height: 0; display: flex; flex-direction: column; align-items: stretch; }
   .hi-plateau > .ed-brode, .hi-moitie { position: relative; inset: auto; height: 64vh; min-height: 360px; }
   .hi-deux { display: flex; }
-  .ed-brode-vue::before { background: linear-gradient(0deg, rgba(8,8,9,.55), transparent 45%); }
+  .ed-brode-vue::before { background: linear-gradient(0deg, rgba(8,8,9,.86) 0%, rgba(8,8,9,.6) 32%, transparent 62%); }
   .ed-brode figcaption { left: 12px; right: 12px; max-width: none; text-align: left; }
   .hi-texte { position: relative; left: auto; right: auto !important; top: auto; transform: none; max-width: none !important; padding: 36px 16px 28px; background: #0a0a0b; pointer-events: auto; }
   .hi-texte h2 { font-size: clamp(56px, 17vw, 96px); }
   .hi-texte > * { opacity: 1; }
   .hi-disque { position: relative; right: auto; top: auto; transform: none; width: 100%; padding: 8px 16px 40px; box-sizing: border-box; background: #0a0a0b; }
   .hi-aparte { display: none; }
+  .hi-fil { bottom: 92px; }
   .hi-objet .ap-ipad { width: min(520px, 86vw); }
   #hi-brodeuses .hi-texte { right: auto; }
   .hi-objet { position: relative; right: auto; top: auto; bottom: auto; transform: none; display: grid; place-items: center; padding: 8px 16px 48px; background: #0a0a0b; }
