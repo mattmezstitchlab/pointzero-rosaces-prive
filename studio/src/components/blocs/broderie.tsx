@@ -1,23 +1,81 @@
 /**
- * Le type de bloc « broderie » : ses commandes pour le Point du bloc.
- * Elles appellent les vraies actions de l'atelier (rien de simulé) ; le registre ne sait rien de la broderie, ce fichier si.
+ * Le type de bloc « broderie » : ses commandes pour le Point du bloc, en navigation progressive.
+ * Premier cercle : les familles (Points, Broder, Fils, Affichage) et les fonctions du bloc (Loupe, Tout voir, Importer, Exporter, Guide).
+ * Chaque famille remplace les choix du cercle par ses sous-outils ; chaque feuille appelle la vraie action de l'atelier (rien de simulé).
+ * Le registre ne sait rien de la broderie, ce fichier si.
  */
-import { Grid3x3, Maximize, Palette, Pencil, Search, Shapes } from "lucide-react";
+import { PanelBottom, Settings2, Compass, Download, Eye, FileUp, Grid3x3, Maximize, Palette, Pencil, Search, Shapes, Sparkles, Spool, Square } from "lucide-react";
 import { enregistrerTypeBloc, typeBloc } from "../../lib/point/registre";
+import type { ModePoint } from "../../lib/point/modes";
+import type { ReactNode } from "react";
+import type { Tool } from "../../lib/stitch";
+import type { ViewMode } from "../Canvas";
+import { FLOSS } from "../../lib/dmc";
+import { FAMILLES, filsParFamille } from "../../lib/famillesFils";
+import { ToolIcon } from "../ToolIcons";
 
 export interface ContexteBroderie {
-  symboles: boolean; patron: boolean; loupe: boolean;
-  points: () => void; fils: () => void; basculerSymboles: () => void; basculerPatron: () => void; basculerLoupe: () => void; toutVoir: () => void;
+  outil: Tool;
+  /** choisir un outil réel : l'atelier (Dessiner ou Broder) suit l'outil */
+  choisirOutil: (t: Tool, atelier: "create" | "stitch") => void;
+  /** l'index DMC du fil actif, et les fils du motif (index DMC) */
+  couleur: number; filsDuMotif: number[];
+  choisirFil: (idx: number) => void;
+  vue: ViewMode; choisirVue: (v: ViewMode) => void;
+  symboles: boolean; basculerSymboles: () => void;
+  grille: "visible" | "masquee"; basculerGrille: () => void;
+  loupe: boolean; basculerLoupe: () => void;
+  toutVoir: () => void;
+  importer: () => void; exporter: () => void; filsEtToile: () => void; suivi: () => void;
+  guide?: () => void;
+  /** revenir tout de suite au dock du bas (l'interface classique) */
+  dockClassique?: () => void;
 }
 
-if (!typeBloc("broderie")) enregistrerTypeBloc<ContexteBroderie>({
-  id: "broderie", nom: "Broderie",
-  commandes: c => [
+/* les outils de dessin : les quatre premiers d'abord (le parcours le plus fréquent), le reste dans « Plus d'outils » */
+const POINTS: [Tool, string, string][] = [["cross", "Croix", "le point de croix entier"], ["half", "Demi-point", "une demi-croix, dans le sens choisi"], ["back", "Point arrière", "un trait de contour, de coin à coin"], ["erase", "Gomme", "effacer des points"]];
+const PLUS: [Tool, string][] = [["hand", "Main"], ["fill", "Remplir"], ["pick", "Pipette"], ["select", "Sélection"], ["quarter", "Quart"], ["threeQuarter", "Trois quarts"], ["petite", "Petite croix"], ["bead", "Perle"], ["knot", "Nœud"], ["long", "Point lancé"], ["line", "Ligne"], ["rect", "Rectangle"], ["ellipse", "Ellipse"], ["lasso", "Lasso"], ["move", "Déplacer"]];
+const BRODER: [Tool, string, string][] = [["mark", "Marquer", "cocher les cases brodées"], ["block", "Bloc 10 × 10", "cocher un carré de dix sur dix"], ["row", "Ligne", "cocher une rangée"], ["unpick", "À défaire", "décocher des cases"], ["park", "Parking", "garer une aiguille sur une case"], ["hand", "Main", "déplacer la grille sans cocher"], ["pick", "Pipette", "prendre le fil d’une case"], ["details", "Détails", "le fil et la case sous le doigt"], ["note", "Note", "une note sur une case"]];
+const VUES: [ViewMode, string, string, ReactNode][] = [["flat", "À plat", "les couleurs à plat", <Square aria-hidden="true" />], ["real", "Réaliste", "le rendu du fil sur la toile", <Sparkles aria-hidden="true" />], ["pattern", "Patron", "la grille à suivre, case par case", <Grid3x3 aria-hidden="true" />]];
+
+const fil = (c: ContexteBroderie, idx: number): ModePoint => {
+  const f = FLOSS[idx];
+  return { id: "dmc-" + f.code, nom: "DMC " + f.code, aide: f.name, groupe: "metier", couleur: f.hex, actif: c.couleur === idx, ouvrir: () => c.choisirFil(idx) };
+};
+
+export function commandesBroderie(c: ContexteBroderie): ModePoint[] {
+  const outil = (atelier: "create" | "stitch") => ([id, nom, aide]: [Tool, string, string?]): ModePoint =>
+    ({ id: (atelier === "stitch" ? "b-" : "o-") + id, nom, aide: aide ?? nom, groupe: "metier", icone: <ToolIcon tool={id} />, actif: c.outil === id, ouvrir: () => c.choisirOutil(id, atelier) });
+  return [
     { id: "loupe", nom: "Loupe", icone: <Search aria-hidden="true" />, aide: "la grille agrandie sous le pointeur ou à la case choisie au clavier", groupe: "socle", actif: c.loupe, ouvrir: c.basculerLoupe },
-    { id: "tout-voir", nom: "Tout voir", icone: <Maximize aria-hidden="true" />, aide: "le patron entier à l’écran", groupe: "socle", ouvrir: c.toutVoir },
-    { id: "points", nom: "Points", icone: <Pencil aria-hidden="true" />, aide: "la croix, le demi-point, le point arrière et tous les outils de dessin", groupe: "metier", ouvrir: c.points },
-    { id: "fils", nom: "Fils", icone: <Palette aria-hidden="true" />, aide: "le nuancier DMC et le fil actif", groupe: "metier", ouvrir: c.fils },
-    { id: "symboles", nom: "Symboles", icone: <Shapes aria-hidden="true" />, aide: "les symboles par-dessus les couleurs", groupe: "metier", actif: c.symboles, ouvrir: c.basculerSymboles },
-    { id: "patron", nom: "Patron", icone: <Grid3x3 aria-hidden="true" />, aide: "la grille à suivre, case par case ; un second geste revient au rendu réaliste", groupe: "metier", actif: c.patron, ouvrir: c.basculerPatron },
-  ],
-});
+    ...(c.guide ? [{ id: "guide", nom: "Guide", icone: <Compass aria-hidden="true" />, aide: "la visite du studio avec Le Point", groupe: "socle", ouvrir: c.guide } satisfies ModePoint] : []),
+    {
+      id: "points", nom: "Points", icone: <Pencil aria-hidden="true" />, aide: "la croix, le demi-point, le point arrière, la gomme et tous les outils de dessin", groupe: "metier", ouvrir: () => {},
+      enfants: () => [...POINTS.map(outil("create")), { id: "plus-outils", nom: "Plus d’outils", aide: "remplir, pipette, sélection, quarts, formes…", groupe: "metier", ouvrir: () => {}, enfants: () => PLUS.map(outil("create")) }],
+    },
+    { id: "broder", nom: "Broder", icone: <Spool aria-hidden="true" />, aide: "cocher ce qui est brodé, défaire, garer l’aiguille, suivre l’avancée", groupe: "metier", ouvrir: () => {},
+      enfants: () => [...BRODER.map(outil("stitch")), { id: "suivi", nom: "Suivi", aide: "l’avancée du patron, fil par fil", groupe: "metier", ouvrir: c.suivi }] },
+    {
+      id: "fils", nom: "Fils", icone: <Palette aria-hidden="true" />, aide: "les fils du motif et le nuancier DMC par familles de couleur", groupe: "metier", ouvrir: () => {},
+      enfants: () => [
+        ...(c.filsDuMotif.length ? [{ id: "fils-motif", nom: "Fils du motif", aide: `${c.filsDuMotif.length} fil${c.filsDuMotif.length > 1 ? "s" : ""} déjà dans le motif`, groupe: "metier", couleur: FLOSS[c.filsDuMotif[0]]?.hex, ouvrir: () => {}, enfants: () => c.filsDuMotif.map(i => fil(c, i)) } satisfies ModePoint] : []),
+        ...FAMILLES.map((f): ModePoint => { const l = filsParFamille().get(f.id) ?? []; return { id: "famille-" + f.id, nom: f.nom, aide: `${l.length} nuances DMC, du plus clair au plus foncé`, groupe: "metier", couleur: f.hex, ouvrir: () => {}, enfants: () => l.map(i => fil(c, i)) }; }),
+        { id: "fils-toile", nom: "Fils et toile", icone: <Settings2 aria-hidden="true" />, aide: "le nombre de brins, la toile et son compte", groupe: "metier", ouvrir: c.filsEtToile },
+      ],
+    },
+    {
+      id: "affichage", nom: "Affichage", icone: <Eye aria-hidden="true" />, aide: "symboles, à plat, réaliste, patron, grille visible ou masquée", groupe: "metier", ouvrir: () => {},
+      enfants: () => [
+        { id: "symboles", nom: "Symboles", icone: <Shapes aria-hidden="true" />, aide: "les symboles par-dessus les couleurs", groupe: "metier", actif: c.symboles, resteOuvert: true, ouvrir: c.basculerSymboles },
+        ...VUES.map(([id, nom, aide, icone]): ModePoint => ({ id: "vue-" + id, nom, aide, icone, groupe: "metier", actif: c.vue === id, resteOuvert: true, ouvrir: () => c.choisirVue(id) })),
+        { id: "tout-voir", nom: "Tout voir", icone: <Maximize aria-hidden="true" />, aide: "le patron entier à l’écran", groupe: "metier", resteOuvert: true, ouvrir: c.toutVoir },
+        { id: "grille", nom: c.grille === "masquee" ? "Grille masquée" : "Grille visible", icone: <Grid3x3 aria-hidden="true" />, aide: c.grille === "masquee" ? "montrer les lignes de la grille" : "masquer les lignes de la grille", groupe: "metier", actif: c.grille === "visible", resteOuvert: true, ouvrir: c.basculerGrille },
+      ],
+    },
+    { id: "importer", nom: "Importer", icone: <FileUp aria-hidden="true" />, aide: "une image, un patron PDF ou un projet", groupe: "creation", ouvrir: c.importer },
+    { id: "exporter", nom: "Exporter", icone: <Download aria-hidden="true" />, aide: "le patron en PDF, en image ou en projet", groupe: "creation", ouvrir: c.exporter },
+    ...(c.dockClassique ? [{ id: "dock-classique", nom: "Dock du bas", icone: <PanelBottom aria-hidden="true" />, aide: "revenir au dock classique en bas de l’écran", groupe: "creation", ouvrir: c.dockClassique } satisfies ModePoint] : []),
+  ];
+}
+
+if (!typeBloc("broderie")) enregistrerTypeBloc<ContexteBroderie>({ id: "broderie", nom: "Broderie", commandes: commandesBroderie });

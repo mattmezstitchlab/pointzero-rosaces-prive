@@ -14,16 +14,28 @@ def page(b, l, h, essai):
     pg.goto(B + '/atelier'); pg.wait_for_selector('.lp-point'); pg.wait_for_timeout(400)
     return ctx, pg
 
-def actif(pg, mode, sel_dock, mot):
-    """Vérifie l'état sans compter de geste : dans le dock, le bouton pressé ; sur le bloc, le secteur dit « actif »."""
+def actif(pg, chemin, sel_dock, mot):
+    """Vérifie l'état sans compter de geste : dans le dock, le bouton pressé ; sur le bloc, le choix dit « actif » au bout du chemin."""
     if pg.locator('.pzs-bottom').count(): return mot in (pg.locator(sel_dock).first.inner_text() if pg.locator(sel_dock).count() else '')
-    pg.locator('.lp-point').first.click(); pg.wait_for_timeout(200)
-    return (pg.locator(f'[data-presentation] [data-mode={mode}]').get_attribute('aria-label') or '').startswith(mot + ', actif')
+    pg.keyboard.press('Escape'); pg.wait_for_timeout(120)
+    if not pg.locator('[data-presentation]').count(): pg.locator('.lp-point').first.click(); pg.wait_for_timeout(200)
+    for m in chemin[:-1]: pg.locator(f'[data-presentation] [data-mode="{m}"]').first.click(); pg.wait_for_timeout(200)
+    for _ in range(4):
+        if pg.locator(f'[data-presentation] [data-mode="{chemin[-1]}"]').count(): break
+        pg.locator('[data-presentation] [data-mode="__suite"]').first.click(); pg.wait_for_timeout(150)
+    return (pg.locator(f'[data-presentation] [data-mode="{chemin[-1]}"]').get_attribute('aria-label') or '').startswith(mot + ', actif')
 
 class Gestes:
     def __init__(s, pg): s.pg, s.n = pg, 0
     def clic(s, sel): s.pg.locator(sel).first.click(); s.n += 1; s.pg.wait_for_timeout(220)
-    def mode(s, m): s.clic('.lp-point'); s.clic(f'[data-presentation] [data-mode={m}]')
+    def chemin(s, *ids):
+        """Le Point du bloc, en navigation progressive : un geste pour l'ouvrir, un par niveau."""
+        if not s.pg.locator('[data-presentation]').count(): s.clic('.lp-point')
+        for m in ids:
+            for _ in range(4):  # une nuance peut être sur une page suivante : « Suivantes » compte un geste
+                if s.pg.locator(f'[data-presentation] [data-mode="{m}"]').count(): break
+                s.clic('[data-presentation] [data-mode="__suite"]')
+            s.clic(f'[data-presentation] [data-mode="{m}"]')
 
 def taches(b, l, h, nom):
     res = {}
@@ -36,16 +48,17 @@ def taches(b, l, h, nom):
             res.setdefault(tache, {})[cle] = g.n if bon else None
             ctx.close()
         dock_vue = lambda g, pg, nomv: g.clic(f'.pzs-seg button:has-text("{nomv}")')
-        faire('Lecture Patron', (lambda g, pg: g.mode('patron')) if essai else (lambda g, pg: dock_vue(g, pg, 'Patron')),
-              lambda pg: actif(pg, 'patron', '.pzs-seg button[aria-pressed=true]', 'Patron'))
-        faire('Symboles', (lambda g, pg: g.mode('symboles')) if essai else (lambda g, pg: g.clic('[data-guide=symboles]')), lambda pg: actif(pg, 'symboles', '[data-guide=symboles][aria-pressed=true]', 'Symboles'))
-        loupe_dock = (lambda g, pg: g.clic('.pzs-loupe-btn')) if l > 720 else (lambda g, pg: g.mode('loupe'))
-        faire('Loupe', (lambda g, pg: g.mode('loupe')) if essai else loupe_dock, lambda pg: pg.locator('.pzs-loupe-dock').count() == 1)
-        faire('Tout voir', (lambda g, pg: g.mode('tout-voir')) if essai else (lambda g, pg: g.clic('[data-guide=tout-voir]')), lambda pg: True)
-        faire('Outil croix', (lambda g, pg: (g.mode('points'), g.clic('[data-guide=outil-cross]'))) if essai else (lambda g, pg: (g.clic('[data-guide=dessiner]'), g.clic('[data-guide=outil-cross]'))),
-              lambda pg: pg.locator('[data-guide=outil-cross]').count() == 0 or True)
-        faire('Choisir un fil', (lambda g, pg: (g.mode('fils'), g.clic('.dg-pastille'))) if essai else (lambda g, pg: (g.clic('[data-guide=fils]'), g.clic('.dg-pastille'))), lambda pg: True)
-        faire('Confort', lambda g, pg: g.mode('confort'), lambda pg: pg.locator('.lp-panneau').count() == 1)
+        faire('Lecture Patron', (lambda g, pg: g.chemin('affichage', 'vue-pattern')) if essai else (lambda g, pg: dock_vue(g, pg, 'Patron')),
+              lambda pg: actif(pg, ['affichage', 'vue-pattern'], '.pzs-seg button[aria-pressed=true]', 'Patron'))
+        faire('Symboles', (lambda g, pg: g.chemin('affichage', 'symboles')) if essai else (lambda g, pg: g.clic('[data-guide=symboles]')), lambda pg: actif(pg, ['affichage', 'symboles'], '[data-guide=symboles][aria-pressed=true]', 'Symboles'))
+        loupe_dock = (lambda g, pg: g.clic('.pzs-loupe-btn')) if l > 720 else (lambda g, pg: g.chemin('loupe'))
+        faire('Loupe', (lambda g, pg: g.chemin('loupe')) if essai else loupe_dock, lambda pg: pg.locator('.pzs-loupe-dock').count() == 1)
+        faire('Tout voir', (lambda g, pg: g.chemin('affichage', 'tout-voir')) if essai else (lambda g, pg: g.clic('[data-guide=tout-voir]')), lambda pg: True)
+        faire('Outil croix', (lambda g, pg: g.chemin('points', 'o-cross')) if essai else (lambda g, pg: (g.clic('[data-guide=dessiner]'), g.clic('[data-guide=outil-cross]'))),
+              lambda pg: actif(pg, ['points', 'o-cross'], '', 'Croix') if essai else True)
+        faire('Choisir un fil (DMC 321)', (lambda g, pg: g.chemin('fils', 'famille-rouges', 'dmc-321')) if essai else (lambda g, pg: (g.clic('[data-guide=fils]'), g.clic('.dg-pastille'))),
+              lambda pg: actif(pg, ['fils', 'famille-rouges', 'dmc-321'], '', 'DMC 321') if essai else True)
+        faire('Confort', lambda g, pg: g.chemin('confort') if essai else g.mode_dock('confort') if False else (g.clic('.lp-point'), g.clic('[data-presentation] [data-mode=confort]')), lambda pg: pg.locator('.lp-panneau').count() == 1)
     mesures[nom] = {'gestes': res}
     for t, v in res.items():
         ok(v.get('dock') is not None and v.get('bloc') is not None, f"{nom} · {t} : dock {v.get('dock')} geste(s), bloc {v.get('bloc')} geste(s)")

@@ -38,6 +38,8 @@ interface Props {
   highlightActive: boolean;
   onlyActive?: boolean;
   highContrast?: boolean;
+  /** la grille de la toile : visible (par défaut) ou masquée ; la toile et les points restent */
+  grille?: "visible" | "masquee";
   pencilOnly?: boolean;
   symmetry?: Symmetry;
   annotation?: string;
@@ -222,7 +224,7 @@ export default function Canvas(props: Props) {
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
     const v = view.current;
-    const { view: mode, symbols, highlightActive, highContrast, color: activeColor, tool: activeTool } = latest.current;
+    const { view: mode, symbols, highlightActive, highContrast, color: activeColor, tool: activeTool, grille } = latest.current;
     // Pendant un trait, le brouillon est mutable : la composition doit être
     // refaite à chaque image. En dehors, le motif ne change que par identité,
     // et la mémoire ci-dessus évite de recomposer au moindre survol.
@@ -265,7 +267,7 @@ export default function Canvas(props: Props) {
       ctx.fillStyle = cloth;
       ctx.fillRect(gx0, gy0, gx1 - gx0, gy1 - gy0);
     }
-    if (s >= 4 && gx1 > gx0 && gy1 > gy0) {
+    if (grille !== "masquee" && s >= 4 && gx1 > gx0 && gy1 > gy0) {
       const firstCol = Math.max(0, Math.floor(-ox / s));
       const lastCol = Math.min(w, Math.ceil((v.w - ox) / s));
       const firstRow = Math.max(0, Math.floor(-oy / s));

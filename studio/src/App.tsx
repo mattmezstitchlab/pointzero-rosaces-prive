@@ -123,6 +123,8 @@ export default function App() {
   const progression = useMemo(() => { const st = computeStats(Pdiffere);
     return { total: st.rows.reduce((n, r) => n + r.cells, 0), done: st.rows.reduce((n, r) => n + r.done, 0), couleurs: st.rows.map(r => ({ idx: r.idx, hex: r.hex, code: r.code, cells: r.cells, done: r.done })) }; }, [Pdiffere]);
   const [tool, setTool] = useState<Tool>("cross"), [color, setColor] = useState(Math.max(0, flossIndex("3801"))), [view, setView] = useState<ViewMode>("real"), [workspace, setWorkspace] = useState<Workspace>("create");
+  const [grille, setGrille] = useState<"visible" | "masquee">(() => { try { return localStorage.getItem("pointzero:grille") === "masquee" ? "masquee" : "visible"; } catch { return "visible"; } });
+  const basculerGrille = () => setGrille(g => { const n = g === "masquee" ? "visible" : "masquee"; try { localStorage.setItem("pointzero:grille", n); } catch { /* pour cette visite */ } return n; });
   const [symbols, setSymbols] = useState(false), [panel, setPanel] = useState<Panel>(null), [file, setFile] = useState<File | null>(null), [pdfFile, setPdfFile] = useState<File | null>(null), [promptOpen, setPromptOpen] = useState(false), [selection, setSelection] = useState<Selection | null>(null), [clipboard, setClipboard] = useState<Pattern | null>(null);
   const [prefs, setPrefs] = useState(initialPreferences), [inventory, setInventory] = useState(readInventory), [saving, setSaving] = useState("Sauvegarde locale"), [toast, setToast] = useState("");
   const [tracer, setTracer] = useState(false);
@@ -541,7 +543,7 @@ export default function App() {
       }}
     />
     <input ref={actionImportRef} type="file" className="sr-only" aria-label="Importer une image, un PDF ou un projet" accept="image/png,image/jpeg,image/webp,.pdf,.json,.oxs" onChange={e=>{const selected=e.target.files?.[0];e.target.value="";if(selected)importAnyFile(selected);}}/>
-    <Canvas pattern={P} tool={remote ? "hand" : tool} color={color} view={view} symbols={symbols} highlightActive={workspace === "stitch"} insets={insets} fitKey={fitKey} onlyActive={prefs.onlyActive} highContrast={prefs.highContrast} pencilOnly={prefs.pencilOnly} symmetry={prefs.symmetry} annotation={prefs.annotation} readOnly={!!remote} selection={selection} halfDirection={prefs.halfDirection}
+    <Canvas pattern={P} tool={remote ? "hand" : tool} color={color} view={view} symbols={symbols} grille={grille} highlightActive={workspace === "stitch"} insets={insets} fitKey={fitKey} onlyActive={prefs.onlyActive} highContrast={prefs.highContrast} pencilOnly={prefs.pencilOnly} symmetry={prefs.symmetry} annotation={prefs.annotation} readOnly={!!remote} selection={selection} halfDirection={prefs.halfDirection}
       onSelection={setSelection} onBegin={() => { if (!remote) dispatch({ type: "begin" }); }}
       onLive={(p) => { if (!remote) dispatch({ type: "live", pattern: p }); }}
       onEnd={(changed) => { if (!remote) dispatch({ type: "end", changed }); }}
@@ -571,6 +573,7 @@ export default function App() {
       onBroder={(p) => { void useImportedPattern(p).then(ok => { if (ok) { setComposer(null); retirerParametreRosace(); } }); }} />}
     {!pdfFile && !promptOpen && !compositionInput && !file && !autoImage && <StudioDocks
       sansPoint={!!composer}
+      grille={grille} onGrille={basculerGrille} onImporter={() => actionImportRef.current?.click()}
       patternName={P.name} saving={saving} workspace={workspace}
       onWorkspace={mode => { chooseWorkspace(mode); setActiveCategory(mode === "stitch" ? "stitch" : "compose"); setShowWelcome(false); }}
       tool={remote ? "hand" : tool} onTool={chooseTool}

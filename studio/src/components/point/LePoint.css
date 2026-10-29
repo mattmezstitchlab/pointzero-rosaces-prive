@@ -99,3 +99,30 @@ html[data-pz-motion="reduce"] .lp-compact { animation: none; }
   .lp-panneau { bottom: var(--pz-bas-libre, 84px); max-height: calc(100vh - var(--pz-bas-libre, 84px) - 90px); }
   .pzs-loupe-dock { bottom: var(--pz-bas-libre, calc(max(16px, env(safe-area-inset-bottom)) + 64px)) !important; }
 }
+
+/* ===== Navigation progressive ===== */
+.lp-plus { margin-left: 2px; opacity: .7; font-weight: 700; }
+.lp-nav { border-style: dashed; color: #e8e2ff; }
+/* une couleur : la pastille porte la teinte ; le mot est dit, et montré au centre (ou à côté sur téléphone) */
+.lp-pastille-couleur { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: var(--lp-teinte, #888); box-shadow: inset 0 0 0 2px rgba(255,255,255,.85), 0 0 0 1px rgba(0,0,0,.4); flex: none; }
+.lp-secteur.lp-pastille-anneau { min-width: 44px; width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 50%; }
+.lp-secteur.lp-pastille-anneau .lp-pastille-couleur { width: 30px; height: 30px; }
+.lp-secteur.lp-pastille-anneau .lp-marque { position: absolute; top: -2px; right: -2px; }
+/* l'anneau intérieur : la famille d'où viennent les nuances (raccourci au pointeur ; au clavier, « Retour ») */
+.lp-interieur { position: absolute; transform: translate(-50%, -50%); width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); cursor: pointer; padding: 0; }
+.lp-interieur-on { border: 3px solid #fff; width: 30px; height: 30px; }
+/* le centre : où l'on est, et ce qu'on montre ; un clic fait revenir d'un niveau */
+.lp-centre-mot { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 120px; min-height: 64px; padding: 6px; border-radius: 50%; border: 0; background: #000; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; cursor: pointer; font: inherit; }
+.lp-centre-mot small { font-size: 10px; color: rgba(255,255,255,.62); line-height: 1.2; }
+.lp-centre-mot b { font-size: 14px; line-height: 1.15; }
+.lp-centre-petit { width: 84px; min-height: 52px; } .lp-centre-petit small { display: none; } .lp-centre-petit b { font-size: 11.5px; }
+/* téléphone : le fil du chemin, les couleurs en pastilles sur quatre colonnes */
+.lp-compact-fil { grid-column: 1 / -1; margin: 0 4px 2px; font-size: 12px; font-weight: 700; letter-spacing: .03em; color: rgba(255,255,255,.75); }
+.lp-compact.lp-compact-pastilles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.lp-case-mode .lp-pastille-couleur { width: 24px; height: 24px; }
+.lp-case-mode .lp-plus { margin-left: auto; }
+
+/* Retour, Point Zéro, Suivantes dans un anneau de pastilles : des ronds à signe, comme les nuances */
+.lp-nav-glyphe { font-size: 18px; line-height: 1; }
+.lp-centre-mot i { display: block; font-style: normal; font-size: 10px; opacity: .75; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-nav-glyphe svg { width: 18px; height: 18px; }

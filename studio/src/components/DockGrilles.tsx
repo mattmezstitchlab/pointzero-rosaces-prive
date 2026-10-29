@@ -135,7 +135,7 @@ export function Loupe({ pattern }: { pattern: Pattern }) {
   return <div className="dg-loupe" role="region" aria-label="Loupe : la grille agrandie sous le pointeur ou à la case choisie au clavier">
     <div className="dg-loupe-formes" role="group" aria-label="Forme de la loupe">
       <button type="button" aria-pressed={forme === "ronde"} onClick={() => changerForme("ronde")}>Ronde</button>
-      <button type="button" aria-pressed={forme === "carree"} onClick={() => changerForme("carree")}>Carrée · précise</button>
+      <button type="button" aria-pressed={forme === "carree"} onClick={() => changerForme("carree")} title="Carrée : plus précise, case par case">Carrée</button>
       <span className="dg-loupe-source">{focus.source === "clavier" ? "suit le clavier" : "suit le pointeur"}</span>
     </div>
     <StitchMagnifier pattern={pattern} focus={focus} rayon={7} className="dg-loupe-vue" forme={forme} />

@@ -1,21 +1,22 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as PE, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { anneau, dispositionArc, hotePortail, lirePresentation, nomAccessible, placePanneau, positionDe, presentationPour, secteurVise, tourner, type ModePoint, type Presentation } from "../../lib/point/modes";
+import { anneau, dispositionArc, hotePortail, lirePresentation, niveau, nomAccessible, ORIGINE, paginer, placePanneau, positionDe, presentationPour, RETOUR, secteurVise, SUITE, tourner, type ModePoint, type Presentation } from "../../lib/point/modes";
 import "./LePoint.css";
 
 /**
- * Le Point, contrôleur universel : un seul bouton, un anneau de modes.
- * - Clic, Entrée ou Espace : l'anneau s'ouvre, le focus va sur Confort (toujours en haut, toujours premier).
- * - Dans l'anneau : flèches pour tourner, Début et Fin, Entrée pour ouvrir un mode, Échap pour refermer (le focus revient au Point).
- * - Poignée, facultative : tirer le Point vers un secteur ouvre ce mode directement. Jamais le seul chemin.
- * L'anneau s'ouvre au niveau de la page (portail) : aucun dock ne le rogne. Il reste juste après le Point dans l'ordre de lecture du lecteur d'écran grâce au focus géré.
- * L'anneau est un index : chaque mode ouvre ensuite un panneau ordinaire (formulaire, liste), lisible au clavier.
- * Selon le support, les mêmes modes s'ouvrent en anneau (ordinateur), en arc compact (téléphone) ou en liste (au choix, dans Confort).
- * Les trois présentations sont le même menu : mêmes boutons, même ordre, mêmes touches, mêmes annonces.
+ * Le Point, contrôleur universel : un bouton central permanent et un dock radial à navigation progressive.
+ * - Clic, Entrée ou Espace : le premier cercle s'ouvre (les familles), le focus va sur Confort (toujours en haut, toujours premier).
+ * - Choisir une famille remplace les choix du cercle par ses sous-outils ; « Retour », Échap, Retour arrière ou le centre remontent d'un niveau ;
+ *   « Point Zéro » revient au premier cercle. Choisir un outil déclenche sa vraie action.
+ * - Quand les choix sont des couleurs (les nuances DMC), la famille reste visible en anneau intérieur : deux anneaux concentriques, et seulement là.
+ * - Poignée, facultative : tirer le Point vers un secteur ouvre ce choix du premier cercle. Jamais le seul chemin.
+ * Selon le support, les mêmes niveaux s'ouvrent en anneau (ordinateur), en panneau compact (téléphone), en arc ou en liste (au choix, dans Confort) :
+ * mêmes boutons, même ordre, mêmes touches, mêmes annonces.
  */
-/* l'anneau grandit avec le nombre de modes : au-delà de cinq, le rayon s'élargit pour que les mots ne se touchent pas */
-const rayonPour = (n: number) => (n <= 5 ? 80 : 80 + (n - 5) * 16);
-const cotePour = (n: number) => 2 * rayonPour(n) + 104;
+/* l'anneau grandit avec le nombre de choix ; des pastilles de couleur tiennent plus serrées que des mots */
+const rayonPour = (n: number, pastilles = false) => pastilles ? Math.max(96, Math.ceil((n * 52) / (2 * Math.PI))) : (n <= 5 ? 80 : 80 + (n - 5) * 16);
+const cotePour = (n: number, pastilles = false) => 2 * rayonPour(n, pastilles) + (pastilles ? 72 : 104);
+const NAV = new Set([RETOUR, ORIGINE, SUITE]);
 
 export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette, guide = "cercle", annonceExterne, refBouton, ancrage = "dessus" }: {
   modes: ModePoint[];
@@ -32,11 +33,14 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
   /** une annonce venue d'un mode (ex. un réglage de confort) */
   annonceExterne?: string;
 }) {
-  const liste = anneau(modes);
+  const racineModes = anneau(modes);
   const [ouvert, setOuvert] = useState(false);
   const [focus, setFocus] = useState(0);
   const [onde, setOnde] = useState(0);
   const [annonce, setAnnonce] = useState("");
+  /* le chemin dans les familles : des identifiants, résolus à chaque rendu dans les modes frais (l'état change sous nos pieds) */
+  const [chemin, setChemin] = useState<string[]>([]);
+  const [page, setPage] = useState(0);
   const bouton = useRef<HTMLButtonElement>(null);
   const racine = useRef<HTMLDivElement>(null);
   const anneauRef = useRef<HTMLDivElement>(null);
@@ -44,11 +48,30 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
   const tire = useRef<{ x: number; y: number; id: number } | null>(null);
   const tireTraite = useRef(false);
   const idMenu = useId();
-  const n = liste.length;
-  const RAYON = rayonPour(n), COTE = cotePour(n);
 
+  /* résoudre le chemin : chaque famille, puis ses enfants */
+  const familles: ModePoint[] = [];
+  let enfants = racineModes;
+  for (const id of chemin) { const f = enfants.find(m => m.id === id); if (!f?.enfants) break; familles.push(f); enfants = f.enfants(); }
+  const profondeur = familles.length, parent = familles[profondeur - 1];
+  const remonter = () => { setChemin(c => c.slice(0, -1)); setPage(0); const p = familles[profondeur - 1]; setFocus(Math.max(0, (profondeur - 1 === 0 ? racineModes : familles[profondeur - 2].enfants!()).findIndex(m => m.id === p?.id) + (profondeur - 1 >= 2 ? 2 : profondeur - 1 >= 1 ? 1 : 0))); if (p) setAnnonce(`Retour : ${profondeur - 1 === 0 ? "Point Zéro" : familles[profondeur - 2].nom}.`); };
+  const origine = () => { setChemin([]); setPage(0); setFocus(0); setAnnonce("Point Zéro : le premier cercle."); };
+  const courant = profondeur === 0 ? racineModes : niveau(paginer(enfants, page, 16, setPage), profondeur, parent?.nom ?? "", { retour: remonter, origine });
+  const n = courant.length;
+  /* un niveau de couleurs (presque toutes) : un anneau serré de pastilles ; les rares autres choix s'y font ronds, à pictogramme */
+  const choixNiveau = courant.filter(m => !NAV.has(m.id)), nCouleurs = choixNiveau.filter(m => !!m.couleur).length;
+  const pastilles = profondeur > 0 && nCouleurs >= 3 && nCouleurs >= 0.7 * choixNiveau.length;
+  const RAYON = rayonPour(n, pastilles), COTE = cotePour(n, pastilles);
+  /* l'anneau intérieur : la famille d'où viennent les nuances, quand elle est faite de couleurs elle aussi */
+  const freres = profondeur >= 1 ? (profondeur === 1 ? racineModes : familles[profondeur - 2].enfants!()) : [];
+  const interieur = pastilles && freres.filter(m => m.couleur).length >= 3 ? freres.filter(m => m.couleur) : [];
+
+  const [pos, setPos] = useState({ left: 8, top: 8 });
+  const [pres, setPres] = useState<Presentation>("anneau");
+  const [arc, setArc] = useState<ReturnType<typeof dispositionArc> | null>(null);
+  const [panneau, setPanneau] = useState({ left: 8, right: 8, bottom: 80 });
   useEffect(() => { if (annonceExterne) setAnnonce(annonceExterne); }, [annonceExterne]);
-  useEffect(() => { if (ouvert) items.current[focus]?.focus(); }, [ouvert, focus]);
+  useEffect(() => { if (ouvert) items.current[Math.min(focus, n - 1)]?.focus(); }, [ouvert, focus, n, chemin, page, pres]);
   /* un clic ailleurs referme l'anneau, sans prendre le focus */
   useEffect(() => {
     if (!ouvert) return;
@@ -60,92 +83,111 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
     return () => document.removeEventListener("pointerdown", dehors);
   }, [ouvert]);
 
-  const fermer = (rendre = true) => { setOuvert(false); if (rendre) requestAnimationFrame(() => bouton.current?.focus()); };
+  const fermer = (rendre = true) => { setOuvert(false); setChemin([]); setPage(0); if (rendre) requestAnimationFrame(() => bouton.current?.focus()); };
   const choisir = (i: number) => {
-    const m = liste[i]; if (!m) return;
-    setOuvert(false); setOnde(o => o + 1);
-    if (!m.annonceEnPropre) setAnnonce(`Mode ${m.nom} ${m.actif ? "désactivé" : "activé"}.`);
+    const m = courant[i]; if (!m) return;
+    if (m.enfants) {
+      const sous = m.enfants();
+      setChemin(c => [...c, m.id]); setPage(0); setFocus(profondeur + 1 >= 2 ? 2 : 1); setOnde(o => o + 1);
+      setAnnonce(`${m.nom} : ${sous.length} choix. Échap pour revenir.`);
+      return;
+    }
+    if (m.resteOuvert) {
+      if (!m.annonceEnPropre && !NAV.has(m.id)) setAnnonce(`${m.nom} ${m.actif ? "désactivé" : "activé"}.`);
+      m.ouvrir(); setOnde(o => o + 1);
+      return;
+    }
+    fermer(false); setOnde(o => o + 1);
+    if (!m.annonceEnPropre) setAnnonce(profondeur === 0 ? `Mode ${m.nom} ${m.actif ? "désactivé" : "activé"}.` : m.actif !== undefined ? `${m.nom} ${m.actif ? "désactivé" : "activé"}.` : `${m.nom} : choisi.`);
     m.ouvrir();
   };
-  const [pos, setPos] = useState({ left: 8, top: 8 });
-  const [pres, setPres] = useState<Presentation>("anneau");
-  const [arc, setArc] = useState<ReturnType<typeof dispositionArc> | null>(null);
-  const [panneau, setPanneau] = useState({ left: 8, right: 8, bottom: 80 });
-  /* l'anneau s'ouvre au-dessus du Point, sans jamais sortir de l'écran ; sur téléphone, l'arc reste collé au Point */
-  const placer = () => {
+  /* l'anneau s'ouvre au-dessus du Point (ou autour de lui), sans jamais sortir de l'écran ; il se replace quand un niveau change de taille */
+  const placer = (nb = n, cote = COTE) => {
     const r = bouton.current?.getBoundingClientRect(); if (!r) return;
-    const cx = r.left + r.width / 2, cy = r.top + r.height / 2, w = window.innerWidth || 1024;
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2, w = window.innerWidth || 1024, h = window.innerHeight || 800;
     const p = presentationPour(lirePresentation(), w); setPres(p);
-    if (p === "arc") setArc(dispositionArc(n, cx, cy, w));
-    setPanneau(placePanneau(r.top, window.innerHeight || 800));
-    const h = window.innerHeight || 800;
-    const top = ancrage === "autour" ? cy - COTE / 2 : r.top - COTE - 10;
-    setPos({ left: Math.max(8, Math.min(cx - COTE / 2, w - COTE - 8)), top: Math.max(8, Math.min(top, h - COTE - 8)) });
+    if (p === "arc") setArc(dispositionArc(nb, cx, cy, w));
+    setPanneau(placePanneau(r.top, h));
+    const top = ancrage === "autour" ? cy - cote / 2 : r.top - cote - 10;
+    setPos({ left: Math.max(8, Math.min(cx - cote / 2, w - cote - 8)), top: Math.max(8, Math.min(top, h - cote - 8)) });
   };
-  const basculer = () => { if (ouvert) fermer(); else { placer(); setFocus(0); setOuvert(true); } };
+  useEffect(() => { if (ouvert) placer(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [ouvert, n, COTE]);
+  const basculer = () => { if (ouvert) fermer(); else { setChemin([]); setPage(0); setFocus(0); placer(racineModes.length, cotePour(racineModes.length)); setOuvert(true); } };
 
   const onClick = () => { if (tireTraite.current) { tireTraite.current = false; return; } basculer(); };
   const onPointerDown = (e: PE<HTMLButtonElement>) => { if (e.button !== 0) return; tire.current = { x: e.clientX, y: e.clientY, id: e.pointerId }; try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* jsdom */ } };
   const onPointerUp = (e: PE<HTMLButtonElement>) => {
-    const t = tire.current; tire.current = null; if (!t) return;
-    const i = secteurVise(e.clientX - t.x, e.clientY - t.y, n);
-    if (i !== null) { tireTraite.current = true; choisir(i); }
+    const t = tire.current; tire.current = null; if (!t || ouvert) return;
+    const i = secteurVise(e.clientX - t.x, e.clientY - t.y, racineModes.length);
+    if (i !== null) { tireTraite.current = true; setChemin([]); const m = racineModes[i]; if (m.enfants) { setOuvert(true); setChemin([m.id]); setFocus(1); setAnnonce(`${m.nom} : ${m.enfants().length} choix.`); } else { setOnde(o => o + 1); if (!m.annonceEnPropre) setAnnonce(`Mode ${m.nom} ${m.actif ? "désactivé" : "activé"}.`); m.ouvrir(); } }
   };
 
   const onKeyMenu = (e: KeyboardEvent) => {
     /* les touches de l'anneau restent à l'anneau : le contexte (compositeur, grille) ne les reçoit pas */
     e.stopPropagation();
     const pas = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
-    if (pas) { e.preventDefault(); setFocus(f => tourner(f, n, pas)); return; }
+    if (pas) { e.preventDefault(); setFocus(f => tourner(Math.min(f, n - 1), n, pas)); return; }
     if (e.key === "Home") { e.preventDefault(); setFocus(0); }
     else if (e.key === "End") { e.preventDefault(); setFocus(n - 1); }
-    else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); fermer(); }
+    else if (e.key === "Escape" || (e.key === "Backspace" && profondeur > 0)) { e.preventDefault(); if (profondeur > 0) remonter(); else fermer(); }
     else if (e.key === "Tab") fermer(false);
   };
 
-  const actifs = liste.filter(m => m.actif).map(m => m.nom);
-  const nom = "Le Point : " + liste.map(m => m.nom).join(", ") + (actifs.length ? ". Actif : " + actifs.join(", ") : "") + (etiquette ? ". " + etiquette : "");
+  const actifs = racineModes.filter(m => m.actif).map(m => m.nom);
+  const nom = "Le Point : " + racineModes.map(m => m.nom).join(", ") + (actifs.length ? ". Actif : " + actifs.join(", ") : "") + (etiquette ? ". " + etiquette : "");
   const c = 2 * Math.PI * 11;
   const pt = (a: number) => { const t = a * Math.PI / 180; return (22 + 18 * Math.cos(t)).toFixed(2) + " " + (22 + 18 * Math.sin(t)).toFixed(2); };
   const arcs = Array.from({ length: 12 }, (_, k) => { const a0 = -90 + k * 30 + 5, a1 = a0 + 20; return "M " + pt(a0) + " A 18 18 0 0 1 " + pt(a1); });
+  const fil = ["Point Zéro", ...familles.map(f => f.nom)].join(" › ");
+  const m0 = courant[Math.min(focus, n - 1)];
 
   const item = (m: ModePoint, i: number, style: CSSProperties | undefined, contenu: ReactNode, classe = "") =>
     <button key={m.id} ref={el => { items.current[i] = el; }} type="button" role="menuitem" tabIndex={i === focus ? 0 : -1}
-      className={"lp-secteur lp-" + m.groupe + classe} data-mode={m.id} aria-label={nomAccessible(m)} title={m.aide}
-      style={style} onClick={() => choisir(i)} onFocus={() => setFocus(i)} onPointerEnter={() => setFocus(i)}>
+      aria-haspopup={m.enfants ? "menu" : undefined}
+      className={"lp-secteur lp-" + m.groupe + classe + (m.couleur ? " lp-teinte" : "") + (NAV.has(m.id) ? " lp-nav" : "")} data-mode={m.id} aria-label={nomAccessible(m) + (m.enfants ? ", famille" : "")} title={m.aide}
+      style={{ ...style, ...(m.couleur ? { ["--lp-teinte" as string]: m.couleur } : null) }} onClick={() => choisir(i)} onFocus={() => setFocus(i)} onPointerEnter={() => setFocus(i)}>
       {m.actif && <span className="lp-marque" aria-hidden="true" />}{contenu}
     </button>;
-  const propsMenu = { ref: anneauRef, id: idMenu, role: "menu", "aria-label": "Les modes du Point", onKeyDown: onKeyMenu };
-  /* ordinateur : l'anneau complet */
-  const anneau_ = () => <div {...propsMenu} className="lp-anneau" data-presentation="anneau" aria-orientation="horizontal" style={{ width: COTE, height: COTE, left: pos.left, top: pos.top }}>
+  /* dans un anneau de pastilles, Retour, Point Zéro et Suivantes se font ronds eux aussi : un signe, le mot reste dit et affiché au centre */
+  const GLYPHES: Record<string, string> = { [RETOUR]: "←", [ORIGINE]: "◎", [SUITE]: "→" };
+  const contenuMot = (m: ModePoint) => pastilles && NAV.has(m.id) ? <span className="lp-nav-glyphe" aria-hidden="true">{GLYPHES[m.id]}</span>
+    : pastilles && !m.couleur ? <span className="lp-nav-glyphe" aria-hidden="true">{m.icone ?? m.nom[0]}</span> : m.couleur ? <span className="lp-pastille-couleur" aria-hidden="true" /> : <>{m.nom}{m.enfants && <span className="lp-plus" aria-hidden="true">›</span>}</>;
+  const propsMenu = { ref: anneauRef, id: idMenu, role: "menu", "aria-label": "Le Point · " + (parent?.nom ?? "Point Zéro"), onKeyDown: onKeyMenu, "data-niveau": profondeur };
+  /* ordinateur : l'anneau ; au centre, le nom du choix en cours (et, sous un niveau, le centre fait revenir) */
+  const anneau_ = () => <div {...propsMenu} className={"lp-anneau" + (pastilles ? " lp-anneau-pastilles" : "")} data-presentation="anneau" aria-orientation="horizontal" style={{ width: COTE, height: COTE, left: pos.left, top: pos.top }}>
     <svg className="lp-trace" width={COTE} height={COTE} aria-hidden="true">
       <circle cx={COTE / 2} cy={COTE / 2} r={RAYON} fill="none" />
-      <line x1={COTE / 2} y1={COTE / 2 - RAYON - 30} x2={COTE / 2} y2={COTE / 2 - RAYON - 18} />
+      <line x1={COTE / 2} y1={COTE / 2 - RAYON - (pastilles ? 22 : 30)} x2={COTE / 2} y2={COTE / 2 - RAYON - (pastilles ? 12 : 18)} />
     </svg>
-    <span className="lp-centre" aria-hidden="true" />
-    {liste.map((m, i) => { const { x, y } = positionDe(i, n, RAYON, COTE); return item(m, i, { left: x, top: y }, m.nom); })}
+    {interieur.length > 0 && interieur.map((f, k) => { const { x, y } = positionDe(k, interieur.length, RAYON - 58, COTE);
+      return <button key={"in-" + f.id} type="button" tabIndex={-1} aria-hidden="true" className={"lp-interieur" + (f.id === parent?.id ? " lp-interieur-on" : "")}
+        style={{ left: x, top: y, background: f.couleur }} title={f.nom} onClick={() => { setChemin(c => [...c.slice(0, -1), f.id]); setPage(0); setFocus(1); setAnnonce(`${f.nom} : ${f.enfants?.().length ?? 0} choix.`); }} />; })}
+    {profondeur === 0 ? <span className="lp-centre" aria-hidden="true" />
+      : <button type="button" tabIndex={-1} aria-hidden="true" className={"lp-centre-mot" + (interieur.length ? " lp-centre-petit" : "")} onClick={remonter} title="Revenir d’un niveau">
+          <small>{fil}</small><b>{m0 && (pastilles || !NAV.has(m0.id)) ? m0.nom : parent?.nom}</b>{m0?.couleur && pastilles && !m0.enfants && <i>{m0.aide}</i>}</button>}
+    {courant.map((m, i) => { const { x, y } = positionDe(i, n, RAYON, COTE); return item(m, i, { left: x, top: y }, contenuMot(m), m.couleur || pastilles ? " lp-pastille-anneau" : ""); })}
   </div>;
-  /* téléphone : un quart d'arc collé au Point, pictogrammes, le mot du mode choisi affiché au creux de l'arc */
+  /* au choix : un quart d'arc collé au Point, pictogrammes, le mot du choix en cours affiché au-delà de sa pastille */
   const arc_ = (d: ReturnType<typeof dispositionArc>) => { const { boite: bx, points, rayon, sens } = d;
+    if (points.length !== n) return panneau_();
     const W = bx.right - bx.left, H = bx.bottom - bx.top, ox = -bx.left, oy = -bx.top;
     const p0 = points[0], p1 = points[points.length - 1];
-    const centre = { x: d.centre.x + ox, y: d.centre.y + oy }; // le centre de l'arc : le Point lui-même
+    const centre = { x: d.centre.x + ox, y: d.centre.y + oy };
     const bande = `M ${p0.x + ox} ${p0.y + oy} A ${rayon} ${rayon} 0 0 ${sens > 0 ? 1 : 0} ${p1.x + ox} ${p1.y + oy}`;
-    const m = liste[focus];
     return <div {...propsMenu} className="lp-arc" data-presentation="arc" aria-orientation="vertical" style={{ left: bx.left, top: bx.top, width: W, height: H }}>
       <svg className="lp-arc-bande" width={W} height={H} aria-hidden="true"><path d={bande} /></svg>
-      {liste.map((mm, i) => item(mm, i, { left: points[i].x + ox, top: points[i].y + oy }, mm.icone ?? <span className="lp-initiale">{mm.nom[0]}</span>, " lp-pastille"))}
-      {/* le mot du mode choisi, juste au-delà de sa pastille, vers l'extérieur de l'arc */}
-      {m && (() => { const a = (d.angles[focus] * Math.PI) / 180, r = rayon + 50; return <span className="lp-arc-mot" aria-hidden="true" style={{ left: centre.x + r * Math.cos(a), top: centre.y + r * Math.sin(a) }}>{m.nom}</span>; })()}
+      {courant.map((mm, i) => item(mm, i, { left: points[i].x + ox, top: points[i].y + oy }, mm.couleur ? <span className="lp-pastille-couleur" aria-hidden="true" /> : mm.icone ?? <span className="lp-initiale">{mm.nom[0]}</span>, " lp-pastille"))}
+      {m0 && (() => { const a = (d.angles[Math.min(focus, n - 1)] * Math.PI) / 180, r = rayon + 50; return <span className="lp-arc-mot" aria-hidden="true" style={{ left: centre.x + r * Math.cos(a), top: centre.y + r * Math.sin(a) }}>{m0.nom}</span>; })()}
     </div>; };
-  /* téléphone : un panneau compact juste au-dessus du Point ; le dock reste visible et reconnaissable dessous */
-  const panneau_ = () => <div {...propsMenu} className="lp-compact" data-defile data-presentation="panneau" aria-orientation="vertical" style={panneau}>
-    {liste.map((m, i) => item(m, i, undefined, <>{m.icone && <span className="lp-compact-icone" aria-hidden="true">{m.icone}</span>}<span>{m.nom}</span></>, " lp-case-mode"))}
+  /* téléphone : un panneau compact juste au-dessus du Point ; le fil du chemin en tête ; le dock (s'il est là) reste visible dessous */
+  const panneau_ = () => <div {...propsMenu} className={"lp-compact" + (pastilles ? " lp-compact-pastilles" : "")} data-defile data-presentation="panneau" aria-orientation="vertical" style={panneau}>
+    {profondeur > 0 && <p className="lp-compact-fil" aria-hidden="true">{fil}</p>}
+    {courant.map((m, i) => item(m, i, undefined, <>{m.couleur ? <span className="lp-pastille-couleur" aria-hidden="true" /> : m.icone && <span className="lp-compact-icone" aria-hidden="true">{m.icone}</span>}<span>{m.nom}</span>{m.enfants && <span className="lp-plus" aria-hidden="true">›</span>}</>, " lp-case-mode"))}
   </div>;
   /* au choix (Confort) : une liste en mots, depuis le bas de l'écran */
   const liste_ = () => <div {...propsMenu} className="lp-liste" data-defile data-presentation="liste" aria-orientation="vertical">
-    <p className="lp-liste-titre" aria-hidden="true">Le Point</p>
-    {liste.map((m, i) => item(m, i, undefined, <><span className="lp-liste-nom">{m.icone && <span className="lp-liste-icone" aria-hidden="true">{m.icone}</span>}{m.nom}</span><span className="lp-liste-aide">{m.aide}</span></>, " lp-ligne"))}
+    <p className="lp-liste-titre" aria-hidden="true">{fil}</p>
+    {courant.map((m, i) => item(m, i, undefined, <><span className="lp-liste-nom">{m.couleur ? <span className="lp-pastille-couleur" aria-hidden="true" /> : m.icone && <span className="lp-liste-icone" aria-hidden="true">{m.icone}</span>}{m.nom}{m.enfants && <span className="lp-plus" aria-hidden="true">›</span>}</span><span className="lp-liste-aide">{m.aide}</span></>, " lp-ligne"))}
   </div>;
 
   return <div className="lp" ref={racine}>

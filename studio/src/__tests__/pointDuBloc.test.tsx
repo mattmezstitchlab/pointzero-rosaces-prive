@@ -72,18 +72,116 @@ describe("L'essai : les outils sur le bloc", () => {
     expect(container!.querySelector(".pzs-bottom")).toBeTruthy();
     expect(localStorage.getItem(ESSAI_BLOC_CLE)).toBeNull();
   });
-  it("le menu du bloc : Confort d'abord, puis les seuls outils de la broderie, réellement branchés", async () => {
+  const mode = (id: string) => secteurs().find(s => s.dataset.mode === id);
+  const touche = async (key: string) => { await act(async () => { (document.activeElement ?? document.body).dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true })); }); await attendre(); };
+  it("le premier cercle : Confort d'abord, puis les familles et les fonctions de la broderie", async () => {
     localStorage.setItem(ESSAI_BLOC_CLE, "1");
     await ouvrir();
     await cliquer(document.querySelector(".lp-point"));
-    expect(secteurs().map(s => s.dataset.mode)).toEqual(["confort", "loupe", "tout-voir", "points", "fils", "symboles", "patron"]);
-    await cliquer(secteurs().find(s => s.dataset.mode === "symboles"));
-    await cliquer(document.querySelector(".lp-point"));
-    expect(secteurs().find(s => s.dataset.mode === "symboles")!.getAttribute("aria-label")).toMatch(/^Symboles, actif/);
-    await cliquer(secteurs().find(s => s.dataset.mode === "loupe"));
+    expect(secteurs().map(s => s.dataset.mode)).toEqual(["confort", "loupe", "guide", "points", "broder", "fils", "affichage", "importer", "exporter", "dock-classique"]);
+    expect(mode("points")!.getAttribute("aria-haspopup")).toBe("menu");
+    expect(mode("points")!.getAttribute("aria-label")).toMatch(/famille/);
+    await cliquer(mode("loupe"));
     expect(container!.querySelector(".pzs-loupe-dock")).toBeTruthy();
+  });
+  it("parcours 1 : Point → Points → Croix, Demi-point, Point arrière, Gomme → l'outil réel est choisi", async () => {
+    localStorage.setItem(ESSAI_BLOC_CLE, "1");
+    await ouvrir();
     await cliquer(document.querySelector(".lp-point"));
-    await cliquer(secteurs().find(s => s.dataset.mode === "points"));
-    expect(container!.querySelector('[data-guide="outil-cross"]')).toBeTruthy(); // la grille des points s'est dépliée
+    await cliquer(mode("points"));
+    expect(secteurs().map(s => s.dataset.mode).slice(0, 6)).toEqual(["__retour", "o-cross", "o-half", "o-back", "o-erase", "plus-outils"]);
+    expect(document.activeElement?.getAttribute("data-mode")).toBe("o-cross");
+    for (const [id, nom] of [["o-half", "Demi-point"], ["o-back", "Point arrière"], ["o-erase", "Gomme"], ["o-cross", "Croix"]]) {
+      if (!mode(id)) { await cliquer(document.querySelector(".lp-point")); await cliquer(mode("points")); }
+      await cliquer(mode(id));
+      expect(secteurs().length).toBe(0); // une feuille ferme le menu
+      await cliquer(document.querySelector(".lp-point"));
+      await cliquer(mode("points"));
+      expect(mode(id)!.getAttribute("aria-label")).toMatch(new RegExp("^" + nom + ", actif"));
+      await touche("Escape"); await touche("Escape");
+    }
+    /* deuxième niveau : Plus d'outils, puis Point Zéro ramène au premier cercle */
+    await cliquer(document.querySelector(".lp-point"));
+    await cliquer(mode("points")); await cliquer(mode("plus-outils"));
+    expect(mode("__origine")).toBeTruthy(); expect(mode("o-fill")).toBeTruthy();
+    await cliquer(mode("__origine"));
+    expect(mode("points")).toBeTruthy();
+  });
+  it("au clavier : Échap remonte d'un niveau, puis ferme ; Retour fait de même", async () => {
+    localStorage.setItem(ESSAI_BLOC_CLE, "1");
+    await ouvrir();
+    await cliquer(document.querySelector(".lp-point"));
+    await cliquer(mode("points"));
+    await touche("Escape");
+    expect(mode("points")).toBeTruthy();
+    expect(document.activeElement?.getAttribute("data-mode")).toBe("points");
+    await cliquer(mode("affichage"));
+    await cliquer(mode("__retour"));
+    expect(mode("affichage")).toBeTruthy();
+    await touche("Escape");
+    expect(secteurs().length).toBe(0);
+  });
+  it("parcours 2 : Point → Fils → une famille → une nuance DMC → le fil réel devient le fil actif", async () => {
+    localStorage.setItem(ESSAI_BLOC_CLE, "1");
+    await ouvrir();
+    await cliquer(document.querySelector(".lp-point"));
+    await cliquer(mode("fils"));
+    expect(mode("famille-rouges")!.style.getPropertyValue("--lp-teinte")).toBeTruthy();
+    await cliquer(mode("famille-rouges"));
+    const nuances = secteurs().filter(s => s.dataset.mode!.startsWith("dmc-"));
+    expect(nuances.length).toBeGreaterThan(5);
+    expect(mode("__suite")).toBeTruthy(); // plus de 16 rouges : une page suivante
+    expect(document.querySelectorAll(".lp-interieur").length + document.querySelectorAll(".lp-compact-fil").length).toBeGreaterThan(0);
+    const choisi = nuances[2].dataset.mode!;
+    await cliquer(nuances[2]);
+    expect(secteurs().length).toBe(0);
+    await cliquer(document.querySelector(".lp-point"));
+    await cliquer(mode("fils")); await cliquer(mode("famille-rouges"));
+    expect(mode(choisi)!.getAttribute("aria-label")).toMatch(/actif/);
+  });
+  it("parcours 3 : Point → Affichage → Symboles, À plat, Réaliste, Patron, Grille ; le menu reste ouvert pour voir l'effet", async () => {
+    localStorage.setItem(ESSAI_BLOC_CLE, "1");
+    await ouvrir();
+    await cliquer(document.querySelector(".lp-point"));
+    await cliquer(mode("affichage"));
+    expect(secteurs().map(s => s.dataset.mode)).toEqual(["__retour", "symboles", "vue-flat", "vue-real", "vue-pattern", "tout-voir", "grille"]);
+    await cliquer(mode("symboles"));
+    expect(mode("symboles")!.getAttribute("aria-label")).toMatch(/^Symboles, actif/);
+    for (const v of ["vue-pattern", "vue-flat", "vue-real"]) { await cliquer(mode(v)); expect(mode(v)!.getAttribute("aria-label")).toMatch(/actif/); }
+    await cliquer(mode("grille"));
+    expect(localStorage.getItem("pointzero:grille")).toBe("masquee");
+    expect(mode("grille")!.textContent).toMatch(/masquée/);
+    await cliquer(mode("grille"));
+    expect(localStorage.getItem("pointzero:grille")).toBe("visible");
+  });
+  it("Broder, Importer, Exporter et le retour au dock du bas sont de vraies actions", async () => {
+    localStorage.setItem(ESSAI_BLOC_CLE, "1");
+    await ouvrir();
+    await cliquer(document.querySelector(".lp-point"));
+    await cliquer(mode("broder"));
+    await cliquer(mode("b-mark"));
+    await cliquer(document.querySelector(".lp-point")); await cliquer(mode("broder"));
+    expect(mode("b-mark")!.getAttribute("aria-label")).toMatch(/^Marquer, actif/);
+    await touche("Escape"); await touche("Escape");
+    const input = container!.querySelector<HTMLInputElement>('input[type="file"][aria-label^="Importer une image"]')!;
+    const clic = vi.spyOn(input, "click");
+    await cliquer(document.querySelector(".lp-point")); await cliquer(mode("importer"));
+    expect(clic).toHaveBeenCalled();
+    await cliquer(document.querySelector(".lp-point")); await cliquer(mode("dock-classique"));
+    expect(container!.querySelector(".pzs-bottom")).toBeTruthy();
+    expect(localStorage.getItem(ESSAI_BLOC_CLE)).toBeNull();
+  });
+});
+
+describe("Le Point du bloc évite ce qu'il couvrirait", () => {
+  it("descend sous un obstacle, sinon passe à sa gauche, et reste dans l'écran", async () => {
+    const { eviterObstacles } = await import("../lib/point/registre");
+    const ecran = { w: 320, h: 740 };
+    const p = { left: 234, top: 520, bord: "dessous" };
+    expect(eviterObstacles(p, [{ left: 0, top: 0, right: 10, bottom: 10 }], ecran)).toBe(p);
+    const pilule = { left: 80, top: 478, right: 240, bottom: 566 };
+    expect(eviterObstacles(p, [pilule], ecran)).toEqual({ left: 234, top: 576, bord: "dessous" });
+    const bas = eviterObstacles({ left: 234, top: 520 }, [{ left: 80, top: 478, right: 240, bottom: 720 }], ecran);
+    expect(bas.left + 46).toBeLessThanOrEqual(80);
   });
 });

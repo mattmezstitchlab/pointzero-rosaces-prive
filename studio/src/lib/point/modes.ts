@@ -21,7 +21,33 @@ export interface ModePoint {
   icone?: ReactNode;
   /** le mode annonce lui-même ce qui change (une phrase plus précise que « Mode … activé ») */
   annonceEnPropre?: boolean;
+  /**
+   * Navigation progressive : un mode qui a des enfants est une famille. Le choisir remplace les choix de l'anneau
+   * par ses sous-outils (on revient avec « Retour », Échap ou le centre). `ouvrir` n'est alors pas appelé.
+   */
+  enfants?: () => ModePoint[];
+  /** une couleur : le choix est montré en pastille (fils, nuances) ; le mot reste dit et affiché au centre */
+  couleur?: string;
+  /** le menu reste ouvert après ce choix (une bascule qu'on veut voir changer : Symboles, Grille) */
+  resteOuvert?: boolean;
   ouvrir: () => void;
+}
+
+/* ——— Navigation progressive ——— */
+export const RETOUR = "__retour", ORIGINE = "__origine", SUITE = "__suite";
+/** Au-delà de `parPage` choix, une famille se lit par pages : « Suivantes » ajoute la page d'après (les nuances DMC). */
+export function paginer(items: ModePoint[], page: number, parPage = 16, allerA: (p: number) => void = () => {}): ModePoint[] {
+  if (items.length <= parPage) return items;
+  const pages = Math.ceil(items.length / parPage), p = ((page % pages) + pages) % pages;
+  return [...items.slice(p * parPage, p * parPage + parPage),
+    { id: SUITE, nom: `Suivantes (${p + 1}/${pages})`, aide: `page ${p + 2 > pages ? 1 : p + 2} sur ${pages}`, groupe: "socle", resteOuvert: true, ouvrir: () => allerA(p + 1) }];
+}
+/** Les choix d'un niveau : Retour en tête (à la place du repère), Point Zéro dès le deuxième niveau, puis les enfants. */
+export function niveau(enfants: ModePoint[], profondeur: number, parent: string, actions: { retour: () => void; origine: () => void }): ModePoint[] {
+  if (profondeur === 0) return enfants;
+  const tete: ModePoint[] = [{ id: RETOUR, nom: "Retour", aide: `revenir avant ${parent}`, groupe: "socle", resteOuvert: true, ouvrir: actions.retour }];
+  if (profondeur >= 2) tete.push({ id: ORIGINE, nom: "Point Zéro", aide: "revenir au premier cercle du Point", groupe: "socle", resteOuvert: true, ouvrir: actions.origine });
+  return [...tete, ...enfants];
 }
 
 const RANG: Record<GroupeMode, number> = { acces: 0, socle: 1, metier: 2, creation: 3 };

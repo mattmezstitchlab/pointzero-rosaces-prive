@@ -57,3 +57,20 @@ export function placePointDuBloc(b: { x: number; y: number; w: number; h: number
   /* dessous, aligné sur le coin droit : le centre du bloc reste libre pour son contenu (l'accueil, un aperçu) */
   return { left: clamp(b.x + b.w - taille, marge, ecran.w - taille - marge), top: clamp(b.y + b.h + marge, haut, ecran.h - taille - marge), bord: "dessous" as const };
 }
+
+type Rect = { left: number; top: number; right: number; bottom: number };
+const croise = (a: Rect, b: Rect) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+/**
+ * Le Point du bloc ne recouvre rien d'utile (le bouton d'import, « Composer une rosace » quand le texte est agrandi…) :
+ * s'il touche un obstacle, il descend sous lui, sinon passe à sa gauche, sinon remonte au-dessus ; toujours dans l'écran.
+ */
+export function eviterObstacles<P extends { left: number; top: number }>(p: P, obstacles: Rect[], ecran: { w: number; h: number }, haut = 72, taille = 46, marge = 10): P {
+  const boite = (q: { left: number; top: number }): Rect => ({ left: q.left, top: q.top, right: q.left + taille, bottom: q.top + taille });
+  const touches = obstacles.filter(o => o.right > o.left && o.bottom > o.top && croise(boite(p), o));
+  if (!touches.length) return p;
+  const dedans = (q: { left: number; top: number }) => q.left >= marge && q.top >= haut && q.left + taille <= ecran.w - marge && q.top + taille <= ecran.h - marge;
+  const bas = Math.max(...touches.map(o => o.bottom)), gauche = Math.min(...touches.map(o => o.left)), dessus = Math.min(...touches.map(o => o.top));
+  for (const q of [{ left: p.left, top: bas + marge }, { left: gauche - taille - marge, top: p.top }, { left: p.left, top: dessus - taille - marge }])
+    if (dedans(q) && !obstacles.some(o => croise(boite(q), o))) return { ...p, ...q };
+  return p;
+}

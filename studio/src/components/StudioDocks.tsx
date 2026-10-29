@@ -76,6 +76,10 @@ interface Props {
   couleur?: number;
   /** un bloc demandé d'ailleurs ; n change à chaque demande */
   blocDemande?: { bloc: BlocDemande; n: number } | null;
+  /** les lignes de la grille, visibles ou masquées (Affichage, dans le Point du bloc) */
+  grille?: "visible" | "masquee"; onGrille?: () => void;
+  /** ouvrir le sélecteur de fichier de l'import (image, PDF, projet) */
+  onImporter?: () => void;
 }
 type Genre = "tout" | "outils" | "fils" | "fonctions";
 const GENRES: [Genre, string][] = [["tout", "Tout"], ["outils", "Outils"], ["fils", "Fils"], ["fonctions", "Fonctions"]];
@@ -330,12 +334,18 @@ export default function StudioDocks(p: Props) {
     </header>
 
     {loupe && p.pattern && <div className="pzs-loupe-dock"><Loupe pattern={p.pattern} /><button type="button" className="pzs-loupe-fermer" aria-label="Fermer la loupe" onClick={() => setLoupe(false)}><X size={16} aria-hidden="true" /></button></div>}
-    {essaiBloc ? (p.sansPoint ? null : <PointDuBloc<ContexteBroderie> type="broderie" nom={p.patternName} contexte={{
-      symboles: !!p.symbols, patron: p.view === "pattern", loupe,
-      points: () => { p.onWorkspace("create"); p.onPath("dessiner"); setBloc("outils"); },
-      fils: () => { p.onPath("fils"); setBloc("nuancier"); },
-      basculerSymboles: p.onSymbols, basculerPatron: () => p.onView(p.view === "pattern" ? "real" : "pattern"),
-      basculerLoupe: () => setLoupe(v => !v), toutVoir: p.zoom.fit,
+    {essaiBloc ? (p.sansPoint ? null : <PointDuBloc<ContexteBroderie> type="broderie" nom={p.patternName} part={prog} etiquette={total ? "patron brodé à " + Math.round(prog * 100) + " %" : undefined} contexte={{
+      outil: p.tool,
+      choisirOutil: (t, atelier) => { if (p.workspace !== atelier) p.onWorkspace(atelier); p.onPath(atelier === "stitch" ? "broder" : "dessiner"); p.onTool(t); },
+      couleur: p.couleur ?? 0, filsDuMotif: (p.progression?.couleurs ?? []).map(c => c.idx),
+      choisirFil: idx => p.onCouleur?.(idx),
+      vue: p.view, choisirVue: p.onView,
+      symboles: !!p.symbols, basculerSymboles: p.onSymbols,
+      grille: p.grille ?? "visible", basculerGrille: () => p.onGrille?.(),
+      loupe, basculerLoupe: () => setLoupe(v => !v), toutVoir: p.zoom.fit,
+      importer: () => p.onImporter?.(), exporter: p.actions.exportPanel, filsEtToile: p.actions.threadsSettings, suivi: p.actions.follow,
+      guide: p.actions.visite,
+      dockClassique: () => { ecrireEssaiBloc(false); setEssaiBloc(false); requestAnimationFrame(() => cercleRef.current?.focus()); },
     }} />) : <>
     <nav className="pzs-bottom" aria-label="Se repérer dans le studio" data-defile ref={el => { rangBas.current = el; }} onKeyDown={e => { if (e.key === "Escape" && loupe) { e.preventDefault(); setLoupe(false); return; } if (e.key === "Escape" && modes) { e.preventDefault(); setModes(false); cercleRef.current?.focus(); } }}>
       {/* Le Point, contrôleur universel : Confort (toujours premier), Loupe, Guide, puis le métier (Broderie : Repères, Fils, Progression) */}
