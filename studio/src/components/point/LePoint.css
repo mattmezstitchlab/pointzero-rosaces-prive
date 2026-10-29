@@ -151,3 +151,24 @@ html[data-pz-motion="reduce"] .lp-compact { animation: none; }
 .lp-centre-niveau .lp-centre { width: 44px; height: 44px; margin: -22px 0 0 -22px; }
 .lp-centre-niveau small { position: absolute; left: 0; right: 0; top: 22px; font-size: 10px; color: rgba(255,255,255,.62); line-height: 1.2; }
 .lp-centre-niveau b { position: absolute; left: 0; right: 0; bottom: 24px; font-size: 13px; line-height: 1.15; }
+
+/* ===== La sphère nacrée : lumineuse, une profondeur subtile (jamais un ovale noir au centre) ===== */
+.lp-centre { background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,.98) 0 9%, rgba(255,255,255,0) 26%),
+    radial-gradient(circle at 70% 78%, rgba(185,240,228,.9) 0, rgba(185,240,228,0) 46%),
+    radial-gradient(circle at 24% 72%, rgba(255,214,236,.95) 0, rgba(255,214,236,0) 48%),
+    radial-gradient(circle at 50% 50%, #e4ecff 0, #c9b8ff 58%, #9f8fe0 100%);
+  box-shadow: inset -6px -8px 14px rgba(70,52,140,.35), inset 4px 5px 10px rgba(255,255,255,.55), 0 0 26px rgba(201,184,255,.38), 0 0 2px rgba(255,255,255,.6); }
+.lp-centre-niveau.lp-centre-seul { width: 72px; height: 72px; }
+.lp-centre-niveau.lp-centre-seul .lp-centre { width: 52px; height: 52px; margin: -26px 0 0 -26px; }
+.lp-centre-niveau.lp-centre-seul.lp-centre-petit .lp-centre { width: 36px; height: 36px; margin: -18px 0 0 -18px; }
+/* le cartouche, discret, à cheval sous le disque */
+.lp-cartouche { position: absolute; left: 50%; top: calc(100% - 10px); transform: translateX(-50%); margin: 0; display: flex; align-items: baseline; gap: 8px; max-width: calc(100% + 40px); padding: 7px 14px; border-radius: 999px;
+  background: rgba(250,249,246,.96); color: #0b0b0c; box-shadow: 0 0 0 1px rgba(11,11,12,.12), 0 8px 20px rgba(11,11,12,.18); white-space: nowrap; pointer-events: none; }
+.lp-cartouche small { font-size: 10.5px; color: #5f5e5a; overflow: hidden; text-overflow: ellipsis; }
+.lp-cartouche b { font-size: 14px; font-weight: 800; }
+.lp-cartouche i { font-style: normal; font-size: 12px; color: #3a3a38; overflow: hidden; text-overflow: ellipsis; }
+/* la scène : le disque posé dans une page, toujours ouvert */
+.lp-scene-hote { display: block; }
+.lp-anneau.lp-scene { position: relative; z-index: auto; animation: none; }
+.lp-scene-hote .lp-liste { position: relative; left: auto; right: auto; bottom: auto; max-height: none; }

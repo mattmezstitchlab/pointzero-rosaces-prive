@@ -28,8 +28,13 @@ const SIGNES: Record<string, ReactNode> = {
   [EFFACER]: svg(<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />),
 };
 
-export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette, guide = "cercle", annonceExterne, refBouton, ancrage = "dessus", memoire }: {
+export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette, guide = "cercle", annonceExterne, refBouton, ancrage = "dessus", memoire, scene = false }: {
   modes: ModePoint[];
+  /**
+   * Présentation « scène » (une page qui montre le Point, comme la landing) : le disque est posé dans la page, toujours ouvert,
+   * sans bouton ni portail. Même noyau, mêmes niveaux, mêmes touches, mêmes annonces ; il ne prend le focus qu'après un geste.
+   */
+  scene?: boolean;
   /** retenir les habitudes sous cette clé (sur l'appareil, jamais dans l'ouvrage) : un accès « Favoris » apparaît au premier cercle */
   memoire?: string;
   /** dessus : l'anneau s'ouvre au-dessus du Point (dans un dock) ; autour : centré sur le Point (sur le bord d'un bloc) */
@@ -56,7 +61,9 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
       return { ...f.mode, id, enfants: undefined, aide: (f.genre === "recent" ? "récent" : `souvent, ${f.n} fois`) + " · " + [...f.familles.map(x => x.nom), f.mode.nom].join(" › ") }; }),
       { id: EFFACER, nom: "Oublier", aide: "effacer les favoris de cet appareil", groupe: "socle", icone: SIGNES[EFFACER], ouvrir: () => { if (memoire) oublierUsage(memoire); setUsageV(v => v + 1); } }] } : null;
   const racineModes = familleFav ? anneau([...modes, familleFav]) : base;
-  const [ouvert, setOuvert] = useState(false);
+  const [ouvert, setOuvert] = useState(scene);
+  /* en scène, le disque ne vole jamais le focus au chargement : seulement après un geste de la personne */
+  const interagi = useRef(!scene);
   const [focus, setFocus] = useState(0);
   const [onde, setOnde] = useState(0);
   const [annonce, setAnnonce] = useState("");
@@ -93,10 +100,11 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
   const [arc, setArc] = useState<ReturnType<typeof dispositionArc> | null>(null);
   const [panneau, setPanneau] = useState({ left: 8, right: 8, bottom: 80 });
   useEffect(() => { if (annonceExterne) setAnnonce(annonceExterne); }, [annonceExterne]);
-  useEffect(() => { if (ouvert) items.current[Math.min(focus, n - 1)]?.focus(); }, [ouvert, focus, n, chemin, page, pres]);
+  useEffect(() => { if (ouvert && interagi.current) items.current[Math.min(focus, n - 1)]?.focus(); }, [ouvert, focus, n, chemin, page, pres]);
+  useEffect(() => { if (scene) setPres(lirePresentation() === "liste" ? "liste" : "anneau"); }, [scene]);
   /* un clic ailleurs referme l'anneau, sans prendre le focus */
   useEffect(() => {
-    if (!ouvert) return;
+    if (!ouvert || scene) return;
     /* un toucher à côté referme le menu et s'arrête là : il ne choisit pas, par mégarde, ce qui est dessous */
     const avaler = (e: Event) => { e.stopPropagation(); e.preventDefault(); };
     const dehors = (e: PointerEvent) => { const t = e.target as Node; if (!racine.current?.contains(t) && !anneauRef.current?.contains(t)) {
@@ -114,6 +122,7 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
   };
   const choisir = (i: number) => {
     const m = courant[i]; if (!m) return;
+    interagi.current = true;
     if (m.enfants) {
       const sous = m.enfants();
       setChemin(c => [...c, m.id]); setPage(0); setFocus(profondeur + 1 >= 2 ? 2 : 1); setOnde(o => o + 1);
@@ -127,7 +136,8 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
       return;
     }
     noter(m);
-    fermer(false); setOnde(o => o + 1);
+    if (!scene) fermer(false);
+    setOnde(o => o + 1);
     if (!m.annonceEnPropre) setAnnonce(profondeur === 0 ? `Mode ${m.nom} ${m.actif ? "désactivé" : "activé"}.` : m.actif !== undefined ? `${m.nom} ${m.actif ? "désactivé" : "activé"}.` : `${m.nom} : choisi.`);
     m.ouvrir();
   };
@@ -139,7 +149,7 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
     if (p === "arc") setArc(dispositionArc(nb, cx, cy, w));
     setPanneau(placePanneau(r.top, h));
     const top = ancrage === "autour" ? cy - cote / 2 : r.top - cote - 10;
-    setPos({ left: Math.max(8, Math.min(cx - cote / 2, w - cote - 8)), top: Math.max(8, Math.min(top, h - cote - 8)) });
+    setPos({ left: Math.max(8, Math.min(cx - cote / 2, w - cote - 8)), top: Math.max(8, Math.min(top, h - cote - 36)) });
   };
   useEffect(() => { if (ouvert) placer(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [ouvert, n, COTE]);
   const basculer = () => { if (ouvert) fermer(); else { setChemin([]); setPage(0); setFocus(0); placer(racineModes.length, cotePour(racineModes.length)); setOuvert(true); } };
@@ -154,13 +164,13 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
 
   const onKeyMenu = (e: KeyboardEvent) => {
     /* les touches de l'anneau restent à l'anneau : le contexte (compositeur, grille) ne les reçoit pas */
-    e.stopPropagation();
+    e.stopPropagation(); interagi.current = true;
     const pas = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
     if (pas) { e.preventDefault(); setFocus(f => tourner(Math.min(f, n - 1), n, pas)); return; }
     if (e.key === "Home") { e.preventDefault(); setFocus(0); }
     else if (e.key === "End") { e.preventDefault(); setFocus(n - 1); }
-    else if (e.key === "Escape" || (e.key === "Backspace" && profondeur > 0)) { e.preventDefault(); if (profondeur > 0) remonter(); else fermer(); }
-    else if (e.key === "Tab") fermer(false);
+    else if (e.key === "Escape" || (e.key === "Backspace" && profondeur > 0)) { if (profondeur > 0) { e.preventDefault(); remonter(); } else if (!scene) { e.preventDefault(); fermer(); } }
+    else if (e.key === "Tab" && !scene) fermer(false);
   };
 
   const actifs = racineModes.filter(m => m.actif).map(m => m.nom);
@@ -187,7 +197,7 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
     : <><span className="lp-rond">{m.actif && <span className="lp-marque" aria-hidden="true" />}{rond(m)}</span><span className="lp-mot">{m.nom}{m.enfants && <span className="lp-plus" aria-hidden="true">›</span>}</span></>;
   const propsMenu = { ref: anneauRef, id: idMenu, role: "menu", "aria-label": "Le Point · " + (parent?.nom ?? "Point Zéro"), onKeyDown: onKeyMenu, "data-niveau": profondeur };
   /* ordinateur : l'anneau ; au centre, le nom du choix en cours (et, sous un niveau, le centre fait revenir) */
-  const anneau_ = () => <div {...propsMenu} className={"lp-anneau" + (pastilles ? " lp-anneau-pastilles" : "")} data-presentation="anneau" aria-orientation="horizontal" style={{ width: COTE, height: COTE, left: pos.left, top: pos.top }}>
+  const anneau_ = () => <div {...propsMenu} className={"lp-anneau" + (pastilles ? " lp-anneau-pastilles" : "") + (scene ? " lp-scene" : "")} data-presentation="anneau" aria-orientation="horizontal" style={scene ? { width: COTE, height: COTE } : { width: COTE, height: COTE, left: pos.left, top: pos.top }}>
     <svg className="lp-trace" width={COTE} height={COTE} aria-hidden="true">
       <circle cx={COTE / 2} cy={COTE / 2} r={RAYON} fill="none" />
       <line x1={COTE / 2} y1={COTE / 2 - RAYON - (pastilles ? 22 : 30)} x2={COTE / 2} y2={COTE / 2 - RAYON - (pastilles ? 12 : 18)} />
@@ -196,11 +206,12 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
       return <button key={"in-" + f.id} type="button" tabIndex={-1} aria-hidden="true" className={"lp-interieur" + (f.id === parent?.id ? " lp-interieur-on" : "")}
         style={{ left: x, top: y, background: f.couleur }} title={f.nom} onClick={() => { setChemin(c => [...c.slice(0, -1), f.id]); setPage(0); setFocus(1); setAnnonce(`${f.nom} : ${f.enfants?.().length ?? 0} choix.`); }} />; })}
     {profondeur === 0 ? <span className="lp-centre" aria-hidden="true" />
-      : pastilles ? <button type="button" tabIndex={-1} aria-hidden="true" className={"lp-centre-mot" + (interieur.length ? " lp-centre-petit" : "")} onClick={remonter} title="Revenir d’un niveau">
-          <small>{fil}</small><b>{m0?.nom}</b>{m0?.couleur && !m0.enfants && <i>{m0.aide}</i>}</button>
+      : pastilles ? <button type="button" tabIndex={-1} aria-hidden="true" className={"lp-centre-niveau lp-centre-seul" + (interieur.length ? " lp-centre-petit" : "")} onClick={remonter} title="Revenir d’un niveau"><span className="lp-centre" /></button>
       : <button type="button" tabIndex={-1} aria-hidden="true" className="lp-centre-niveau" onClick={remonter} title="Revenir d’un niveau">
           <small>{fil}</small><span className="lp-centre" /><b>{m0 && !NAV.has(m0.id) ? m0.nom : parent?.nom}</b></button>}
     {courant.map((m, i) => { const { x, y } = positionDe(i, n, RAYON, COTE); return item(m, i, { left: x, top: y }, contenuMot(m), pastilles ? " lp-pastille-anneau" : " lp-outil"); })}
+    {/* le cartouche : où l'on est et ce qu'on montre (« DMC 351 · Corail », « Luminosité +20 »), posé sous le disque, jamais sur la sphère */}
+    {pastilles && m0 && <p className="lp-cartouche" aria-hidden="true"><small>{fil}</small><b>{m0.nom}</b>{(m0.couleur || m0.valeur) && !m0.enfants && m0.aide !== m0.nom && <i>{m0.aide}</i>}</p>}
   </div>;
   /* au choix : un quart d'arc collé au Point, pictogrammes, le mot du choix en cours affiché au-delà de sa pastille */
   const arc_ = (d: ReturnType<typeof dispositionArc>) => { const { boite: bx, points, rayon, sens } = d;
@@ -225,6 +236,10 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
     {courant.map((m, i) => item(m, i, undefined, <><span className="lp-liste-nom">{m.couleur ? <span className="lp-pastille-couleur" aria-hidden="true" /> : m.valeur ? <span className="lp-valeur" aria-hidden="true">{m.valeur}</span> : (SIGNES[m.id] ?? m.icone) && <span className="lp-liste-icone" aria-hidden="true">{SIGNES[m.id] ?? m.icone}</span>}{m.nom}{m.enfants && <span className="lp-plus" aria-hidden="true">›</span>}</span><span className="lp-liste-aide">{m.aide}</span></>, " lp-ligne"))}
   </div>;
 
+  if (scene) return <div className="lp lp-scene-hote" ref={racine}>
+    {pres === "liste" ? liste_() : anneau_()}
+    <span className="lp-annonce" role="status" aria-live="polite">{annonce}</span>
+  </div>;
   return <div className="lp" ref={racine}>
     <button ref={el => { bouton.current = el; if (refBouton) refBouton.current = el; }} type="button" data-guide={guide} className="pzs-cercle lp-point" aria-haspopup="menu" aria-expanded={ouvert} aria-controls={idMenu}
       aria-label={nom} title="Le Point : confort, loupe, guide…" onClick={onClick} onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerCancel={() => { tire.current = null; }}>

@@ -3,6 +3,10 @@ import TopDock from "./TopDock";
 import Metamorphose from "./Metamorphose";
 import TraineePoints from "./TraineePoints";
 import "./CrossStitchHome.css";
+import Edition, { CHAPITRES_EDITION } from "./edition/Edition";
+
+/** L'édition (la nouvelle narration sous le héros) : en essai privé derrière ?edition, la page actuelle reste la même sans ce paramètre. */
+const estEdition = () => { try { return new URLSearchParams(window.location.search).has("edition"); } catch { return false; } };
 
 export type StitchEntry = "create" | "library" | "prepare" | "stitch";
 interface Props {
@@ -115,6 +119,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
   const [chapitre, setChapitre] = useState<string | null>(null);
   const enter = () => (onOuvrages ? onOuvrages() : onOpen("library"));
   const visite = () => (onVisite ? onVisite() : onOpen("create"));
+  const [edition] = useState(estEdition);
   useParallaxe();
 
   // Repère : la section visible est mise en évidence dans le dock du bas.
@@ -163,30 +168,32 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
       menu={[{ label: "Mes ouvrages", faire: () => onOpen("library") }, { label: "Ouvrir le studio", faire: () => onOpen("stitch") }, { label: "Faire la visite avec Le Point", faire: visite }]}
       droite={<button type="button" className="pzs-tool pzs-noir pzh-entrer" onClick={enter} aria-label="Entrer dans Point Zéro"><span aria-hidden="true">+</span> Entrer</button>}>
       <a className="pzs-tool" href="#chapitres" onClick={go("chapitres")}>Le studio</a>
-      <a className="pzs-tool" href="#ch-point" onClick={go("ch-point")}>Le Point</a>
+      <a className="pzs-tool" href={edition ? "#ed-origine" : "#ch-point"} onClick={go(edition ? "ed-origine" : "ch-point")}>Le Point</a>
       <a className="pzs-tool" href="#tout" onClick={go("tout")}>Tout le studio</a>
       <a className="pzs-tool" href="#csh-import" onClick={go("csh-import")}>Importer</a>
     </TopDock>
 
     {/* l'index des chapitres, à gauche, comme une table des matières qui suit la lecture */}
-    <nav className={"ix" + (chapitre ? " ix-on" : "")} aria-label="Chapitres">
+    {!edition && <nav className={"ix" + (chapitre ? " ix-on" : "")} aria-label="Chapitres">
       <p className="ix-tete">Point Zéro<span>Édition point de croix</span></p>
       <ol>{CHAPITRES.map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)} aria-current={chapitre === c.id ? "true" : undefined}><span className="ix-nom">{c.titre}</span><span className="ix-points" aria-hidden="true" /><span className="ix-num">{c.num}</span></a></li>)}</ol>
-    </nav>
+    </nav>}
 
     <main id="csh-main">
       <Metamorphose src={IMG + "peinture-roses.webp"} titre="Point Zéro">
         <p className="mm-sous">Du tableau à la dernière croix.</p>
-        <ol className="mm-sommaire">{CHAPITRES.map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.titre}</a><span>{c.num}</span></li>)}</ol>
+        <ol className="mm-sommaire">{(edition ? CHAPITRES_EDITION : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.titre}</a><span>{c.num}</span></li>)}</ol>
         <div className="mm-actions">
           <button className="pzh-btn pzh-btn-clair" onClick={() => onOpen("create")}>Créer mon patron</button>
           <button className="pzh-btn mm-btn-point" onClick={visite}><span className="pzh-dot" aria-hidden="true" />Faire la visite avec Le Point</button>
         </div>
       </Metamorphose>
 
-      <div id="chapitres" className="chapitres">
+      {edition
+        ? <div id="chapitres"><Edition actions={{ ouvrir: e => onOpen(e), importer: onImport, visite }} /></div>
+        : <div id="chapitres" className="chapitres">
         {CHAPITRES.map((c, n) => <ChapitreVue key={c.id} c={c} n={n} onVoir={setChapitre} />)}
-      </div>
+      </div>}
 
       <section className="pzh-section tout" id="tout" aria-labelledby="tout-titre">
         <div className="tout-tete">
@@ -287,7 +294,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
 
     <nav className="pzh-bottom" aria-label="Sections de la page">
       <button type="button" className="pzh-bottom-orb" aria-label="Le Point : faire la visite du studio" title="Le Point : faire la visite" onClick={visite} />
-      {SECTIONS.map(([id, label]) => <a key={id} href={"#" + id} onClick={go(id)} aria-current={current === id ? "location" : undefined} className={current === id ? "is-on" : undefined}>{label}</a>)}
+      {SECTIONS.map(([id0, label]) => [edition && id0 === "ch-point" ? "ed-origine" : id0, label] as const).map(([id, label]) => <a key={id} href={"#" + id} onClick={go(id)} aria-current={current === id ? "location" : undefined} className={current === id ? "is-on" : undefined}>{label}</a>)}
     </nav>
   </div>;
 }
