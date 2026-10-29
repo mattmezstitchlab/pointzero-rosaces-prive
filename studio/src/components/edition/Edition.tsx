@@ -14,12 +14,15 @@ import { FLOSS } from "../../lib/dmc";
 import { FAMILLES, filsParFamille, familleDe, hsl } from "../../lib/famillesFils";
 import { etapeDe, lisse, mouvementReduit, suivreScene } from "./defilement";
 import { dessinerRosace, ETAPES_ROSACE, rosaceDe, SEUILS_ROSACE } from "./rosace";
+import Histoire, { CHAPITRES_HISTOIRE } from "./Histoire";
 import "./Edition.css";
+import "./Histoire.css";
 
 export const CHAPITRES_EDITION = [
-  { id: "ed-origine", num: "01", titre: "L’origine" },
-  { id: "ed-rosace", num: "02", titre: "Une rosace naît" },
-  { id: "ed-fils", num: "04", titre: "Le nuage de fils" },
+  ...CHAPITRES_HISTOIRE,
+  { id: "ed-fils", num: "05", titre: "Aujourd’hui" },
+  { id: "ed-rosace", num: "06", titre: "Créez maintenant" },
+  { id: "ed-origine", num: "07", titre: "L’atelier" },
 ] as const;
 
 interface Actions {
@@ -30,7 +33,7 @@ interface Actions {
 }
 
 /* ——— Le disque dans la page : le même Point, posé, ajusté à la largeur disponible ——— */
-function Disque({ contexte, modes, etiquette, children, max = 1 }: { contexte: string; modes: ModePoint[]; etiquette: string; children?: ReactNode; max?: number }) {
+export function Disque({ contexte, modes, etiquette, children, max = 1 }: { contexte: string; modes: ModePoint[]; etiquette: string; children?: ReactNode; max?: number }) {
   const hote = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = hote.current; if (!el) return;
@@ -65,7 +68,7 @@ function useFichier(importer: (f: File) => void) {
 
 const aller = (id: string) => {
   const el = document.getElementById(id); if (!el) return;
-  el.scrollIntoView({ behavior: mouvementReduit() ? "auto" : "smooth", block: "start" });
+  el.scrollIntoView?.({ behavior: mouvementReduit() ? "auto" : "smooth", block: "start" });
   el.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
 };
 
@@ -91,16 +94,17 @@ function Origine({ actions }: { actions: Actions }) {
     { id: "broder", nom: "Broder", icone: <Spool aria-hidden="true" />, aide: "reprendre l’ouvrage en cours", groupe: "metier", ouvrir: () => actions.ouvrir("stitch") },
     { id: "visite", nom: "Visite", icone: <Compass aria-hidden="true" />, aide: "la visite de l’atelier avec le Point", groupe: "socle", ouvrir: actions.visite },
   ];
-  const phrases = ["Un point.", "Un seul centre, et autour, tout l’atelier.", "Choisissez : le disque devient l’outil."];
+  const phrases = ["Un seul centre, et autour, tout l’atelier.", "Le disque devient l’outil que vous choisissez.", "Puis il redevient un point : le vôtre."];
   return <section ref={scene} id="ed-origine" className="ed-scene ed-origine" aria-labelledby="ed-origine-titre" data-etape={etape}>
     <div className="ed-plateau">
       <div className="ed-texte">
-        <p className="ed-num">01 · L’origine</p>
-        <h2 id="ed-origine-titre" tabIndex={-1}>Tout part d’un point.</h2>
+        <p className="ed-num">07 · L’atelier vous attend</p>
+        <h2 id="ed-origine-titre" tabIndex={-1}>Tout commence au Point Zéro.</h2>
         <ol className="ed-phrases">{phrases.map((t, k) => <li key={k} aria-current={k === etape ? "step" : undefined}>{t}</li>)}</ol>
+        <button type="button" className="ed-cta" onClick={() => actions.ouvrir("create")}>Créer mon premier motif</button>
         <p className="ed-aide">Le disque est celui de l’atelier. Touchez une famille pour l’ouvrir ; Retour, ou Échap, pour revenir. Au clavier : Tab, puis les flèches et Entrée.</p>
       </div>
-      <div className="ed-scene-disque ed-grandit">
+      <div className="ed-scene-disque ed-grandit ed-revient">
         <Disque max={1.3} contexte="edition-origine" modes={modes} etiquette="Le Point de Point Zéro : l’atelier en un disque" />
       </div>
     </div>
@@ -148,8 +152,8 @@ function RosaceNait() {
   return <section ref={scene} id="ed-rosace" className="ed-scene ed-rosace" aria-labelledby="ed-rosace-titre" data-etape={etape}>
     <div className="ed-plateau">
       <div className="ed-texte">
-        <p className="ed-num">02 · Une rosace naît</p>
-        <h2 id="ed-rosace-titre" tabIndex={-1}>Cinq choix, une rosace.</h2>
+        <p className="ed-num">06 · Créez maintenant</p>
+        <h2 id="ed-rosace-titre" tabIndex={-1}>Et si c’était votre rosace ?</h2>
         <ol className="ed-phrases ed-phrases-5">{ETAPES_ROSACE.map((t, k) => <li key={t} aria-current={k === etape ? "step" : undefined}>{t}</li>)}</ol>
         <p className="ed-recette"><b>{nom ?? "Rosace"}</b> <code>{code}</code> · {rosace.fils} fils DMC · {rosace.w} × {rosace.h} points</p>
       </div>
@@ -209,8 +213,9 @@ function NuageFils() {
   return <section ref={scene} id="ed-fils" className="ed-scene ed-fils" aria-labelledby="ed-fils-titre" data-etape={etape}>
     <div className="ed-plateau">
       <div className="ed-texte">
-        <p className="ed-num">04 · Le nuage de fils</p>
+        <p className="ed-num">05 · Aujourd’hui</p>
         <h2 id="ed-fils-titre" tabIndex={-1}>489 fils, un seul geste.</h2>
+        <p className="ed-chapeau">Le même amour des couleurs, maintenant dans vos mains : explorez les fils du nuancier, famille par famille.</p>
         <ol className="ed-phrases">{etapes.map((t, k) => <li key={t} aria-current={k === etape ? "step" : undefined}>{t}</li>)}</ol>
       </div>
       <div className="ed-scene-disque ed-nuancier">
@@ -232,9 +237,12 @@ function NuageFils() {
 }
 
 export default function Edition({ actions }: { actions: Actions }) {
-  return <div className="ed" data-edition="a">
-    <Origine actions={actions} />
-    <RosaceNait />
+  const fichier = useFichier(actions.importer);
+  return <div className="ed" data-edition="b">
+    <Histoire Disque={Disque} actions={{ ouvrir: actions.ouvrir, visite: actions.visite, choisirFichier: fichier.choisir, aller }} />
     <NuageFils />
+    <RosaceNait />
+    <Origine actions={actions} />
+    {fichier.champ}
   </div>;
 }

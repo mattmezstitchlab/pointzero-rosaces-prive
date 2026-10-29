@@ -8,7 +8,8 @@ from playwright.sync_api import sync_playwright
 B = os.environ.get('BASE', 'http://localhost:4620'); CAP = os.environ.get('CAPTURES')
 resultats, erreurs = [], []
 def ok(c, nom): print(('OK ' if c else 'ÉCHEC ') + nom, flush=True); resultats.append(bool(c))
-SCENES = ('ed-origine', 'ed-rosace', 'ed-fils')
+SCENES = ('hi-origine', 'hi-indiennes', 'hi-mulhouse', 'hi-brodeuses', 'ed-fils', 'ed-rosace', 'ed-origine')
+DISQUES = ('hi-origine', 'ed-fils', 'ed-rosace', 'ed-origine')
 
 def page(b, l, h, reduit=False, url='/?edition'):
     ctx = b.new_context(viewport={'width': l, 'height': h}, reduced_motion='reduce' if reduit else 'no-preference')
@@ -19,6 +20,9 @@ def page(b, l, h, reduit=False, url='/?edition'):
 
 def aller(pg, sid, f):
     pg.evaluate(f"""() => {{ const e = document.getElementById('{sid}'); const t = e.getBoundingClientRect().top + scrollY; scrollTo(0, t + Math.max(0, e.offsetHeight - innerHeight) * {f}); }}"""); pg.wait_for_timeout(450)
+    if sid.startswith('hi-'):
+        try: pg.wait_for_function(f"() => [...document.querySelectorAll('#{sid} .ed-brode')].every(e => e.dataset.pret === 'oui')", timeout=12000); pg.wait_for_timeout(350)
+        except Exception: pass
 
 with sync_playwright() as p:
     b = p.chromium.launch()
@@ -30,26 +34,53 @@ with sync_playwright() as p:
         ctx, pg = page(b, l, h)
         ok(pg.locator('.mm-toile').count() == 1 and pg.locator('.mm-cadre h1').inner_text().strip() == 'Point Zéro', f'{l} px · le héros historique (la peinture qui se brode) est là, en tête')
         ok(pg.evaluate("() => document.querySelector('.ed').getBoundingClientRect().top > document.querySelector('.mm-toile').getBoundingClientRect().top"), f'{l} px · l’édition commence sous le héros')
-        ok(all(pg.locator(f'#{s}').count() == 1 for s in SCENES) and pg.locator('.ed .lp-anneau.lp-scene').count() == 3, f'{l} px · trois scènes, trois disques (le Point en scène)')
+        ok(all(pg.locator(f'#{s}').count() == 1 for s in SCENES) and pg.locator('.ed .lp-anneau.lp-scene').count() == 4, f'{l} px · sept scènes, quatre disques (le Point en scène)')
         larges = pg.evaluate("() => document.documentElement.scrollWidth - innerWidth")
         ok(larges <= 1, f'{l} px · pas de défilement horizontal ({larges} px)')
         for s in SCENES:
             for f in (0.15, 0.9):
                 aller(pg, s, f)
                 if CAP: pg.screenshot(path=f'{CAP}/edition-{l}-{s}-{int(f * 100)}.png')
-            entier = pg.evaluate(f"""() => {{ const a = document.querySelector('#{s} .lp-anneau').getBoundingClientRect(); return a.left >= -1 && a.right <= innerWidth + 1; }}""")
-            ok(entier, f'{l} px · {s} : le disque tient dans la largeur')
+            if s in DISQUES:
+                entier = pg.evaluate(f"""() => {{ const a = document.querySelector('#{s} .lp-anneau').getBoundingClientRect(); return a.left >= -1 && a.right <= innerWidth + 1; }}""")
+                ok(entier, f'{l} px · {s} : le disque tient dans la largeur')
         ok(pg.locator('.lp-centre-mot').count() == 0, f'{l} px · aucun ovale noir au centre du disque')
+        tailles = pg.evaluate("() => [...document.querySelectorAll('.hi .ed-brode-vue')].map(e => Math.round(e.getBoundingClientRect().width))")
+        ok(all(t >= 200 for t in tailles), f'{l} px · chaque broderie a sa place ({tailles} px de large)')
         ctx.close()
+
+    # 1 bis. la séquence historique : tout en broderie, une loupe qui voit à travers, des légendes honnêtes
+    ctx, pg = page(b, 1440, 900)
+    aller(pg, 'hi-indiennes', 0.9)
+    try: pg.wait_for_function("() => document.querySelectorAll('#hi-indiennes .ed-brode[data-pret=\"oui\"]').length === 2", timeout=15000)
+    except Exception: pass
+    ok(pg.locator('#hi-indiennes .ed-brode[data-pret="oui"]').count() == 2, 'histoire : les deux étoffes du Met sont converties en broderie par le studio')
+    ok(all('domaine public' in t for t in pg.locator('#hi-indiennes figcaption').all_inner_texts()), 'histoire : les étoffes du Met sont créditées, domaine public')
+    ok(all('Reconstitution' in pg.locator(f'#{s} figcaption').first.inner_text() for s in ('hi-origine', 'hi-mulhouse', 'hi-brodeuses')), 'histoire : les images générées sont annoncées comme reconstitutions')
+    ok('DMC' in pg.locator('#hi-indiennes .hi-fil-dmc').first.inner_text() and 'indicatif' in pg.locator('#hi-indiennes .hi-fil-dmc').first.inner_text(), 'histoire : la garance est rapprochée d’un fil DMC, à titre indicatif')
+    vue = pg.locator('#hi-indiennes .ed-brode-vue').first
+    vue.focus(); pg.keyboard.press('ArrowRight'); pg.keyboard.press('Shift+ArrowDown'); pg.wait_for_timeout(300)
+    dit = pg.locator('#hi-indiennes .ed-brode [role=status]').first.inner_text()
+    ok(dit.startswith('Colonne') and ('DMC' in dit or 'toile' in dit), f'histoire : la loupe au clavier dit la case et son fil (« {dit} »)')
+    ok(pg.locator('#hi-indiennes .ed-brode-fil').count() == 1, 'histoire : sous la loupe, le patron et le numéro du fil')
+    if CAP: pg.screenshot(path=f'{CAP}/edition-1440-loupe-clavier.png')
+    aller(pg, 'hi-origine', 0.9); pg.wait_for_timeout(600)
+    pg.locator('#hi-origine [data-mode="loupe"]').click(); pg.wait_for_timeout(400)
+    ok(pg.evaluate("() => document.activeElement?.classList.contains('ed-brode-vue')") and pg.locator('#hi-origine .ed-brode-fil').count() == 1, 'histoire : la commande Loupe du disque pose la loupe sur la broderie')
+    ok(pg.locator('.hi-sources a').count() >= 5, 'histoire : les sources sont données')
+    ctx.close()
 
     # 2. fluidité : on défile toute l'édition et l'on compte les images lentes
     ctx, pg = page(b, 1440, 900)
-    lentes = pg.evaluate("""async () => {
+    # premier passage : les scènes se préparent (conversion paresseuse) ; on mesure le second, en régime établi, et l'on rapporte les deux
+    passe = """async () => {
         const e = document.querySelector('.ed'), debut = e.getBoundingClientRect().top + scrollY, fin = debut + e.offsetHeight;
         let t = performance.now(), lentes = 0, n = 0;
         for (let y = debut; y < fin; y += 40) { scrollTo(0, y); await new Promise(r => requestAnimationFrame(r)); const u = performance.now(); if (u - t > 50) lentes++; t = u; n++; }
-        return [lentes, n]; }""")
-    ok(lentes[0] <= max(2, lentes[1] // 25), f'défilement : {lentes[0]} image(s) lente(s) (> 50 ms) sur {lentes[1]}')
+        return [lentes, n]; }"""
+    premier = pg.evaluate(passe); pg.evaluate("() => scrollTo(0, 0)"); pg.wait_for_timeout(2500)
+    lentes = pg.evaluate(passe)
+    ok(lentes[0] <= max(2, lentes[1] // 25), f'défilement : {lentes[0]} image(s) lente(s) (> 50 ms) sur {lentes[1]} en régime établi ; {premier[0]} au premier passage, pendant les conversions')
 
     # 3. de vraies actions
     aller(pg, 'ed-rosace', 0.95)

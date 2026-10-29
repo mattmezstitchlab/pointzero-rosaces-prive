@@ -51,10 +51,10 @@ describe("Trois scènes, le même Point, de vraies actions", () => {
     const ouvrir = vi.fn();
     hote = document.createElement("div"); document.body.appendChild(hote); root = createRoot(hote);
     await act(async () => { root!.render(<Edition actions={{ ouvrir, importer: vi.fn(), visite: vi.fn() }} />); });
-    expect(document.querySelectorAll(".ed .lp-anneau.lp-scene").length).toBe(3);
+    expect(document.querySelectorAll(".ed .lp-anneau.lp-scene").length).toBe(4); // l'histoire, le nuancier, la rosace, l'atelier
     expect(document.querySelector(".ed .lp-point")).toBeNull();
     expect(document.activeElement).toBe(document.body);
-    for (const s of ["ed-origine", "ed-rosace", "ed-fils"]) expect(document.querySelector(`#${s} [role=menu] [data-mode="confort"]`)).toBeTruthy(); // Confort, toujours premier
+    for (const s of ["hi-origine", "ed-origine", "ed-rosace", "ed-fils"]) expect(document.querySelector(`#${s} [role=menu] [data-mode="confort"]`)).toBeTruthy(); // Confort, toujours premier
     await cliquer(dans("ed-origine", "creer"));
     expect(document.querySelector(".lp-centre-mot")).toBeNull();
     await cliquer(dans("ed-origine", "creer-motif"));
@@ -76,5 +76,17 @@ describe("Trois scènes, le même Point, de vraies actions", () => {
     await cliquer(nuance);
     expect(document.querySelector(".ed-fiche-code")!.textContent).toBe("DMC " + nuance.dataset.mode!.slice(4));
     expect(document.querySelector(".ed-fiche")!.textContent).toMatch(/simulation/);
+  });
+  it("la séquence historique : quatre tableaux brodés, des légendes honnêtes, des sources, le disque y navigue", async () => {
+    hote = document.createElement("div"); document.body.appendChild(hote); root = createRoot(hote);
+    await act(async () => { root!.render(<Edition actions={{ ouvrir: vi.fn(), importer: vi.fn(), visite: vi.fn() }} />); });
+    const legendes = [...document.querySelectorAll(".hi figcaption")].map(f => f.textContent ?? "");
+    expect(legendes.filter(t => /Reconstitution générée/.test(t)).length).toBe(3);
+    expect(legendes.filter(t => /The Met.*domaine public/.test(t)).length).toBe(2);
+    expect(document.querySelectorAll(".hi-sources a").length).toBe(5);
+    expect([...document.querySelectorAll(".ed-scene")].map(s => s.id)).toEqual(["hi-origine", "hi-indiennes", "hi-mulhouse", "hi-brodeuses", "ed-fils", "ed-rosace", "ed-origine"]);
+    const vu = vi.fn(); (document.getElementById("hi-mulhouse") as HTMLElement).scrollIntoView = vu;
+    await cliquer(dans("hi-origine", "histoire")); await cliquer(dans("hi-origine", "hi-3"));
+    expect(vu).toHaveBeenCalled();
   });
 });
