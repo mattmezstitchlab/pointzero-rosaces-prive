@@ -12,6 +12,7 @@ import { commandesDuBloc, typeBloc } from "../lib/point/registre";
 import { createPattern } from "../lib/pattern";
 import { FLOSS } from "../lib/dmc";
 import LePoint from "../components/point/LePoint";
+import { placeTambour } from "../components/TambourAtelier";
 import { appliquer, coinsInitiaux, convexe, homographie, matrix3d } from "../lib/tambour/homographie";
 import { ecrireCoins, lireCoins, resteAFaire } from "../lib/tambour/superposition";
 import { commandesSuperposition, type ContexteSuperposition } from "../components/blocs/superposition";
@@ -137,5 +138,27 @@ describe("Superposer un patron (lot B) : la perspective par quatre coins", () =>
     f("afaire").ouvrir(); expect(c.basculerAFaire).toHaveBeenCalled(); expect(f("afaire").aide).toContain("120");
     f("coins").enfants!()[0].ouvrir(); expect(c.reinitialiserCoins).toHaveBeenCalled();
     f("creer").ouvrir(); expect(c.creer).toHaveBeenCalled();
+  });
+});
+
+describe("Le Cadre-Tambour (essai de l'atelier)", () => {
+  let root: Root | null = null, hote: HTMLDivElement | null = null;
+  afterEach(() => { act(() => root?.unmount()); hote?.remove(); root = null; });
+  it("le tambour tient à l'écran avec son anneau d'outils, sur ordinateur comme sur téléphone", () => {
+    for (const [l, h] of [[1440, 900], [390, 844], [320, 568], [1024, 600]]) {
+      const t = placeTambour(l, h, 80);
+      expect(t.cx - t.r - 88).toBeGreaterThanOrEqual(-1); expect(t.cx + t.r + 88).toBeLessThanOrEqual(l + 1);
+      if (h - 80 > 2 * (60 + 96)) { expect(t.cy - t.r - 96).toBeGreaterThanOrEqual(79); expect(t.cy + t.r + 96).toBeLessThanOrEqual(h + 1); }
+    }
+  });
+  it("l'anneau entoure le tambour : les choix à r + 40 du centre, pas de sphère au centre, le centre laisse passer les gestes", () => {
+    hote = document.createElement("div"); document.body.appendChild(hote); root = createRoot(hote);
+    const modes = [{ id: "confort", nom: "Confort", aide: "c", groupe: "acces" as const, ouvrir: () => {} }, ...["a", "b", "c", "d", "e"].map(id => ({ id, nom: id, aide: id, groupe: "metier" as const, ouvrir: () => {} }))];
+    act(() => root!.render(<LePoint scene tambour={200} modes={modes} />));
+    const anneau = hote.querySelector<HTMLElement>(".lp-anneau.lp-tambour")!;
+    expect(anneau).not.toBeNull(); expect(hote.querySelector(".lp-centre, .lp-centre-niveau, .lp-centre-action")).toBeNull();
+    const cote = parseFloat(anneau.style.width), items = [...anneau.querySelectorAll<HTMLElement>("[role=menuitem]")];
+    expect(cote).toBe(2 * (200 + 96)); expect(items).toHaveLength(6);
+    for (const it of items) expect(Math.hypot(parseFloat(it.style.left) - cote / 2, parseFloat(it.style.top) - cote / 2)).toBeCloseTo(240, 3);
   });
 });

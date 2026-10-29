@@ -100,7 +100,10 @@ export default function Tambour() {
     if (mode !== "superposer") return;
     let vivant = true;
     void listProjects().then(l => { if (!vivant) return; const tries = [...l].sort((a, b) => b.updated - a.updated); setOuvrages(tries.map(r => ({ id: r.id, nom: r.name || "Sans titre" })));
-      if (!patron && tries[0]) void choisirPatron(tries[0].id); }).catch(() => setOuvrages([]));
+      /* « ?ouvrage=<id> » (depuis l'atelier : Sur ma toile) pose cet ouvrage ; sinon le plus récent */
+      let voulu: string | null = null; try { voulu = new URLSearchParams(window.location.search).get("ouvrage"); } catch { /* rien */ }
+      const choix = (voulu && tries.find(r => r.id === voulu)) || tries[0];
+      if (!patron && choix) void choisirPatron(choix.id); }).catch(() => setOuvrages([]));
     return () => { vivant = false; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);

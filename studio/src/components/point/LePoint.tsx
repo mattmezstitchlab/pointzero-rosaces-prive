@@ -28,13 +28,18 @@ const SIGNES: Record<string, ReactNode> = {
   [EFFACER]: svg(<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />),
 };
 
-export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette, guide = "cercle", annonceExterne, refBouton, ancrage = "dessus", memoire, scene = false, centre }: {
+export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette, guide = "cercle", annonceExterne, refBouton, ancrage = "dessus", memoire, scene = false, centre, tambour }: {
   modes: ModePoint[];
   /**
    * Facultatif (mode Tambour seulement, accord de Matt du 29/10) : au premier cercle, la sphère centrale devient un raccourci vers cette action
    * (la caméra). Elle reste un double d’une commande de l’anneau, qui seule la porte pour le clavier et le lecteur d’écran. Sans elle, rien ne change.
    */
   centre?: Pick<ModePoint, "nom" | "aide" | "ouvrir" | "actif" | "icone">;
+  /**
+   * Facultatif (présentation « scène » seulement, essai du Cadre-Tambour) : le rayon, en pixels, d'un tambour que l'anneau entoure.
+   * Les choix se posent autour du cercle, le centre reste vide et laisse passer les gestes vers l'ouvrage. Sans lui, rien ne change.
+   */
+  tambour?: number;
   /**
    * Présentation « scène » (une page qui montre le Point, comme la landing) : le disque est posé dans la page, toujours ouvert,
    * sans bouton ni portail. Même noyau, mêmes niveaux, mêmes touches, mêmes annonces ; il ne prend le focus qu'après un geste.
@@ -95,7 +100,8 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
   /* un niveau de couleurs (presque toutes) : un anneau serré de pastilles ; les rares autres choix s'y font ronds, à pictogramme */
   const choixNiveau = courant.filter(m => !NAV.has(m.id)), nCouleurs = choixNiveau.filter(m => !!m.couleur || !!m.valeur).length;
   const pastilles = profondeur > 0 && nCouleurs >= 3 && nCouleurs >= 0.7 * choixNiveau.length;
-  const RAYON = rayonPour(n, pastilles), COTE = cotePour(n, pastilles);
+  const enTambour = scene && !!tambour && tambour > 0;
+  const RAYON = enTambour ? tambour! + 40 : rayonPour(n, pastilles), COTE = enTambour ? 2 * (tambour! + 96) : cotePour(n, pastilles);
   /* l'anneau intérieur : la famille d'où viennent les nuances, quand elle est faite de couleurs elle aussi */
   const freres = profondeur >= 1 ? (profondeur === 1 ? racineModes : familles[profondeur - 2].enfants!()) : [];
   const interieur = pastilles && freres.filter(m => m.couleur).length >= 3 ? freres.filter(m => m.couleur) : [];
@@ -201,8 +207,10 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
   const contenuMot = (m: ModePoint) => pastilles ? rond(m)
     : <><span className="lp-rond">{m.actif && <span className="lp-marque" aria-hidden="true" />}{rond(m)}</span><span className="lp-mot">{m.nom}{m.enfants && <span className="lp-plus" aria-hidden="true">›</span>}</span></>;
   const propsMenu = { ref: anneauRef, id: idMenu, role: "menu", "aria-label": "Le Point · " + (parent?.nom ?? "Point Zéro"), onKeyDown: onKeyMenu, "data-niveau": profondeur };
+  /* le raccourci du centre (option « centre ») : un double, hors du clavier et du lecteur d'écran */
+  const centreAction = () => centre && <button type="button" tabIndex={-1} aria-hidden="true" className={"lp-centre-action" + (centre.actif ? " lp-centre-actif" : "")} onClick={() => centre.ouvrir()} title={centre.nom + " : " + centre.aide}><span className="lp-centre" />{centre.icone && <span className="lp-centre-signe">{centre.icone}</span>}</button>;
   /* ordinateur : l'anneau ; au centre, le nom du choix en cours (et, sous un niveau, le centre fait revenir) */
-  const anneau_ = () => <div {...propsMenu} className={"lp-anneau" + (pastilles ? " lp-anneau-pastilles" : "") + (scene ? " lp-scene" : "")} data-presentation="anneau" aria-orientation="horizontal" style={scene ? { width: COTE, height: COTE } : { width: COTE, height: COTE, left: pos.left, top: pos.top }}>
+  const anneau_ = () => <div {...propsMenu} className={"lp-anneau" + (pastilles ? " lp-anneau-pastilles" : "") + (scene ? " lp-scene" : "") + (enTambour ? " lp-tambour" : "")} data-presentation="anneau" aria-orientation="horizontal" style={scene ? { width: COTE, height: COTE } : { width: COTE, height: COTE, left: pos.left, top: pos.top }}>
     <svg className="lp-trace" width={COTE} height={COTE} aria-hidden="true">
       <circle cx={COTE / 2} cy={COTE / 2} r={RAYON} fill="none" />
       <line x1={COTE / 2} y1={COTE / 2 - RAYON - (pastilles ? 22 : 30)} x2={COTE / 2} y2={COTE / 2 - RAYON - (pastilles ? 12 : 18)} />
@@ -210,15 +218,15 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
     {interieur.length > 0 && interieur.map((f, k) => { const { x, y } = positionDe(k, interieur.length, RAYON - 58, COTE);
       return <button key={"in-" + f.id} type="button" tabIndex={-1} aria-hidden="true" className={"lp-interieur" + (f.id === parent?.id ? " lp-interieur-on" : "")}
         style={{ left: x, top: y, background: f.couleur }} title={f.nom} onClick={() => { setChemin(c => [...c.slice(0, -1), f.id]); setPage(0); setFocus(1); setAnnonce(`${f.nom} : ${f.enfants?.().length ?? 0} choix.`); }} />; })}
-    {profondeur === 0 ? (centre
-        ? <button type="button" tabIndex={-1} aria-hidden="true" className={"lp-centre-action" + (centre.actif ? " lp-centre-actif" : "")} onClick={() => centre.ouvrir()} title={centre.nom + " : " + centre.aide}><span className="lp-centre" />{centre.icone && <span className="lp-centre-signe">{centre.icone}</span>}</button>
+    {enTambour ? (profondeur === 0 && centre ? centreAction() : null) : profondeur === 0 ? (centre
+        ? centreAction()
         : <span className="lp-centre" aria-hidden="true" />)
       : pastilles ? <button type="button" tabIndex={-1} aria-hidden="true" className={"lp-centre-niveau lp-centre-seul" + (interieur.length ? " lp-centre-petit" : "")} onClick={remonter} title="Revenir d’un niveau"><span className="lp-centre" /></button>
       : <button type="button" tabIndex={-1} aria-hidden="true" className="lp-centre-niveau" onClick={remonter} title="Revenir d’un niveau">
           <small>{fil}</small><span className="lp-centre" /><b>{m0 && !NAV.has(m0.id) ? m0.nom : parent?.nom}</b></button>}
     {courant.map((m, i) => { const { x, y } = positionDe(i, n, RAYON, COTE); return item(m, i, { left: x, top: y }, contenuMot(m), pastilles ? " lp-pastille-anneau" : " lp-outil"); })}
     {/* le cartouche : où l'on est et ce qu'on montre (« DMC 351 · Corail », « Luminosité +20 »), posé sous le disque, jamais sur la sphère */}
-    {pastilles && m0 && <p className="lp-cartouche" aria-hidden="true"><small>{fil}</small><b>{m0.nom}</b>{(m0.couleur || m0.valeur) && !m0.enfants && m0.aide !== m0.nom && <i>{m0.aide}</i>}</p>}
+    {pastilles && m0 && !enTambour && <p className="lp-cartouche" aria-hidden="true"><small>{fil}</small><b>{m0.nom}</b>{(m0.couleur || m0.valeur) && !m0.enfants && m0.aide !== m0.nom && <i>{m0.aide}</i>}</p>}
   </div>;
   /* au choix : un quart d'arc collé au Point, pictogrammes, le mot du choix en cours affiché au-delà de sa pastille */
   const arc_ = (d: ReturnType<typeof dispositionArc>) => { const { boite: bx, points, rayon, sens } = d;

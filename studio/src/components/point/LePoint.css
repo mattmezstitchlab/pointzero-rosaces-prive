@@ -181,3 +181,9 @@ html[data-pz-motion="reduce"] .lp-compact { animation: none; }
 .lp-centre-signe svg { width: 22px; height: 22px; }
 .lp-centre-actif .lp-centre { box-shadow: 0 0 0 3px rgba(255,255,255,.9), 0 0 28px rgba(201,184,255,.55); }
 html[data-pz-motion="reduce"] .lp-centre-action .lp-centre { transition: none; }
+
+/* l'anneau autour d'un tambour (essai du Cadre-Tambour) : pas de disque plein, le centre laisse passer les gestes vers l'ouvrage */
+.lp-anneau.lp-tambour { background: none; box-shadow: none; pointer-events: none; }
+.lp-anneau.lp-tambour .lp-secteur, .lp-anneau.lp-tambour .lp-interieur { pointer-events: auto; }
+.lp-anneau.lp-tambour .lp-trace { display: none; }
+.lp-anneau.lp-tambour .lp-centre-action { pointer-events: auto; }

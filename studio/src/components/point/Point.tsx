@@ -19,7 +19,9 @@ const ICONE_CONFORT = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
  * Un seul Point est à l'écran à la fois : le contexte qui a la main le rend, les autres le taisent.
  * Le Point ne crée rien et ne déplace pas : la création reste dans FAIRE, la navigation dans ALLER.
  */
-export default function Point({ contexte, modes, part, teinte, etiquette, refBouton, guide, ancrage, memoire, scene, centre }: {
+export default function Point({ contexte, modes, part, teinte, etiquette, refBouton, guide, ancrage, memoire, scene, centre, tambour }: {
+  /** l'anneau autour d'un tambour (présentation scène) : voir LePoint */
+  tambour?: number;
   /** le raccourci du centre (mode Tambour) : voir LePoint */
   centre?: Parameters<typeof LePoint>[0]["centre"];
   /** le disque posé dans une page (landing), toujours ouvert : voir LePoint */
@@ -56,7 +58,7 @@ export default function Point({ contexte, modes, part, teinte, etiquette, refBou
     ...modes.map(m => ({ ...m, ouvrir: () => { setConfort(false); m.ouvrir(); } })),
   ];
   return <span className="lp-contexte" data-contexte={contexte}>
-    <LePoint modes={tous} centre={centre && { ...centre, ouvrir: () => { setConfort(false); centre.ouvrir(); } }} scene={scene} memoire={memoire} ancrage={ancrage} part={part} teinte={teinte} etiquette={etiquette} guide={guide} refBouton={ref} annonceExterne={annonce} />
+    <LePoint modes={tous} tambour={tambour} centre={centre && { ...centre, ouvrir: () => { setConfort(false); centre.ouvrir(); } }} scene={scene} memoire={memoire} ancrage={ancrage} part={part} teinte={teinte} etiquette={etiquette} guide={guide} refBouton={ref} annonceExterne={annonce} />
     {confort && createPortal(<PanneauConfort onFermer={fermer} onAnnonce={setAnnonce} />, hotePortail(ref.current))}
   </span>;
 }

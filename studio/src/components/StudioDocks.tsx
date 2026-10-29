@@ -17,6 +17,7 @@ import PointDuBloc from "./point/PointDuBloc";
 import "./blocs/broderie";
 import type { ContexteBroderie } from "./blocs/broderie";
 import { ecrireEssaiBloc, lireEssaiBloc } from "../lib/point/registre";
+import TambourAtelier, { ecrireCadreTambour, lireCadreTambour } from "./TambourAtelier";
 import type { ModePoint } from "../lib/point/modes";
 
 /**
@@ -132,13 +133,50 @@ function useDefile() {
   return ref;
 }
 
+/**
+ * Essai du Cadre-Tambour : le dock du bas accroché sous le format, comme l'étiquette du Cadre l'est au-dessus.
+ * Il suit le Cadre (déplacé, agrandi, zoomé) ; si le format sort de l'écran, il reste en bas de l'écran. La logique du Cadre ne change pas :
+ * on lit seulement la place qu'il publie (--fx0, --fy0, --fw, --fh).
+ */
+function useAccroche(ref: { current: HTMLElement | null }, actif: boolean) {
+  useLayoutEffect(() => {
+    const nav = ref.current; if (!nav) return;
+    const nettoyer = () => { for (const k of ["left", "top", "bottom", "transform"]) nav.style.removeProperty(k); };
+    if (!actif) { nettoyer(); return; }
+    let raf = 0, obs: MutationObserver | null = null, cadre: Element | null = null;
+    const placer = () => {
+      cadre = cadre && document.contains(cadre) ? cadre : document.querySelector(".cadre");
+      if (!cadre) return;
+      const cs = getComputedStyle(cadre), v = (k: string) => parseFloat(cs.getPropertyValue(k));
+      const fx = v("--fx0"), fy = v("--fy0"), fw = v("--fw"), fh = v("--fh");
+      if (!Number.isFinite(fx) || !fw) return;
+      const w = nav.offsetWidth, h = nav.offsetHeight, bas = window.innerHeight - h - Math.max(12, parseFloat(getComputedStyle(nav).getPropertyValue("--pz-sur")) || 12);
+      const top = Math.max(fy + 24, Math.min(fy + fh + 12, bas)), left = Math.max(12, Math.min(fx + fw / 2 - w / 2, window.innerWidth - w - 12));
+      nav.style.left = left + "px"; nav.style.top = top + "px"; nav.style.bottom = "auto"; nav.style.transform = "none";
+    };
+    const programmer = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(placer); };
+    const brancher = () => { const c = document.querySelector(".cadre"); if (c && c !== cadre) { cadre = c; obs?.disconnect(); obs = new MutationObserver(programmer); obs.observe(c, { attributes: true, attributeFilter: ["style"] }); } };
+    brancher(); placer();
+    const minuteur = window.setInterval(() => { brancher(); programmer(); }, 800);
+    const ro = new ResizeObserver(programmer); ro.observe(nav);
+    window.addEventListener("resize", programmer);
+    return () => { obs?.disconnect(); ro.disconnect(); cancelAnimationFrame(raf); window.clearInterval(minuteur); window.removeEventListener("resize", programmer); nettoyer(); };
+  }, [ref, actif]);
+}
+
 export default function StudioDocks(p: Props) {
   const rangHaut = useDefile(), rangBas = useDefile();
+  const navBas = useRef<HTMLElement | null>(null);
   const [bloc, setBloc] = useState<Bloc>(null);
   const [loupe, setLoupe] = useState(false);
   const [aideOuvrages, setAideOuvrages] = useState(false);
   /* essai : les outils sur le bloc (le Point posé sur le Cadre) au lieu du dock du bas ; réversible depuis le menu */
   const [essaiBloc, setEssaiBloc] = useState(lireEssaiBloc);
+  /* essai : le Cadre-Tambour (le dock du bas accroché sous le format ; le tambour, cercle d'outils posé sur l'ouvrage) */
+  const [cadreTambour, setCadreTambour] = useState(() => lireCadreTambour() && !lireEssaiBloc());
+  const [tambourOuvert, setTambourOuvert] = useState(false);
+  const tambourBouton = useRef<HTMLButtonElement>(null);
+  useAccroche(navBas, cadreTambour && !essaiBloc);
   const [q, setQ] = useState("");
   const [genre, setGenre] = useState<Genre>("tout");
   const [moi, setMoi] = useState<{ name?: string; email?: string; image?: string } | null>(null);
@@ -231,6 +269,25 @@ export default function StudioDocks(p: Props) {
   if (p.path) { const parent = PARENT[p.path]; if (parent) crumbs.push(LABELS[parent]); crumbs.push(LABELS[p.path]); }
   if ((p.path === "dessiner" || p.path === "broder") && toolName) crumbs.push(toolName);
 
+  /* les outils de l'ouvrage, pour le Point posé sur le bloc (essai) comme pour l'anneau du tambour */
+  const contexteBroderie: ContexteBroderie = {
+      outil: p.tool,
+      choisirOutil: (t, atelier) => { if (p.workspace !== atelier) p.onWorkspace(atelier); p.onPath(atelier === "stitch" ? "broder" : "dessiner"); p.onTool(t); },
+      couleur: p.couleur ?? 0, filsDuMotif: (p.progression?.couleurs ?? []).map(c => c.idx),
+      choisirFil: idx => p.onCouleur?.(idx),
+      vue: p.view, choisirVue: p.onView,
+      symboles: !!p.symbols, basculerSymboles: p.onSymbols,
+      grille: p.grille ?? "visible", basculerGrille: () => p.onGrille?.(),
+      loupe, basculerLoupe: () => setLoupe(v => !v), toutVoir: p.zoom.fit,
+      importer: genre => p.onImporter?.(genre), ouvrages: () => setBloc("inviter"), composer: p.onComposer,
+      exporter: p.actions.exportPanel, enregistrer: p.actions.save, partager: p.actions.share,
+      filsEtToile: p.actions.threadsSettings, suivi: p.actions.follow,
+      aide: p.actions.settings, chercher: () => setBloc("chercher"),
+      guide: p.actions.visite,
+      dockClassique: () => { ecrireEssaiBloc(false); setEssaiBloc(false); requestAnimationFrame(() => cercleRef.current?.focus()); },
+  };
+  const retracterTambour = () => { setTambourOuvert(false); requestAnimationFrame(() => tambourBouton.current?.focus()); };
+
   return <>
     <header className="pzs-head" aria-label="En-tête du studio">
       <button type="button" className="lp-evitement" onClick={() => { setLoupe(false); ouvrirConfort(); }}>Réglages de confort</button>
@@ -274,7 +331,8 @@ export default function StudioDocks(p: Props) {
                 <li><button type="button" onClick={() => setBloc("chercher")}>Chercher</button></li>
                 <li><a href={import.meta.env.BASE_URL + "galerie"}>Galerie des Vivants</a></li>
                 <li><a href={import.meta.env.BASE_URL + "tambour"}>Essai : le Tambour vivant</a></li>
-                <li><button type="button" aria-pressed={essaiBloc} onClick={() => { const v = !essaiBloc; ecrireEssaiBloc(v); setEssaiBloc(v); setBloc(null); }}>{essaiBloc ? "Revenir au dock du bas" : "Essai : les outils sur le bloc"}</button></li>
+                <li><button type="button" aria-pressed={essaiBloc} onClick={() => { const v = !essaiBloc; ecrireEssaiBloc(v); setEssaiBloc(v); if (v) { ecrireCadreTambour(false); setCadreTambour(false); setTambourOuvert(false); } setBloc(null); }}>{essaiBloc ? "Revenir au dock du bas" : "Essai : les outils sur le bloc"}</button></li>
+                <li><button type="button" aria-pressed={cadreTambour} onClick={() => { const v = !cadreTambour; ecrireCadreTambour(v); setCadreTambour(v); setTambourOuvert(false); if (v) { ecrireEssaiBloc(false); setEssaiBloc(false); } setBloc(null); }}>{cadreTambour ? "Revenir au dock en bas de l’écran" : "Essai : le Cadre-Tambour"}</button></li>
                 <li><button type="button" onClick={() => { setBloc(null); p.actions.settings(); }}>Réglages et aide</button></li>
                 {p.actions.visite && <li><button type="button" onClick={() => { setBloc(null); p.actions.visite!(); }}>Revoir la visite avec Le Point</button></li>}
               </ul>
@@ -343,23 +401,8 @@ export default function StudioDocks(p: Props) {
     </header>
 
     {loupe && p.pattern && <div className="pzs-loupe-dock"><Loupe pattern={p.pattern} /><button type="button" className="pzs-loupe-fermer" aria-label="Fermer la loupe" onClick={() => setLoupe(false)}><X size={16} aria-hidden="true" /></button></div>}
-    {essaiBloc ? (p.sansPoint ? null : <PointDuBloc<ContexteBroderie> type="broderie" nom={p.patternName} part={prog} etiquette={total ? "patron brodé à " + Math.round(prog * 100) + " %" : undefined} contexte={{
-      outil: p.tool,
-      choisirOutil: (t, atelier) => { if (p.workspace !== atelier) p.onWorkspace(atelier); p.onPath(atelier === "stitch" ? "broder" : "dessiner"); p.onTool(t); },
-      couleur: p.couleur ?? 0, filsDuMotif: (p.progression?.couleurs ?? []).map(c => c.idx),
-      choisirFil: idx => p.onCouleur?.(idx),
-      vue: p.view, choisirVue: p.onView,
-      symboles: !!p.symbols, basculerSymboles: p.onSymbols,
-      grille: p.grille ?? "visible", basculerGrille: () => p.onGrille?.(),
-      loupe, basculerLoupe: () => setLoupe(v => !v), toutVoir: p.zoom.fit,
-      importer: genre => p.onImporter?.(genre), ouvrages: () => setBloc("inviter"), composer: p.onComposer,
-      exporter: p.actions.exportPanel, enregistrer: p.actions.save, partager: p.actions.share,
-      filsEtToile: p.actions.threadsSettings, suivi: p.actions.follow,
-      aide: p.actions.settings, chercher: () => setBloc("chercher"),
-      guide: p.actions.visite,
-      dockClassique: () => { ecrireEssaiBloc(false); setEssaiBloc(false); requestAnimationFrame(() => cercleRef.current?.focus()); },
-    }} />) : <>
-    <nav className="pzs-bottom" aria-label="Se repérer dans le studio" data-defile ref={el => { rangBas.current = el; }} onKeyDown={e => { if (e.key === "Escape" && loupe) { e.preventDefault(); setLoupe(false); return; } if (e.key === "Escape" && modes) { e.preventDefault(); setModes(false); cercleRef.current?.focus(); } }}>
+    {essaiBloc ? (p.sansPoint ? null : <PointDuBloc<ContexteBroderie> type="broderie" nom={p.patternName} part={prog} etiquette={total ? "patron brodé à " + Math.round(prog * 100) + " %" : undefined} contexte={contexteBroderie} />) : <>
+    <nav className={"pzs-bottom" + (cadreTambour ? " pzs-accroche" : "")} aria-label="Se repérer dans le studio" data-defile ref={el => { rangBas.current = el; navBas.current = el; }} onKeyDown={e => { if (e.key === "Escape" && loupe) { e.preventDefault(); setLoupe(false); return; } if (e.key === "Escape" && modes) { e.preventDefault(); setModes(false); cercleRef.current?.focus(); } }}>
       {/* Le Point, contrôleur universel : Confort (toujours premier), Loupe, Guide, puis le métier (Broderie : Repères, Fils, Progression) */}
       {p.sansPoint ? null : <Point contexte="broderie" refBouton={cercleRef} part={prog} teinte={teinte}
         etiquette={"Dock en mode " + (MODES.find(m => m[0] === modeBas)?.[1] ?? "") + (total ? ", patron brodé à " + Math.round(prog * 100) + " %" : "")}
@@ -368,6 +411,10 @@ export default function StudioDocks(p: Props) {
           ...(p.actions.visite ? [{ id: "guide", nom: "Guide", icone: <Compass aria-hidden="true" />, aide: "la visite du studio avec Le Point", groupe: "socle", ouvrir: () => p.actions.visite!() } satisfies ModePoint] : []),
           { id: "broderie", nom: "Broderie", icone: <Spool aria-hidden="true" />, aide: "le dock du bas en Repères, Fils DMC ou Progression", groupe: "metier", actif: modes, ouvrir: () => { setModes(v => !v); requestAnimationFrame(() => document.querySelector<HTMLElement>(".pzs-modes [aria-pressed=\"true\"]")?.focus()); } },
         ]} />}
+      {/* essai du Cadre-Tambour : le tambour se déploie depuis le dock accroché ; ses outils l'entourent */}
+      {cadreTambour && !p.sansPoint && <button ref={tambourBouton} type="button" className="pzs-btm pzs-sq pzs-ouvrir-tambour" aria-expanded={tambourOuvert}
+        aria-label="Tambour : refermer l’ouvrage en cercle, les outils tout autour" title="Tambour" onClick={() => setTambourOuvert(true)}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="13" r="8" /><circle cx="12" cy="13" r="4.5" strokeDasharray="2 2.5" /><path d="M10 3.5h4" strokeLinecap="round" /></svg></button>}
       {modes
         ? <div className="pzs-modes" role="group" aria-label="Les modes du dock">
           {MODES.map(([id, nom, halo]) => <button key={id} type="button" className="pzs-btm pzs-halo-mode" aria-pressed={modeBas === id}
@@ -389,6 +436,7 @@ export default function StudioDocks(p: Props) {
       <button type="button" data-guide="loupe" className="pzs-btm pzs-loupe-btn" aria-pressed={loupe} aria-label="Loupe : la grille agrandie sous le pointeur" title="Loupe" onClick={() => setLoupe(v => !v)}><Search size={17} aria-hidden="true" /><span className="pzs-loupe-txt">Loupe</span></button>
         </>}
     </nav>
+    {cadreTambour && tambourOuvert && !p.sansPoint && <TambourAtelier ouvrage={p.pattern?.id} contexte={contexteBroderie} retracter={retracterTambour} part={prog} etiquette={total ? "patron brodé à " + Math.round(prog * 100) + " %" : undefined} />}
     </>}
   </>;
 }

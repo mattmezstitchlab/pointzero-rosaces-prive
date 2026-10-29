@@ -4,7 +4,7 @@
  * Chaque famille remplace les choix du cercle par ses sous-outils ; chaque feuille appelle la vraie action de l'atelier (rien de simulé).
  * Le registre ne sait rien de la broderie, ce fichier si.
  */
-import { LayoutGrid, ListChecks, FileJson, FileText, Folder, HelpCircle, Image as ImageIcon, PanelBottom, Settings2, Share2, Compass, Download, Eye, FileUp, Grid3x3, Maximize, Palette, Pencil, Search, Shapes, Sparkles, Spool, Square } from "lucide-react";
+import { Camera, LayoutGrid, ListChecks, FileJson, FileText, Folder, HelpCircle, Image as ImageIcon, PanelBottom, Settings2, Share2, Compass, Download, Eye, FileUp, Grid3x3, Maximize, Palette, Pencil, Search, Shapes, Sparkles, Spool, Square } from "lucide-react";
 import { enregistrerTypeBloc, typeBloc } from "../../lib/point/registre";
 import type { ModePoint } from "../../lib/point/modes";
 import type { ReactNode } from "react";
@@ -35,6 +35,8 @@ export interface ContexteBroderie {
   guide?: () => void;
   /** revenir tout de suite au dock du bas (l'interface classique) */
   dockClassique?: () => void;
+  /** le Tambour vivant : filmer sa vraie toile et y poser ce patron (essai du Cadre-Tambour) */
+  surMaToile?: () => void;
 }
 
 /* les outils de dessin : les quatre premiers d'abord (le parcours le plus fréquent), le reste dans « Plus d'outils » */
@@ -66,7 +68,8 @@ export function commandesBroderie(c: ContexteBroderie): ModePoint[] {
       enfants: () => [...POINTS.map(outil("create")), { id: "plus-outils", nom: "Plus d’outils", icone: <LayoutGrid aria-hidden="true" />, aide: "remplir, pipette, sélection, quarts, formes…", groupe: "metier", ouvrir: () => {}, enfants: () => PLUS.map(outil("create")) }],
     },
     { id: "broder", nom: "Broder", icone: <Spool aria-hidden="true" />, aide: "cocher ce qui est brodé, défaire, garer l’aiguille, suivre l’avancée", groupe: "metier", ouvrir: () => {},
-      enfants: () => [...BRODER.map(outil("stitch")), { id: "suivi", nom: "Suivi", icone: <ListChecks aria-hidden="true" />, aide: "l’avancée du patron, fil par fil", groupe: "metier", ouvrir: c.suivi }] },
+      enfants: () => [...BRODER.map(outil("stitch")), { id: "suivi", nom: "Suivi", icone: <ListChecks aria-hidden="true" />, aide: "l’avancée du patron, fil par fil", groupe: "metier", ouvrir: c.suivi },
+        ...(c.surMaToile ? [{ id: "sur-ma-toile", nom: "Sur ma toile", icone: <Camera aria-hidden="true" />, aide: "filmer votre vraie toile et y poser ce patron (Tambour vivant)", groupe: "metier", ouvrir: c.surMaToile } satisfies ModePoint] : [])] },
     {
       id: "fils", nom: "Fils", icone: <Palette aria-hidden="true" />, aide: "les fils du motif et le nuancier DMC par familles de couleur", groupe: "metier", ouvrir: () => {},
       enfants: () => [

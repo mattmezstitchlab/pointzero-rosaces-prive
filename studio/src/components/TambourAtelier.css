@@ -1,0 +1,43 @@
+/* Essai : le Cadre-Tambour. Le tambour est posé sur l'ouvrage ; seuls l'anneau, ses outils et la vis attrapent les gestes. */
+.pzt { position: fixed; inset: 0; z-index: 39; pointer-events: none; animation: pzt-ouvre .26s cubic-bezier(.2,.8,.2,1); }
+@keyframes pzt-ouvre { from { opacity: 0; transform: scale(.94); transform-origin: var(--pzt-x) var(--pzt-y); } to { opacity: 1; transform: none; } }
+/* hors du tambour, l'ouvrage s'efface doucement : on regarde ce qu'on brode */
+.pzt-voile { position: absolute; inset: 0; background: radial-gradient(circle at var(--pzt-x) var(--pzt-y), transparent calc(var(--pzt-r) + 9px), rgba(236,235,230,.86) calc(var(--pzt-r) + 10px)); }
+html[data-aime-studio="nuit"] .pzt-voile { background: radial-gradient(circle at var(--pzt-x) var(--pzt-y), transparent calc(var(--pzt-r) + 9px), rgba(10,10,11,.84) calc(var(--pzt-r) + 10px)); }
+.pzt-anneau { position: absolute; left: var(--pzt-x); top: var(--pzt-y); transform: translate(-50%, -50%); overflow: visible; }
+.pzt-anneau path { fill: rgba(11,11,12,.94); pointer-events: visiblePainted; filter: drop-shadow(0 24px 50px rgba(11,11,12,.35)); }
+/* l'anneau de bois clair, comme un vrai tambour, serré sur la toile */
+.pzt-bois { position: absolute; left: var(--pzt-x); top: var(--pzt-y); width: calc(2 * var(--pzt-r) + 20px); height: calc(2 * var(--pzt-r) + 20px); transform: translate(-50%, -50%); border-radius: 50%;
+  box-shadow: inset 0 0 0 10px #e3d3b4, inset 0 0 0 11px rgba(0,0,0,.18), inset 0 6px 14px rgba(0,0,0,.18); }
+.pzt-point { position: absolute; left: var(--pzt-x); top: var(--pzt-y); transform: translate(-50%, -50%); }
+.pzt-point .lp-scene-hote { pointer-events: none; }
+html[data-pz-motion="reduce"] .pzt { animation: none; }
+@media (prefers-reduced-motion: reduce) { .pzt { animation: none; } }
+
+/* tant que le tambour est ouvert, l'étiquette du Cadre, ses poignées et le dock du bas sont repliés dedans */
+html.pz-tambour-ouvert .cadre-tete, html.pz-tambour-ouvert .cadre-poignee, html.pz-tambour-ouvert .cadre-contour, html.pz-tambour-ouvert .cadre-fantome, html.pz-tambour-ouvert .cadre-menu, html.pz-tambour-ouvert .pzs-bottom { visibility: hidden; }
+
+/* le dock du bas accroché sous le format (sa place est posée par le studio, en suivant le Cadre) */
+.pzs-bottom.pzs-accroche { transition: top .12s ease, left .12s ease; }
+html[data-pz-motion="reduce"] .pzs-bottom.pzs-accroche { transition: none; }
+/* le bouton qui ouvre le tambour : le même rond nacré que le Point */
+.pzs-ouvrir-tambour { position: relative; }
+
+/* « Le disque unique » (maquette de Matt) : un corps sombre avec son rebord, des boutons pleins marqués d'un point, le bois et sa vis, la caméra nacrée au centre */
+.pzt-anneau path { fill: url(#pzt-corps); }
+.pzt-rebord { fill: none; stroke: rgba(255,255,255,.10); stroke-width: 3; }
+.pzt-rebord-int { fill: none; stroke: rgba(0,0,0,.55); stroke-width: 3; }
+.pzt-bois { width: calc(2 * var(--pzt-r) + 24px); height: calc(2 * var(--pzt-r) + 24px);
+  box-shadow: inset 0 0 0 12px #e7d6b6, inset 0 0 0 13px rgba(120,90,50,.35), inset 0 2px 0 13px rgba(255,255,255,.35), inset 0 8px 18px rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.25); }
+.pzt-vis { position: absolute; left: var(--pzt-x); top: calc(var(--pzt-y) - var(--pzt-r) - 12px); width: 30px; height: 20px; transform: translate(-50%, -50%); border-radius: 4px;
+  background: linear-gradient(#f3e6cc, #d8c29b); box-shadow: 0 2px 5px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.6); }
+.pzt .lp-tambour .lp-rond { width: 52px; height: 52px; background: radial-gradient(circle at 50% 30%, #3a3a39, #1b1b1b 70%); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 4px 10px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08); }
+.pzt .lp-tambour .lp-outil.lp-acces .lp-rond { border: 2px solid #c9b8ff; box-shadow: 0 0 18px rgba(201,184,255,.35), 0 4px 10px rgba(0,0,0,.5); }
+.pzt .lp-tambour .lp-outil.lp-creation .lp-rond, .pzt .lp-tambour .lp-outil.lp-metier .lp-rond { border-style: solid; border-width: 1px; }
+.pzt .lp-tambour .lp-rond svg { width: 22px; height: 22px; }
+.pzt .lp-tambour .lp-mot { font-size: 12.5px; }
+.pzt .lp-tambour .lp-mot::after { content: ""; display: block; width: 4px; height: 4px; margin: 5px auto 0; border-radius: 50%; background: rgba(255,255,255,.75); }
+.pzt .lp-tambour .lp-outil[aria-haspopup] .lp-plus { display: none; }
+.pzt .lp-tambour .lp-centre-action { width: 76px; height: 76px; }
+.pzt .lp-tambour .lp-centre-action .lp-centre { width: 64px; height: 64px; margin: -32px 0 0 -32px; box-shadow: 0 0 0 3px rgba(255,255,255,.75), 0 8px 24px rgba(0,0,0,.3), 0 0 26px rgba(201,184,255,.45); }
+.pzt .lp-tambour .lp-centre-signe svg { width: 24px; height: 24px; }
