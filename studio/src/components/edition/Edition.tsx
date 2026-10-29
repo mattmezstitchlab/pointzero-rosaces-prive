@@ -1,20 +1,25 @@
 /**
  * Point Zéro — l'édition : la narration verticale qui commence sous le héros existant (la Métamorphose).
- * Livraison A : trois scènes. Le disque est LE Point du studio (même noyau, présentation « scène ») ; ses commandes sont
- * celles de la page, et chacune déclenche une vraie action (ouvrir l'atelier, importer, ouvrir une rosace, choisir un fil).
+ * L'histoire du textile, et en même temps celle de la création du visiteur : cinq rencontres avec l'Orbe nourrissent une recette 5D,
+ * la rosace évolue à chaque choix, et le cadeau l'ouvre dans l'atelier. Le disque est LE Point du studio (présentation « scène ») ;
+ * chaque commande déclenche une vraie action.
  * Le moteur 5D n'est pas modifié : on lit le motif qu'il produit. Aucun projet n'est écrit par la page.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { BookOpen, ExternalLink, FileJson, FileText, FileUp, Folder, Grid2x2, Image as ImageIcon, Palette, PenLine, Scaling, Shapes, Shuffle, Sparkles, Spline, Spool, Compass } from "lucide-react";
+import { BookOpen, ExternalLink, Grid2x2, Palette, Scaling, Shapes, Shuffle, Spline } from "lucide-react";
 import Point from "../point/Point";
 import type { ModePoint } from "../../lib/point/modes";
-import { DIMENSIONS, codeDe, VERSION, type Choix, type Signature } from "../../lib/motif5d/code";
+import { DIMENSIONS, type Choix } from "../../lib/motif5d/code";
 import { RECETTES, recetteDe } from "../../lib/motif5d/recettes";
 import { FLOSS } from "../../lib/dmc";
 import { FAMILLES, filsParFamille, familleDe, hsl } from "../../lib/famillesFils";
 import { etapeDe, lisse, mouvementReduit, suivreScene } from "./defilement";
 import { dessinerRosace, ETAPES_ROSACE, rosaceDe, SEUILS_ROSACE } from "./rosace";
 import Histoire, { CHAPITRES_HISTOIRE } from "./Histoire";
+import { Cadeau, MaRosace, Orbe, RENCONTRES, RencontreOrbe, useCommandesTrace } from "./Participation";
+import { codeDeCreation, creation, graineDe, nbChoix, reponseDe, signatureDe, useCreation } from "./creation";
+import "./Participation.css";
+import Appareil from "./Appareil";
 import "./Edition.css";
 import "./Histoire.css";
 
@@ -22,7 +27,7 @@ export const CHAPITRES_EDITION = [
   ...CHAPITRES_HISTOIRE,
   { id: "ed-fils", num: "05", titre: "Aujourd’hui" },
   { id: "ed-rosace", num: "06", titre: "Créez maintenant" },
-  { id: "ed-origine", num: "07", titre: "L’atelier" },
+  { id: "ed-cadeau", num: "07", titre: "Le cadeau" },
 ] as const;
 
 interface Actions {
@@ -72,56 +77,14 @@ const aller = (id: string) => {
   el.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
 };
 
-/* ——— 01 · L'origine : un point, puis tout ce qu'il ouvre ——— */
-function Origine({ actions }: { actions: Actions }) {
-  const scene = useRef<HTMLElement>(null);
-  const [etape, setEtape] = useState(0);
-  const fichier = useFichier(actions.importer);
-  useEffect(() => scene.current ? suivreScene(scene.current, p => setEtape(e => { const n = etapeDe(p, [0, 0.28, 0.6]); return n === e ? e : n; })) : undefined, []);
-  const modes: ModePoint[] = [
-    { id: "creer", nom: "Créer", icone: <PenLine aria-hidden="true" />, aide: "un nouveau motif, ou une rosace", groupe: "metier", ouvrir: () => {}, enfants: () => [
-      { id: "creer-motif", nom: "Nouveau motif", icone: <PenLine aria-hidden="true" />, aide: "ouvrir l’atelier sur une grille vierge", groupe: "metier", ouvrir: () => actions.ouvrir("create") },
-      { id: "creer-rosace", nom: "Une rosace", icone: <Sparkles aria-hidden="true" />, aide: "voir naître une rosace, plus bas", groupe: "metier", ouvrir: () => aller("ed-rosace") },
-      { id: "creer-image", nom: "Depuis une image", icone: <ImageIcon aria-hidden="true" />, aide: "une photo convertie en fils DMC", groupe: "metier", ouvrir: () => fichier.choisir("image/png,image/jpeg,image/webp") },
-    ] },
-    { id: "fils", nom: "Fils DMC", icone: <Palette aria-hidden="true" />, aide: "le nuancier, plus bas", groupe: "metier", ouvrir: () => aller("ed-fils") },
-    { id: "importer", nom: "Importer", icone: <FileUp aria-hidden="true" />, aide: "une image, un patron PDF, un projet", groupe: "creation", ouvrir: () => {}, enfants: () => [
-      { id: "imp-image", nom: "Image", icone: <ImageIcon aria-hidden="true" />, aide: "PNG, JPEG, WebP", groupe: "creation", ouvrir: () => fichier.choisir("image/png,image/jpeg,image/webp") },
-      { id: "imp-pdf", nom: "Patron PDF", icone: <FileText aria-hidden="true" />, aide: "un patron sur plusieurs pages, recomposé", groupe: "creation", ouvrir: () => fichier.choisir(".pdf,application/pdf") },
-      { id: "imp-projet", nom: "Projet", icone: <FileJson aria-hidden="true" />, aide: "une sauvegarde JSON ou un fichier OXS", groupe: "creation", ouvrir: () => fichier.choisir(".json,.oxs,application/json") },
-    ] },
-    { id: "ouvrages", nom: "Mes ouvrages", icone: <Folder aria-hidden="true" />, aide: "les ouvrages rangés sur cet appareil", groupe: "creation", ouvrir: () => actions.ouvrir("library") },
-    { id: "broder", nom: "Broder", icone: <Spool aria-hidden="true" />, aide: "reprendre l’ouvrage en cours", groupe: "metier", ouvrir: () => actions.ouvrir("stitch") },
-    { id: "visite", nom: "Visite", icone: <Compass aria-hidden="true" />, aide: "la visite de l’atelier avec le Point", groupe: "socle", ouvrir: actions.visite },
-  ];
-  const phrases = ["Un seul centre, et autour, tout l’atelier.", "Le disque devient l’outil que vous choisissez.", "Puis il redevient un point : le vôtre."];
-  return <section ref={scene} id="ed-origine" className="ed-scene ed-origine" aria-labelledby="ed-origine-titre" data-etape={etape}>
-    <div className="ed-plateau">
-      <div className="ed-texte">
-        <p className="ed-num">07 · L’atelier vous attend</p>
-        <h2 id="ed-origine-titre" tabIndex={-1}>Tout commence au Point Zéro.</h2>
-        <ol className="ed-phrases">{phrases.map((t, k) => <li key={k} aria-current={k === etape ? "step" : undefined}>{t}</li>)}</ol>
-        <button type="button" className="ed-cta" onClick={() => actions.ouvrir("create")}>Créer mon premier motif</button>
-        <p className="ed-aide">Le disque est celui de l’atelier. Touchez une famille pour l’ouvrir ; Retour, ou Échap, pour revenir. Au clavier : Tab, puis les flèches et Entrée.</p>
-      </div>
-      <div className="ed-scene-disque ed-grandit ed-revient">
-        <Disque max={1.3} contexte="edition-origine" modes={modes} etiquette="Le Point de Point Zéro : l’atelier en un disque" />
-      </div>
-    </div>
-    {fichier.champ}
-  </section>;
-}
-
 /* ——— 02 · Une rosace naît : le vrai moteur 5D, révélé au défilement, réglé par le disque ——— */
 const ICONES_DIM: Record<string, ReactNode> = { structure: <Shapes aria-hidden="true" />, trace: <Spline aria-hidden="true" />, densite: <Grid2x2 aria-hidden="true" />, echelle: <Scaling aria-hidden="true" />, palette: <Palette aria-hidden="true" /> };
 function RosaceNait() {
   const scene = useRef<HTMLElement>(null), toile = useRef<HTMLCanvasElement>(null), pRef = useRef(mouvementReduit() ? 1 : 0);
-  const depart = recetteDe(RECETTES.find(r => r.nom === "Kaléidoscope")!.code);
-  const [sig, setSig] = useState<Signature>(depart.signature);
-  const [graine, setGraine] = useState(depart.graine);
+  const c = useCreation(), sig = signatureDe(c), graine = graineDe(c);
   const [etape, setEtape] = useState(0);
-  const rosace = useMemo(() => rosaceDe(sig, graine, 81), [sig, graine]);
-  const code = codeDe({ signature: sig, graine, version: VERSION });
+  const rosace = useMemo(() => rosaceDe(sig, graine), [sig.structure, sig.trace, sig.densite, sig.echelle, sig.palette, graine]); // eslint-disable-line react-hooks/exhaustive-deps
+  const code = codeDeCreation(c);
   const nom = RECETTES.find(r => r.code === code)?.nom;
 
   const dessiner = useRef(() => {});
@@ -136,35 +99,51 @@ function RosaceNait() {
   useEffect(() => { dessiner.current(); }, [rosace]);
   useEffect(() => { const r = () => dessiner.current(); window.addEventListener("resize", r); return () => window.removeEventListener("resize", r); }, []);
 
+  /* le disque du compositeur règle la MÊME création que les rencontres : on peut revenir sur chaque choix */
   const modes: ModePoint[] = [
     ...DIMENSIONS.map((d): ModePoint => ({
-      id: d.cle, nom: d.nom, icone: ICONES_DIM[d.cle], aide: `${d.question} ${d.reponses[sig[d.cle]][0]}`, groupe: "metier", ouvrir: () => {},
-      enfants: () => d.reponses.map(([n, phrase], k): ModePoint => ({ id: `${d.cle}-${k}`, nom: n, aide: phrase, groupe: "metier", actif: sig[d.cle] === k, resteOuvert: true,
-        ouvrir: () => setSig(s => ({ ...s, [d.cle]: k as Choix })) })),
+      id: d.cle, nom: d.nom, icone: ICONES_DIM[d.cle], aide: `${d.question} ${c.choix[d.cle] === undefined ? "pas encore choisi" : d.reponses[sig[d.cle]][0]}`, groupe: "metier", ouvrir: () => {},
+      enfants: () => d.reponses.map(([n, phrase], k): ModePoint => ({ id: `${d.cle}-${k}`, nom: n, aide: phrase, groupe: "metier", actif: c.choix[d.cle] === k, resteOuvert: true,
+        ouvrir: () => creation.choisir(d.cle, k as Choix) })),
     })),
-    { id: "recettes", nom: "Recettes", icone: <BookOpen aria-hidden="true" />, aide: "douze rosaces nommées", groupe: "creation", ouvrir: () => {},
+    { id: "recettes", nom: "Recettes", icone: <BookOpen aria-hidden="true" />, aide: "partir d’une des douze rosaces nommées", groupe: "creation", ouvrir: () => {},
       enfants: () => RECETTES.map((r): ModePoint => ({ id: "recette-" + r.code.slice(3, 8), nom: r.nom, aide: r.code, groupe: "creation", actif: r.code === code, resteOuvert: true,
-        ouvrir: () => { const x = recetteDe(r.code); setSig(x.signature); setGraine(x.graine); } })) },
-    { id: "variation", nom: "Variation", icone: <Shuffle aria-hidden="true" />, aide: "la même recette, une autre graine", groupe: "creation", resteOuvert: true, ouvrir: () => setGraine(g => (g % 99999) + 1) },
-    { id: "studio", nom: "Dans l’atelier", icone: <ExternalLink aria-hidden="true" />, aide: "ouvrir cette rosace dans le compositeur", groupe: "creation",
+        ouvrir: () => { const x = recetteDe(r.code); creation.recette(x.signature, x.graine); } })) },
+    { id: "variation", nom: "Variation", icone: <Shuffle aria-hidden="true" />, aide: "la même recette, une autre graine", groupe: "creation", resteOuvert: true, ouvrir: () => creation.varier() },
+    { id: "studio", nom: "Dans l’atelier", icone: <ExternalLink aria-hidden="true" />, aide: "regarder cette rosace dans le compositeur de l’atelier", groupe: "creation",
       ouvrir: () => { window.location.assign(import.meta.env.BASE_URL + "atelier?rosace=" + encodeURIComponent(code)); } },
   ];
   return <section ref={scene} id="ed-rosace" className="ed-scene ed-rosace" aria-labelledby="ed-rosace-titre" data-etape={etape}>
     <div className="ed-plateau">
       <div className="ed-texte">
         <p className="ed-num">06 · Créez maintenant</p>
-        <h2 id="ed-rosace-titre" tabIndex={-1}>Et si c’était votre rosace ?</h2>
+        <h2 id="ed-rosace-titre" tabIndex={-1}>{nbChoix(c) ? "Votre rosace naît." : "Et si c’était votre rosace ?"}</h2>
         <ol className="ed-phrases ed-phrases-5">{ETAPES_ROSACE.map((t, k) => <li key={t} aria-current={k === etape ? "step" : undefined}>{t}</li>)}</ol>
-        <p className="ed-recette"><b>{nom ?? "Rosace"}</b> <code>{code}</code> · {rosace.fils} fils DMC · {rosace.w} × {rosace.h} points</p>
+        <p className="ed-recette"><b>{nom ?? (nbChoix(c) ? "Ma rosace" : "Aperçu")}</b> <code>{code}</code> · {rosace.fils} fils DMC · {rosace.w} × {rosace.h} points{nbChoix(c) < 5 && <> · <i>{5 - nbChoix(c)} choix encore provisoires</i></>}</p>
       </div>
       <figure className="ed-toile-rosace">
-        <canvas ref={toile} role="img" aria-label={`La rosace ${nom ?? code} du moteur 5D : ${DIMENSIONS.map(d => d.reponses[sig[d.cle]][0].toLowerCase()).join(", ")}. ${rosace.fils} fils.`} />
+        <canvas ref={toile} role="img" aria-label={`Votre rosace, par le moteur 5D : ${DIMENSIONS.map(d => (c.choix[d.cle] === undefined ? "provisoire " : "") + d.reponses[sig[d.cle]][0].toLowerCase()).join(", ")}. ${rosace.fils} fils.`} />
         <figcaption>Motif réel du moteur 5D, rendu à l’écran (simulation de broderie).</figcaption>
+        <RencontreOrbe cle="densite" variante="curseur" sombre compacte />
       </figure>
       <div className="ed-scene-disque">
-        <Disque contexte="edition-rosace" modes={modes} etiquette="Le Point du compositeur : structure, tracé, densité, échelle, palette" />
+        <Disque contexte="edition-rosace" modes={modes} etiquette="Le Point du compositeur : revenir sur chaque choix de votre rosace" />
       </div>
     </div>
+  </section>;
+}
+
+/* ——— Rencontre 2 · Les lignes : dans le disque, le même Point ——— */
+function RencontreDisque() {
+  const c = useCreation(), r = RENCONTRES[1], modes = useCommandesTrace(), choisi = c.choix.trace;
+  return <section id={r.id} className="or-rencontre or-sombre or-disque" aria-labelledby="or-lignes-titre" data-rencontre="trace">
+    <div className="or-tete">
+      <Orbe taille={64} parle={choisi === undefined} />
+      <div><p className="or-kicker" id="or-lignes-titre">Rencontre {r.num} sur 5 · {r.titre}</p><p className="or-question">{r.question}</p>
+        <p className="or-aide-disque">Touchez un secteur du disque, ou Tab puis les flèches et Entrée.</p></div>
+    </div>
+    <div className="or-disque-hote"><Disque contexte="edition-lignes" modes={modes} etiquette="Le Point : quatre lignes pour votre rosace" max={1.15} /></div>
+    <p className="or-reaction" role="status" aria-live="polite">{choisi !== undefined ? r.reaction(reponseDe("trace", choisi)[0]) : ""}</p>
   </section>;
 }
 
@@ -238,11 +217,22 @@ function NuageFils() {
 
 export default function Edition({ actions }: { actions: Actions }) {
   const fichier = useFichier(actions.importer);
-  return <div className="ed" data-edition="b">
-    <Histoire Disque={Disque} actions={{ ouvrir: actions.ouvrir, visite: actions.visite, choisirFichier: fichier.choisir, aller }} />
+  return <div className="ed" data-edition="c">
+    <Histoire Disque={Disque} actions={{ ouvrir: actions.ouvrir, visite: actions.visite, choisirFichier: fichier.choisir, aller }}
+      objet={<div className="hi-objet"><Appareil type="ipad" src="atelier-ipad-patron.webp" alt="L’atelier Point Zéro sur iPad : une rosace en lecture Patron, symboles et grille" /></div>} entre={{
+      "hi-indiennes": <RencontreOrbe cle="structure" variante="cartes" />,
+      "hi-mulhouse": <RencontreDisque />,
+      "hi-brodeuses": <RencontreOrbe cle="echelle" variante="loupes" />,
+    }} />
     <NuageFils />
+    <RencontreOrbe cle="palette" variante="echeveaux" />
     <RosaceNait />
-    <Origine actions={actions} />
+    <Cadeau aller={aller} appareils={<div className="cd-appareils">
+      <Appareil type="ordinateur" src="atelier-ordinateur.webp" alt="L’atelier Point Zéro sur ordinateur : la rosace offerte dans son cadre, les docks de l’atelier" />
+      <Appareil type="iphone" src="atelier-iphone-fils.webp" alt="L’atelier sur iPhone : le Point du bloc ouvert sur les nuances DMC" className="cd-iphone" />
+      <p className="cd-appareils-legende">L’atelier, sur ordinateur, tablette et téléphone. Captures de l’atelier actuel.</p>
+    </div>} />
+    <MaRosace aller={aller} guide={actions.visite} />
     {fichier.champ}
   </div>;
 }

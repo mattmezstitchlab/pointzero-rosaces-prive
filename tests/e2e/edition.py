@@ -8,8 +8,8 @@ from playwright.sync_api import sync_playwright
 B = os.environ.get('BASE', 'http://localhost:4620'); CAP = os.environ.get('CAPTURES')
 resultats, erreurs = [], []
 def ok(c, nom): print(('OK ' if c else 'ÉCHEC ') + nom, flush=True); resultats.append(bool(c))
-SCENES = ('hi-origine', 'hi-indiennes', 'hi-mulhouse', 'hi-brodeuses', 'ed-fils', 'ed-rosace', 'ed-origine')
-DISQUES = ('hi-origine', 'ed-fils', 'ed-rosace', 'ed-origine')
+SCENES = ('hi-origine', 'hi-indiennes', 'hi-mulhouse', 'hi-brodeuses', 'ed-fils', 'ed-rosace', 'ed-cadeau')
+DISQUES = ('hi-origine', 'or-lignes', 'ed-fils', 'ed-rosace')
 
 def page(b, l, h, reduit=False, url='/?edition'):
     ctx = b.new_context(viewport={'width': l, 'height': h}, reduced_motion='reduce' if reduit else 'no-preference')
@@ -34,7 +34,7 @@ with sync_playwright() as p:
         ctx, pg = page(b, l, h)
         ok(pg.locator('.mm-toile').count() == 1 and pg.locator('.mm-cadre h1').inner_text().strip() == 'Point Zéro', f'{l} px · le héros historique (la peinture qui se brode) est là, en tête')
         ok(pg.evaluate("() => document.querySelector('.ed').getBoundingClientRect().top > document.querySelector('.mm-toile').getBoundingClientRect().top"), f'{l} px · l’édition commence sous le héros')
-        ok(all(pg.locator(f'#{s}').count() == 1 for s in SCENES) and pg.locator('.ed .lp-anneau.lp-scene').count() == 4, f'{l} px · sept scènes, quatre disques (le Point en scène)')
+        ok(all(pg.locator(f'#{s}').count() == 1 for s in SCENES) and pg.locator('.ed .lp-anneau.lp-scene').count() == 4, f'{l} px · les scènes et quatre disques (le Point en scène)')
         larges = pg.evaluate("() => document.documentElement.scrollWidth - innerWidth")
         ok(larges <= 1, f'{l} px · pas de défilement horizontal ({larges} px)')
         for s in SCENES:
@@ -111,17 +111,17 @@ with sync_playwright() as p:
     ok(code5d in pg.url and pg.locator('.cr').count() >= 1, f'parcours : « Dans l’atelier » ouvre le compositeur sur {code5d}')
     ctx.close()
     ctx, pg = page(b, 1440, 900)
-    aller(pg, 'ed-origine', 0.9)
-    pg.locator('#ed-origine [data-mode="creer"]').click(); pg.locator('#ed-origine [data-mode="creer-motif"]').click(); pg.wait_for_timeout(1200)
+    aller(pg, 'hi-origine', 0.9)
+    pg.locator('#hi-origine [data-mode="creer"]').click(); pg.locator('#hi-origine [data-mode="creer-motif"]').click(); pg.wait_for_timeout(1200)
     ok('/atelier' in pg.url and pg.locator('.pzs-top').count() == 1, 'parcours : Créer → Nouveau motif ouvre l’atelier')
     ctx.close()
 
     # 4. mouvement réduit : rien de collé, tout montré
     ctx, pg = page(b, 1440, 900, reduit=True)
-    hauteurs = pg.evaluate("() => ['ed-origine','ed-rosace','ed-fils'].map(i => document.getElementById(i).offsetHeight / innerHeight)")
+    hauteurs = pg.evaluate("() => ['hi-origine','ed-rosace','ed-fils'].map(i => document.getElementById(i).offsetHeight / innerHeight)")
     ok(all(x < 1.9 for x in hauteurs), f'mouvement réduit : pas de scène allongée ({[round(x, 2) for x in hauteurs]} écrans)')
-    ok(pg.evaluate("() => getComputedStyle(document.querySelector('#ed-origine .ed-plateau')).position") == 'relative', 'mouvement réduit : rien n’est collé à l’écran')
-    ok(pg.evaluate("() => getComputedStyle(document.querySelector('#ed-origine .lp-anneau > .lp-secteur')).opacity") == '1', 'mouvement réduit : le disque est montré entier')
+    ok(pg.evaluate("() => getComputedStyle(document.querySelector('#hi-origine .ed-plateau')).position") == 'relative', 'mouvement réduit : rien n’est collé à l’écran')
+    ok(pg.evaluate("() => getComputedStyle(document.querySelector('#hi-origine .lp-anneau > .lp-secteur')).opacity") == '1', 'mouvement réduit : le disque est montré entier')
     ctx.close()
     b.close()
 ok(not erreurs, 'aucune erreur dans la page ' + str(erreurs[:3]))

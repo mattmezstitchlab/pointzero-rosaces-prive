@@ -28,7 +28,7 @@ export interface ActionsHistoire {
 /* le fil le plus présent d'une teinte (rouge, bleu) dans une broderie : dit honnêtement « proche, à l'écran » */
 function dominant(b: Broderie, teinte: "rouge" | "bleu") {
   const ok = (hex: string) => { const n = parseInt(hex.slice(1), 16), r = n >> 16 & 255, g = n >> 8 & 255, bl = n & 255;
-    return teinte === "rouge" ? r > g + 40 && r > bl + 30 : bl > r + 25 && bl >= g; };
+    return teinte === "rouge" ? r > g + 25 && r > bl + 15 : bl > r + 25 && bl >= g; };
   return b.palette.find(f => ok(FLOSS[f].hex)) ?? null;
 }
 function Fil({ idx, nom, texte }: { idx: number | null; nom: string; texte: ReactNode }) {
@@ -40,7 +40,7 @@ function Fil({ idx, nom, texte }: { idx: number | null; nom: string; texte: Reac
   </div>;
 }
 
-export default function Histoire({ actions, Disque }: { actions: ActionsHistoire; Disque: (p: { contexte: string; modes: ModePoint[]; etiquette: string; max?: number }) => ReactNode }) {
+export default function Histoire({ actions, Disque, entre = {}, objet }: { entre?: Record<string, ReactNode>; objet?: ReactNode; actions: ActionsHistoire; Disque: (p: { contexte: string; modes: ModePoint[]; etiquette: string; max?: number }) => ReactNode }) {
   const [loupe, setLoupe] = useState(0);
   const [rouge, setRouge] = useState<number | null>(null), [bleu, setBleu] = useState<number | null>(null);
   const modes: ModePoint[] = [
@@ -73,68 +73,71 @@ export default function Histoire({ actions, Disque }: { actions: ActionsHistoire
           legende="Reconstitution générée (pigments, racines, étoffe), rendue en broderie par la conversion du studio. Pas une photographie d’époque." />
         <div className="hi-texte">
           <p className="ed-num">01 · L’origine</p>
-          <h2 id="hi-origine-titre" tabIndex={-1}>Des couleurs qui traversent les siècles.</h2>
-          <p>Avant les fils, il y eut des plantes, des voyages et des mains expertes : la racine de garance pour le rouge, les feuilles d’indigotier pour le bleu.</p>
+          <h2 id="hi-origine-titre" tabIndex={-1}>Garance <span className="hi-et">&</span> indigo</h2>
+          <p className="hi-sous">Des couleurs qui traversent les siècles.</p>
+          <p className="hi-corps">Avant les fils, il y eut des plantes, des voyages et des mains expertes : la racine de garance pour le rouge, les feuilles d’indigotier pour le bleu.</p>
           <p className="hi-geste">Passez la souris, le doigt, ou Tab puis les flèches : la loupe voit à travers la broderie, jusqu’à la grille et aux symboles.</p>
         </div>
         <div className="hi-disque"><Disque contexte="edition-histoire" modes={modes} etiquette="Le Point de Point Zéro : l’histoire, la loupe, le nuancier, l’atelier" max={1} /></div>
-        <p className="hi-aparte" aria-hidden="true">Rouge de garance<br />et bleu d’indigo.<br />Deux couleurs qui ont<br />changé le textile.</p>
       </div>
     </section>
+    {entre["hi-origine"]}
 
-    <section id="hi-indiennes" className="ed-scene hi-scene" aria-labelledby="hi-indiennes-titre">
-      <div className="ed-plateau hi-plateau hi-avec-fiche">
-        <Brode src={IMG + "met-palampore-2010-337.webp"} cols={96} maxFils={18} surFils={b => setRouge(dominant(b, "rouge"))}
-          alt="Palampore de la côte de Coromandel : un grand arbre fleuri, rouges de garance et bleus, rendu en broderie"
-          legende="Palampore, côte de Coromandel (Inde), pour le marché sri-lankais, premier quart du XVIIIᵉ siècle. The Metropolitan Museum of Art, 2010.337, domaine public. Rendu en broderie par le studio." />
+    <section id="hi-indiennes" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-indiennes-titre">
+      <div className="ed-plateau hi-plateau hi-deux">
+        <div className="hi-moitie hi-moitie-rouge">
+          <Brode src={IMG + "met-palampore-2010-337.webp"} cols={84} maxFils={18} surFils={b => setRouge(dominant(b, "rouge"))}
+            alt="Palampore de la côte de Coromandel : un grand arbre fleuri, rouges de garance et bleus, rendu en broderie"
+            legende="Palampore, côte de Coromandel (Inde), pour le marché sri-lankais, premier quart du XVIIIᵉ siècle. The Metropolitan Museum of Art, 2010.337, domaine public. Rendu en broderie par le studio." />
+          <Fil idx={rouge} nom="Garance" texte="La racine de Rubia tinctorum. Un rouge qu’un mordant fixe sur le coton." />
+        </div>
+        <div className="hi-moitie hi-moitie-bleue">
+          <Brode src={IMG + "met-reserve-bleue-40-128.webp"} cols={56} maxFils={10} surFils={b => setBleu(dominant(b, "bleu"))}
+            alt="Panneau à réserve bleue : oiseaux et feuillages en bleus d’indigo, rendu en broderie"
+            legende="Panneau de rideau à réserve bleue, vers 1725–1775. The Met, 40.128, domaine public. Rendu en broderie par le studio." />
+          <Fil idx={bleu} nom="Indigo" texte="Les feuilles de l’indigotier. Un bleu profond, posé autour de réserves qui protègent le fond." />
+        </div>
         <div className="hi-texte">
           <p className="ed-num">02 · Les indiennes</p>
-          <h2 id="hi-indiennes-titre" tabIndex={-1}>Des étoffes venues d’Inde, un savoir-faire inégalé.</h2>
-          <p>Peintes et imprimées sur coton, fixées par des mordants, les indiennes portaient des rouges et des bleus qui résistaient au temps. L’Europe s’en éprend ; la France en interdit l’importation et la fabrication de 1686 à 1759, pour protéger la laine et la soie.</p>
+          <h2 id="hi-indiennes-titre" tabIndex={-1}>Indiennes</h2>
+          <p className="hi-sous">Des étoffes venues d’Inde, un savoir-faire inégalé.</p>
+          <p className="hi-corps">Peintes et imprimées sur coton, fixées par des mordants, elles portaient des rouges et des bleus qui résistaient au temps. L’Europe s’en éprend ; la France en interdit l’importation et la fabrication de 1686 à 1759.</p>
         </div>
-        <aside className="hi-fiche" aria-label="Les deux couleurs">
-          <Fil idx={rouge} nom="Garance" texte="La racine de Rubia tinctorum. Un rouge qu’un mordant fixe sur le coton." />
-          <div className="hi-fiche-mini">
-            <Brode src={IMG + "met-reserve-bleue-40-128.webp"} cols={46} maxFils={8} surFils={b => setBleu(dominant(b, "bleu"))}
-              alt="Panneau à réserve bleue : oiseaux et feuillages en bleus d’indigo, rendu en broderie"
-              legende="Panneau de rideau à réserve bleue, vers 1725–1775. The Met, 40.128, domaine public." />
-          </div>
-          <Fil idx={bleu} nom="Indigo" texte="Les feuilles de l’indigotier. Un bleu profond, posé autour de réserves qui protègent le fond." />
-        </aside>
       </div>
     </section>
+    {entre["hi-indiennes"]}
 
     <section id="hi-mulhouse" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-mulhouse-titre">
-      <div className="ed-plateau hi-plateau hi-avec-fiche">
+      <div className="ed-plateau hi-plateau">
         <Brode src={IMG + "reconstitution-atelier.webp"} cols={150} maxFils={16}
           alt="Reconstitution : un artisan imprime une étoffe à la planche de bois, rendue en broderie"
           legende="Reconstitution générée d’un atelier d’impression à la planche, rendue en broderie. Pas un document d’époque." />
         <div className="hi-texte">
           <p className="ed-num">03 · Mulhouse, 1746</p>
-          <h2 id="hi-mulhouse-titre" tabIndex={-1}>Une manufacture, un nouveau chapitre.</h2>
-          <p>En 1746, à Mulhouse, Samuel Koechlin, Jean-Jacques Schmaltzer, Jean-Henri Dollfus et Jean-Jacques Feer lancent l’impression de cotonnades à la planche. De la lignée Dollfus naîtra Dollfus-Mieg et Compagnie : DMC.</p>
+          <h2 id="hi-mulhouse-titre" tabIndex={-1}>Mulhouse</h2>
+          <p className="hi-sous">Une manufacture, un nouveau chapitre.</p>
+          <p className="hi-corps">En 1746, Samuel Koechlin, Jean-Jacques Schmaltzer, Jean-Henri Dollfus et Jean-Jacques Feer lancent l’impression de cotonnades à la planche. La ville n’est pas encore française : une république alliée aux cantons suisses, qui rejoint la France en 1798. De la lignée Dollfus naîtra Dollfus-Mieg et Compagnie : DMC.</p>
         </div>
-        <aside className="hi-fiche hi-fiche-texte">
-          <p className="hi-fiche-titre">Mulhouse n’était pas encore française.</p>
-          <p>Une république alliée aux cantons suisses, qui rejoint la France en 1798.</p>
-          <p className="hi-fiche-date">1746 · Mulhouse</p>
-        </aside>
+        <p className="hi-aparte" aria-hidden="true">1746<br />Mulhouse</p>
       </div>
     </section>
+    {entre["hi-mulhouse"]}
 
-    <section id="hi-brodeuses" className="ed-scene hi-scene" aria-labelledby="hi-brodeuses-titre">
+    <section id="hi-brodeuses" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-brodeuses-titre">
       <div className="ed-plateau hi-plateau">
         <Brode src={IMG + "reconstitution-ouvrages.webp"} cols={120} maxFils={18}
           alt="Reconstitution : des ouvrages anciens ouverts sur des motifs brodés, des écheveaux et des ciseaux, rendus en broderie"
           legende="Reconstitution générée (ouvrages, écheveaux), rendue en broderie. Couvertures et étiquettes imaginées." />
         <div className="hi-texte">
           <p className="ed-num">04 · Les brodeuses</p>
-          <h2 id="hi-brodeuses-titre" tabIndex={-1}>Des gestes transmis de génération en génération.</h2>
-          <p>Les brodeuses ont fait vivre ces motifs, les ont adaptés, enseignés, enrichis. En 1884, Thérèse de Dillmont commence à travailler avec DMC ; en 1886 paraît son <i>Encyclopédie des ouvrages de dames</i>, qui diffuse les points bien au-delà de l’Alsace.</p>
+          <h2 id="hi-brodeuses-titre" tabIndex={-1}>Brodeuses</h2>
+          <p className="hi-sous">Des gestes transmis de génération en génération.</p>
+          <p className="hi-corps">Elles ont fait vivre ces motifs, les ont adaptés, enseignés, enrichis. En 1884, Thérèse de Dillmont commence à travailler avec DMC ; en 1886 paraît son <i>Encyclopédie des ouvrages de dames</i>, qui diffuse les points bien au-delà de l’Alsace.</p>
         </div>
+        {objet}
       </div>
     </section>
-
+    {entre["hi-brodeuses"]}
     <details className="hi-sources">
       <summary>Sources de cette séquence</summary>
       <ul>

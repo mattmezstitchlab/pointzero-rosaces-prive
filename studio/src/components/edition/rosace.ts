@@ -4,7 +4,7 @@
  * 1. le point central · 2. un premier secteur (la symétrie) · 3. les huit secteurs · 4. les anneaux jusqu'au bord · 5. la composition complète.
  */
 import { FLOSS } from "../../lib/dmc";
-import { generer } from "../../lib/motif5d/generer";
+import { formatParDefaut, generer } from "../../lib/motif5d/generer";
 import { codeDe, VERSION, type Signature } from "../../lib/motif5d/code";
 import { lisse } from "./defilement";
 
@@ -12,12 +12,15 @@ export interface CaseRosace { x: number; y: number; f: number; d: number; secteu
 export interface Rosace { w: number; h: number; cases: CaseRosace[]; code: string; fils: number }
 
 const cacheRosaces = new Map<string, Rosace>();
-/** Le motif réel, à une taille donnée ; même demande → même motif (le moteur est déterministe). */
-export function rosaceDe(signature: Signature, graine: number, cote = 81): Rosace {
+/**
+ * Le motif réel, à la taille que lui donne le compositeur de l'atelier (formatParDefaut) : même recette, même motif, ici et là-bas.
+ * Le moteur est déterministe ; le résultat est gardé par recette.
+ */
+export function rosaceDe(signature: Signature, graine: number): Rosace {
   const code = codeDe({ signature, graine, version: VERSION });
-  const cle = code + "@" + cote;
-  const deja = cacheRosaces.get(cle); if (deja) return deja;
-  const { pattern, controle } = generer({ signature, graine, version: VERSION, w: cote, h: cote });
+  const deja = cacheRosaces.get(code); if (deja) return deja;
+  const [w, h] = formatParDefaut(signature);
+  const { pattern, controle } = generer({ signature, graine, version: VERSION, w, h });
   const cx = (pattern.w - 1) / 2, cy = (pattern.h - 1) / 2, dmax = Math.hypot(cx, cy) || 1;
   const cases: CaseRosace[] = [];
   for (let y = 0; y < pattern.h; y++) for (let x = 0; x < pattern.w; x++) {
@@ -26,7 +29,7 @@ export function rosaceDe(signature: Signature, graine: number, cote = 81): Rosac
     cases.push({ x, y, f, d: Math.hypot(dx, dy) / dmax, secteur: Math.floor(((a + 22.5) % 360) / 45) });
   }
   const r: Rosace = { w: pattern.w, h: pattern.h, cases, code, fils: controle.fils };
-  cacheRosaces.set(cle, r);
+  cacheRosaces.set(code, r);
   return r;
 }
 
@@ -47,13 +50,15 @@ export function visibilite(c: CaseRosace, p: number): number {
   return c.d <= rC ? Math.min(1, (rC - c.d) / 0.04) : 0;
 }
 
-/** Dessine la toile Aida et les croix visibles. `cote` : la taille CSS du carré ; le contexte est déjà mis à l'échelle de l'écran. */
-export function dessinerRosace(ctx: CanvasRenderingContext2D, r: Rosace, cote: number, p: number) {
-  const s = cote / r.w;
-  ctx.clearRect(0, 0, cote, cote);
-  ctx.fillStyle = "#f2eee5"; ctx.fillRect(0, 0, cote, cote);
+/** Dessine la toile Aida et les croix visibles, centrées dans W × H (une frise est plus large que haute). Le contexte est déjà à l'échelle de l'écran. */
+export function dessinerRosace(ctx: CanvasRenderingContext2D, r: Rosace, W: number, p: number, H = W, fond = "#f2eee5") {
+  const s = Math.min(W / r.w, H / r.h), ox = (W - r.w * s) / 2, oy = (H - r.h * s) / 2;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = fond; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.translate(ox, oy);
   ctx.lineWidth = 1; ctx.strokeStyle = "rgba(60,50,40,.07)"; ctx.beginPath();
-  for (let k = 0; k <= r.w; k++) { const v = Math.round(k * s) + 0.5; ctx.moveTo(v, 0); ctx.lineTo(v, cote); ctx.moveTo(0, v); ctx.lineTo(cote, v); }
+  for (let k = 0; k <= r.w; k++) { const v = Math.round(k * s) + 0.5; ctx.moveTo(v, 0); ctx.lineTo(v, r.h * s); }
+  for (let k = 0; k <= r.h; k++) { const v = Math.round(k * s) + 0.5; ctx.moveTo(0, v); ctx.lineTo(r.w * s, v); }
   ctx.stroke();
   const parFil = new Map<string, Path2D>(), ombre = new Path2D(), m = s * 0.17;
   for (const c of r.cases) {
@@ -74,8 +79,18 @@ export function dessinerRosace(ctx: CanvasRenderingContext2D, r: Rosace, cote: n
   ctx.globalAlpha = 1;
   /* le point central : la lueur du Point Zéro, tant que la rosace n'est pas née */
   if (p < 0.3) {
-    const c = cote / 2, R = s * 3 * (1 - lisse(0.1, 0.3, p));
-    const g = ctx.createRadialGradient(c, c, 0, c, c, R * 2.4); g.addColorStop(0, "rgba(201,184,255,.85)"); g.addColorStop(1, "rgba(201,184,255,0)");
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(c, c, R * 2.4, 0, Math.PI * 2); ctx.fill();
+    const cx = r.w * s / 2, cy = r.h * s / 2, R = s * 3 * (1 - lisse(0.1, 0.3, p));
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 2.4); g.addColorStop(0, "rgba(201,184,255,.85)"); g.addColorStop(1, "rgba(201,184,255,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 2.4, 0, Math.PI * 2); ctx.fill();
   }
+  ctx.restore();
+}
+
+/** Un aperçu fixe (toute la rosace) dans un canevas, à la taille de son élément. */
+export function peindre(cv: HTMLCanvasElement | null, r: Rosace, fond?: string) {
+  const ctx = cv?.getContext?.("2d"); if (!cv || !ctx) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1), W = cv.clientWidth || 160, H = cv.clientHeight || W;
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  dessinerRosace(ctx, r, W, 1, H, fond);
 }

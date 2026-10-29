@@ -39,6 +39,8 @@ import PeerShare from "./components/PeerShare";
 import OrbeGuide, { VISITE_CLE, visiteVue } from "./components/OrbeGuide";
 import Cadre, { TracerCadre } from "./components/Cadre";
 import ComposerRosace from "./components/ComposerRosace";
+import { formatParDefaut, generer } from "./lib/motif5d/generer";
+import { OFFERTE_CLE } from "./components/edition/creation";
 import Sceau from "./components/Sceau";
 import { lireCode } from "./lib/motif5d/code";
 
@@ -501,6 +503,29 @@ export default function App() {
       return true;
     } catch { return false; }
   };
+  /* Le cadeau de la landing : « ?offerte=<recette> » ouvre la rosace du visiteur dans son cadre, une seule fois.
+     La recette passe, pas une image : le même moteur, à la même taille que le compositeur, redonne le même motif ;
+     l'ouvrage rejoint Mes ouvrages (stockage de cet appareil), avec sa recette pour pouvoir y revenir. */
+  const offerteVue = useRef(false);
+  useEffect(() => {
+    if (offerteVue.current) return; offerteVue.current = true;
+    let code: string | null = null;
+    try { code = new URLSearchParams(window.location.search).get("offerte"); } catch { return; }
+    if (!code) return;
+    try { const u = new URL(window.location.href); u.searchParams.delete("offerte"); window.history.replaceState(window.history.state, "", u.pathname + u.search + u.hash); } catch { /* rien */ }
+    const recette = lireCode(code);
+    if (!recette) { notify("Ce lien de rosace n’est pas lisible."); return; }
+    let deja: string | null = null; try { deja = localStorage.getItem(OFFERTE_CLE); } catch { /* rien */ }
+    if (deja === code) { notify("Votre rosace offerte est déjà dans Mes ouvrages."); return; }
+    const [w, h] = formatParDefaut(recette.signature);
+    const { pattern } = generer({ ...recette, w, h, nom: "Ma rosace offerte" });
+    void useImportedPattern(pattern).then(ok => {
+      if (!ok) return;
+      try { localStorage.setItem(OFFERTE_CLE, code!); } catch { /* rien */ }
+      notify("Voici votre rosace offerte. Elle est enregistrée dans Mes ouvrages, sur cet appareil.");
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const createActions = {
     prompt: promptText, onPrompt: setPromptText,
     onGenerate: () => setPromptOpen(true),
