@@ -140,7 +140,8 @@ describe("Le Point · dans l'atelier", () => {
     expect(container!.querySelector(".lp-annonce")?.textContent).toBe("Mouvements réduits activé.");
     /* le Point porte la Marque : Confort est actif */
     expect(lePoint()!.getAttribute("aria-label")).toContain("Actif : Confort");
-    await cliquer([...p.querySelectorAll("button")].find(b => b.textContent?.startsWith("Lecture confortable")));
+    /* le profil « Lecture confortable » (Mon profil) : un choix, pas un bouton */
+    await cliquer([...p.querySelectorAll("label")].find(l => l.textContent?.startsWith("Lecture confortable"))!.querySelector("input")!);
     expect(readPrefs().fontScale).toBe(1.25);
     expect(document.documentElement.style.getPropertyValue("--pz-user-font-scale")).toBe("1.25");
     await touche(panneau(), "Escape");

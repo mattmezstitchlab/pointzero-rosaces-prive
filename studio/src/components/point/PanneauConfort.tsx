@@ -2,10 +2,12 @@ import { useEffect, useId, useRef, useState } from "react";
 import { DEFAULT_ACCESS, readPrefs, savePrefs, type Preferences } from "../../lib/accessibilityCore";
 import { annonce, PROFILS } from "../../lib/point/confort";
 import { ecrirePresentation, lirePresentation, type ChoixPresentation } from "../../lib/point/modes";
+import { appliquerProfil, lireNiveau, nomProfil, profilActuel, PROFILS_POINT, type IdProfil } from "../../lib/point/profils";
 
 /**
  * Le mode Confort du Point : un formulaire ordinaire, sans geste.
  * Chaque changement s'applique tout de suite à toute la page, s'enregistre sur cet appareil seulement, et se dit (l'Onde).
+ * En tête, le profil (Débutante, Experte, Lecture confortable, Création géométrique) ; « Personnalisé » dès qu'un réglage s'en écarte.
  * Échap ou « Fermer » : le focus revient au Point.
  */
 export default function PanneauConfort({ onFermer, onAnnonce }: { onFermer: () => void; onAnnonce: (texte: string) => void }) {
@@ -25,6 +27,13 @@ export default function PanneauConfort({ onFermer, onAnnonce }: { onFermer: () =
   };
   const set = (patch: Partial<Preferences>) => changer({ ...p, ...patch });
   const pc = (x: number) => Math.round(x * 100) + " %";
+  /* le profil se relit après chaque changement (un réglage modifié à la main donne « Personnalisé ») */
+  const profil: IdProfil | null = profilActuel({ confort: p, niveau: lireNiveau(), menu }) ?? null;
+  const choisirProfil = (id: IdProfil) => {
+    const ok = appliquerProfil(id), suite = readPrefs();
+    onAnnonce(`Profil ${nomProfil(id)}.` + (ok ? "" : " Cet appareil refuse d’enregistrer : le profil vaut jusqu’au rechargement."));
+    setP(suite); setMenu(lirePresentation()); setErreur("");
+  };
 
   return <section ref={racine} className="lp-panneau" data-defile role="dialog" aria-modal="false" aria-labelledby={titre}
     onKeyDown={e => { e.stopPropagation(); /* flèches, Retour arrière… restent aux réglages, pas au contexte */ if (e.key === "Escape") { e.preventDefault(); onFermer(); } }}>
@@ -35,9 +44,19 @@ export default function PanneauConfort({ onFermer, onAnnonce }: { onFermer: () =
     <p className="lp-note">Chaque réglage s’applique tout de suite à tout le studio et reste sur cet appareil.</p>
 
     <fieldset className="lp-groupe">
-      <legend>Profils rapides</legend>
+      <legend>Mon profil</legend>
+      <div className="lp-choix lp-profils-point">
+        {PROFILS_POINT.map(pr => <label key={pr.id}><input type="radio" name={titre + "profil"} checked={profil === pr.id} onChange={() => choisirProfil(pr.id)} />
+          <span>{pr.nom}<span className="lp-aide">{pr.aide}</span></span></label>)}
+        <label><input type="radio" name={titre + "profil"} checked={profil === null} disabled />
+          <span>Personnalisé<span className="lp-aide">Vos propres réglages, dès que l’un d’eux s’écarte d’un profil.</span></span></label>
+      </div>
+    </fieldset>
+
+    <fieldset className="lp-groupe">
+      <legend>Réglages rapides</legend>
       <div className="lp-profils">
-        {PROFILS.map(pr => <button key={pr.id} type="button" onClick={() => changer({ ...pr.valeur })} aria-describedby={titre + pr.id}>
+        {PROFILS.filter(pr => pr.id !== "lecture").map(pr => <button key={pr.id} type="button" onClick={() => changer({ ...pr.valeur })} aria-describedby={titre + pr.id}>
           {pr.nom}<span id={titre + pr.id} className="lp-aide">{pr.aide}</span></button>)}
         <button type="button" onClick={() => changer({ ...DEFAULT_ACCESS })}>Réglages d’origine<span className="lp-aide">Tout revient comme au premier jour. Vos ouvrages ne bougent pas.</span></button>
       </div>

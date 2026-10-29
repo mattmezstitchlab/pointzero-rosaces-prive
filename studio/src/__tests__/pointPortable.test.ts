@@ -33,10 +33,10 @@ describe("Le Point est portable", () => {
     const interdits = /dmc|pattern|stitch|motif5d|cadre|canvas|pdf|oxs|floss|broderie|Studio|Docks|Composer|library|aimeSync/i;
     expect(fichiers.filter(f => interdits.test(f))).toEqual([]);
   });
-  it("tient en neuf fichiers connus (la mémoire des habitudes comprise)", () => {
+  it("tient en dix fichiers connus (la mémoire des habitudes et les profils compris)", () => {
     expect(fichiers).toEqual([
       "components/point/LePoint.css", "components/point/LePoint.tsx", "components/point/PanneauConfort.tsx", "components/point/Point.tsx",
-      "lib/accessibilityCore.ts", "lib/point/confort.ts", "lib/point/memoire.ts", "lib/point/modes.ts", "lib/storageSafety.ts",
+      "lib/accessibilityCore.ts", "lib/point/confort.ts", "lib/point/memoire.ts", "lib/point/modes.ts", "lib/point/profils.ts", "lib/storageSafety.ts",
     ]);
   });
 });

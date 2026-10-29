@@ -1,6 +1,7 @@
 import StudioDocks, { type BlocDemande, type DockPath } from "./components/StudioDocks";
 import { VISIBILITY, visibilityOf, writeVisibility } from "./lib/visibility";
 import { readInterfaceLevel, INTERFACE_LEVEL_KEY, type InterfaceLevel } from "./lib/interfaceLevel";
+import { EVENEMENT_NIVEAU } from "./lib/point/profils";
 import CrossStitchHome, { type StitchEntry } from "./components/CrossStitchHome";
 import {writeStoredJSON} from "./lib/storageSafety";
 import { useCallback, useDeferredValue, useEffect, useMemo, useReducer, useRef, useState } from "react";
@@ -109,6 +110,11 @@ export default function App() {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
   const subjectMove = useRef<{ scene: SubjectScene; base: Pattern; id: string; x: number; y: number } | null>(null);
   const [interfaceLevel, setInterfaceLevel] = useState(readInterfaceLevel);
+  /* un profil choisi dans le Confort du Point change aussi le niveau d'affichage (lib/point/profils) */
+  useEffect(() => {
+    const suivre = (e: Event) => { const v = (e as CustomEvent<InterfaceLevel>).detail; if (v === "beginner" || v === "intermediate" || v === "expert") setInterfaceLevel(v); };
+    window.addEventListener(EVENEMENT_NIVEAU, suivre); return () => window.removeEventListener(EVENEMENT_NIVEAU, suivre);
+  }, []);
   const [, setShowDrawingTools] = useState(() => readInterfaceLevel() === "expert");
   const [, setMobileLibraryOpen] = useState(false);
   const [dockPath, setDockPath] = useState<DockPath>(null);
