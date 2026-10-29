@@ -174,3 +174,9 @@
   .cv-page-bas > .cv-zone + .cv-zone { border-top: 1px solid var(--cv-trait); }
   .cv-page-galerie .cv-galerie li { flex-basis: 42%; }
 }
+
+/* un module montré par le contrôleur (le Disque) : un repère bref, sans mouvement imposé */
+.cv-zone.cv-montre { outline: 2px solid #7c5cff; outline-offset: 4px; border-radius: 8px; animation: cv-montre 1.6s ease forwards; }
+@keyframes cv-montre { 0%, 70% { outline-color: #7c5cff; } 100% { outline-color: transparent; } }
+@media (prefers-reduced-motion: reduce) { .cv-zone.cv-montre { animation: none; } }
+.cv-zone:focus { outline: 2px solid #7c5cff; outline-offset: 4px; }

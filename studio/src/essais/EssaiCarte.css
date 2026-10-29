@@ -43,3 +43,7 @@
   .ec-piliers li + li { border-left: 0; border-top: 1px solid rgba(255,255,255,.2); padding-top: 16px; }
   .ec-groupe button { padding: 0 13px; }
 }
+
+/* le Disque, contrôleur de la carte : le même Point que le studio, posé en bas à gauche */
+.ec-point { position: fixed; left: 16px; bottom: 16px; z-index: 30; padding: 4px; border-radius: 14px; background: #0b0b0c; box-shadow: 0 10px 30px rgba(11, 11, 12, .25); }
+.ec-point .lp-panneau { bottom: 84px; }

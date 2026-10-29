@@ -10,7 +10,7 @@
  *   Instantané quand les animations sont réduites. L'ouvrage n'est ni dupliqué ni modifié.
  * Aucune logique du Cadre ni de la grille ne change : ce composant se pose par-dessus.
  */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import { ArrowUp, Bell, Camera, ChevronsDownUp, Ellipsis, Minimize2 } from "lucide-react";
 import { aVoir, decorer, MOT_ETAT, trier, type Indicateur, type Indicateurs } from "../lib/point/indicateurs";
 import Point from "./point/Point";
@@ -50,7 +50,10 @@ function rectCadre(): Rect | null {
 /** le suivi de la couleur active, dans le cercle : son avancée (l'arc sur le bois, dit aussi en toutes lettres) et le prochain point */
 export interface SuiviCercle { code: string; hex: string; cells: number; done: number; /** le vrai motif, la couleur active, et le dernier point coché (null : on part du centre de la toile) */ motif: Pattern; couleur: number; depuis: number | null; /** montrer le prochain point dans la toile (le Guide est actif, on brode) */ montrer: boolean }
 
-export default function TambourAtelier({ contexte, retracter, part, etiquette, ouvrage, indicateurs, racine, suivi }: { contexte: ContexteBroderie; retracter: () => void; part?: number; etiquette?: string; ouvrage?: string; indicateurs?: Indicateurs; /** une autre racine (Navigation intégrale .0) ; sinon les commandes du bloc broderie */ racine?: ModePoint[]; suivi?: SuiviCercle }) {
+export default function TambourAtelier({ contexte, retracter, part, etiquette, ouvrage, indicateurs, racine, suivi, centreContenu }: { contexte: ContexteBroderie; retracter: () => void; part?: number; etiquette?: string; ouvrage?: string; indicateurs?: Indicateurs; /** une autre racine (Navigation intégrale .0) ; sinon les commandes du bloc broderie */ racine?: ModePoint[]; suivi?: SuiviCercle;
+  /** un autre contenu réel au centre (le Bureau : les ouvrages) ; il peut se déployer en plein écran */
+  centreContenu?: { titre: string; element: ReactNode; plein: boolean; quitterPlein: () => void; defile?: MutableRefObject<number> } }) {
+  if (centreContenu) suivi = undefined;   /* le suivi parle de l'ouvrage : il se tait quand le centre montre autre chose */
   /* les points lumineux : la liste réelle (publiée par les modules), lue ici ; le disque n'invente aucun statut */
   const [indic, setIndic] = useState<Indicateur[]>([]);
   useEffect(() => indicateurs?.abonner(l => setIndic(l.filter(i => !i.resolu))), [indicateurs]);
@@ -139,10 +142,11 @@ export default function TambourAtelier({ contexte, retracter, part, etiquette, o
     style={{ ["--pzt-x" as string]: g.cx + "px", ["--pzt-y" as string]: g.cy + "px", ["--pzt-r" as string]: g.r + "px", ["--pzt-rb" as string]: g.rb + "px", ["--pzt-ri" as string]: g.ri + "px", ["--pzt-ro" as string]: g.Ro + "px",
       ["--pzt-bl" as string]: g.env.l + "px", ["--pzt-bh" as string]: g.env.h + "px", ["--pzt-bd" as string]: g.env.rond + "px",
       ["--pzt-dx" as string]: (dock ? dock.x - g.cx : 0) + "px", ["--pzt-dy" as string]: (dock ? dock.y - g.cy : 0) + "px" }}
-    onKeyDown={e => { if (e.key === "Escape" && !e.defaultPrevented) { e.preventDefault(); if (replie) setReplie(false); else fermer(); } }}
+    onKeyDown={e => { if (e.key === "Escape" && !e.defaultPrevented) { e.preventDefault(); if (centreContenu?.plein) centreContenu.quitterPlein(); else if (replie) setReplie(false); else fermer(); } }}
     onPointerOver={e => { surCouronne(e); viser(e); }} onPointerOut={horsCouronne} onFocus={e => { surCouronne(e); viser(e); }}>
     <div className="pzt-voile" aria-hidden="true" />
     <div className="pzt-bois" aria-hidden="true" style={bois} />
+    {centreContenu && <CentreContenu {...centreContenu} cx={g.cx} cy={g.cy} r={g.r} />}
     {fin && suivi && <svg className="pzt-suivi" aria-hidden="true" width={2 * g.rb + 4} height={2 * g.rb + 4} style={{ left: g.cx - g.rb - 2, top: g.cy - g.rb - 2 }}>
       <circle cx={g.rb + 2} cy={g.rb + 2} r={g.rb - 4} className="pzt-suivi-piste" />
       <circle cx={g.rb + 2} cy={g.rb + 2} r={g.rb - 4} className="pzt-suivi-arc" stroke={suivi.hex} pathLength={100} strokeDasharray={`${(100 * suivi.done / suivi.cells).toFixed(2)} 100`} transform={`rotate(-90 ${g.rb + 2} ${g.rb + 2})`} />
@@ -198,4 +202,23 @@ function ProchainPoint({ motif, couleur, depuis, code, cx, cy, r, rb }: { motif:
   const a = Math.atan2(dy, dx);
   return <button type="button" className="pzt-prochain-fleche" aria-label={`Le prochain point de DMC ${code} est hors du cercle : l’amener au centre`} title="Amener le prochain point au centre"
     onClick={montrer} style={{ left: cx + Math.cos(a) * (rb - 6), top: cy + Math.sin(a) * (rb - 6) }}><ArrowUp aria-hidden="true" style={{ transform: `rotate(${a * 180 / Math.PI + 90}deg)` }} /></button>;
+}
+
+/** Le centre du disque montre un autre contenu réel (le Bureau) : rond, dans la toile ; ou en plein écran quand c'est préférable.
+ *  La position de lecture est retenue (revenir au Bureau ne fait rien perdre). */
+function CentreContenu({ titre, element, plein, quitterPlein, defile, cx, cy, r }: { titre: string; element: ReactNode; plein: boolean; quitterPlein: () => void; defile?: MutableRefObject<number>; cx: number; cy: number; r: number }) {
+  const zone = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => { if (zone.current && defile) zone.current.scrollTop = defile.current; }, [plein]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* en plein écran : le focus va au bouton de retour ; Échap revient au disque (avant tout autre usage d'Échap) */
+  const retour = useRef<HTMLButtonElement>(null), quitter = useRef(quitterPlein); quitter.current = quitterPlein;
+  useEffect(() => {
+    if (!plein) return;
+    retour.current?.focus();
+    const f = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); quitter.current(); } };
+    window.addEventListener("keydown", f, true); return () => window.removeEventListener("keydown", f, true);
+  }, [plein]);
+  return <section className={"pzt-centre" + (plein ? " pzt-centre-plein" : "")} aria-label={titre} style={plein ? undefined : { left: cx - r, top: cy - r, width: 2 * r, height: 2 * r }}>
+    {plein && <header className="pzt-centre-tete"><h2>{titre}</h2><button ref={retour} type="button" onClick={quitterPlein}>Revenir au disque</button></header>}
+    <div ref={zone} className="pzt-centre-defile" onScroll={e => { if (defile) defile.current = e.currentTarget.scrollTop; }}>{element}</div>
+  </section>;
 }

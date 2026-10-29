@@ -71,8 +71,15 @@ function Module({ t, x }: { t: TypeModule; x: Ctx }): ReactNode {
   }
 }
 
-export default function CarteVivante({ carte, role, format, onFormat }: { carte: Carte; role: Role; format: Format; onFormat: (f: Format) => void }) {
-  const [media, setMedia] = useState(0), [face, setFace] = useState<Face>("recto"), [creneau, setCreneau] = useState<string | null>(null), [message, setMessage] = useState("");
+export default function CarteVivante({ carte, role, format, onFormat, media: mediaImpose, onMedia, face: faceImposee, onFace, montrer }: { carte: Carte; role: Role; format: Format; onFormat: (f: Format) => void;
+  /** facultatif : un contrôleur (le Disque) tient le média et la face ; sinon la carte les garde elle-même */
+  media?: number; onMedia?: (k: number) => void; face?: Face; onFace?: (f: Face) => void;
+  /** facultatif : montrer un module (la carte se tourne ou se déplie si besoin) ; n change à chaque demande */
+  montrer?: { module: TypeModule; n: number } }) {
+  const [mediaLocal, setMediaLocal] = useState(0), [faceLocale, setFaceLocale] = useState<Face>("recto"), [creneau, setCreneau] = useState<string | null>(null), [message, setMessage] = useState("");
+  const media = mediaImpose ?? mediaLocal, face = faceImposee ?? faceLocale;
+  const setMedia = (k: number) => { if (onMedia) onMedia(k); else setMediaLocal(k); };
+  const setFace = (f: Face) => { if (onFace) onFace(f); else setFaceLocale(f); };
   const precedent = useRef<Exclude<Format, "page">>(format === "page" ? "verticale" : format);
   const racine = useRef<HTMLElement>(null), deplier = useRef<HTMLButtonElement>(null), retour = useRef<HTMLButtonElement>(null), dejaMonte = useRef(false);
   const id = useId(), idNom = id + "-nom", idVerso = id + "-verso";
@@ -91,6 +98,23 @@ export default function CarteVivante({ carte, role, format, onFormat }: { carte:
     const f: Face = face === "recto" ? "verso" : "recto"; setFace(f);
     requestAnimationFrame(() => racine.current?.querySelector<HTMLElement>(f === "verso" ? `#${CSS.escape(idVerso)}` : ".cv-recto .cv-nom")?.focus());
   };
+  /* montrer un module : sur la face où il est, ou dans la page s'il n'a pas de place dans cette forme ; puis le focus y va */
+  useEffect(() => {
+    if (!montrer) return;
+    const t = montrer.module;
+    if (format !== "page") {
+      if (recto.includes(t)) setFace("recto");
+      else if (verso.includes(t)) setFace("verso");
+      else { onFormat("page"); }
+    }
+    const r = requestAnimationFrame(() => requestAnimationFrame(() => {
+      const zone = racine.current?.querySelector<HTMLElement>(`${format === "page" || (!recto.includes(t) && !verso.includes(t)) ? ".cv-page" : recto.includes(t) ? ".cv-recto" : ".cv-verso"} [data-module="${t}"]`);
+      if (!zone) return;
+      zone.setAttribute("tabindex", "-1"); zone.focus({ preventScroll: true }); zone.scrollIntoView({ block: "nearest" });
+      zone.classList.remove("cv-montre"); void zone.offsetWidth; zone.classList.add("cv-montre");
+    }));
+    return () => cancelAnimationFrame(r);
+  }, [montrer?.n]); // eslint-disable-line react-hooks/exhaustive-deps
   const agir = (a: IdAction) => {
     if (a === "reserver" && !creneau) { setMessage("Choisissez d’abord un créneau."); return; }
     setMessage(`Démonstration : « ${ACTIONS[a].nom} »${a === "reserver" ? ` (${creneau})` : ""} n’envoie rien.`);
