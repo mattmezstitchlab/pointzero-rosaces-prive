@@ -273,6 +273,7 @@ export default function StudioDocks(p: Props) {
                 <li><button type="button" onClick={() => setBloc("inviter")}>Mes ouvrages</button></li>
                 <li><button type="button" onClick={() => setBloc("chercher")}>Chercher</button></li>
                 <li><a href={import.meta.env.BASE_URL + "galerie"}>Galerie des Vivants</a></li>
+                <li><a href={import.meta.env.BASE_URL + "tambour"}>Essai : le Tambour vivant</a></li>
                 <li><button type="button" aria-pressed={essaiBloc} onClick={() => { const v = !essaiBloc; ecrireEssaiBloc(v); setEssaiBloc(v); setBloc(null); }}>{essaiBloc ? "Revenir au dock du bas" : "Essai : les outils sur le bloc"}</button></li>
                 <li><button type="button" onClick={() => { setBloc(null); p.actions.settings(); }}>Réglages et aide</button></li>
                 {p.actions.visite && <li><button type="button" onClick={() => { setBloc(null); p.actions.visite!(); }}>Revoir la visite avec Le Point</button></li>}

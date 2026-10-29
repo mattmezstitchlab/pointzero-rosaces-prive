@@ -28,8 +28,13 @@ const SIGNES: Record<string, ReactNode> = {
   [EFFACER]: svg(<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />),
 };
 
-export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette, guide = "cercle", annonceExterne, refBouton, ancrage = "dessus", memoire, scene = false }: {
+export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette, guide = "cercle", annonceExterne, refBouton, ancrage = "dessus", memoire, scene = false, centre }: {
   modes: ModePoint[];
+  /**
+   * Facultatif (mode Tambour seulement, accord de Matt du 29/10) : au premier cercle, la sphère centrale devient un raccourci vers cette action
+   * (la caméra). Elle reste un double d’une commande de l’anneau, qui seule la porte pour le clavier et le lecteur d’écran. Sans elle, rien ne change.
+   */
+  centre?: Pick<ModePoint, "nom" | "aide" | "ouvrir" | "actif" | "icone">;
   /**
    * Présentation « scène » (une page qui montre le Point, comme la landing) : le disque est posé dans la page, toujours ouvert,
    * sans bouton ni portail. Même noyau, mêmes niveaux, mêmes touches, mêmes annonces ; il ne prend le focus qu'après un geste.
@@ -205,7 +210,9 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
     {interieur.length > 0 && interieur.map((f, k) => { const { x, y } = positionDe(k, interieur.length, RAYON - 58, COTE);
       return <button key={"in-" + f.id} type="button" tabIndex={-1} aria-hidden="true" className={"lp-interieur" + (f.id === parent?.id ? " lp-interieur-on" : "")}
         style={{ left: x, top: y, background: f.couleur }} title={f.nom} onClick={() => { setChemin(c => [...c.slice(0, -1), f.id]); setPage(0); setFocus(1); setAnnonce(`${f.nom} : ${f.enfants?.().length ?? 0} choix.`); }} />; })}
-    {profondeur === 0 ? <span className="lp-centre" aria-hidden="true" />
+    {profondeur === 0 ? (centre
+        ? <button type="button" tabIndex={-1} aria-hidden="true" className={"lp-centre-action" + (centre.actif ? " lp-centre-actif" : "")} onClick={() => centre.ouvrir()} title={centre.nom + " : " + centre.aide}><span className="lp-centre" />{centre.icone && <span className="lp-centre-signe">{centre.icone}</span>}</button>
+        : <span className="lp-centre" aria-hidden="true" />)
       : pastilles ? <button type="button" tabIndex={-1} aria-hidden="true" className={"lp-centre-niveau lp-centre-seul" + (interieur.length ? " lp-centre-petit" : "")} onClick={remonter} title="Revenir d’un niveau"><span className="lp-centre" /></button>
       : <button type="button" tabIndex={-1} aria-hidden="true" className="lp-centre-niveau" onClick={remonter} title="Revenir d’un niveau">
           <small>{fil}</small><span className="lp-centre" /><b>{m0 && !NAV.has(m0.id) ? m0.nom : parent?.nom}</b></button>}

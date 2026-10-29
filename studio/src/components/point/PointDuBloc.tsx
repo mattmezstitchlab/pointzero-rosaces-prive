@@ -9,7 +9,7 @@ import { commandesDuBloc, eviterObstacles, placePointDuBloc } from "../../lib/po
  */
 /* ce que le Point du bloc ne doit jamais couvrir : les actions du centre de la grille vide */
 const OBSTACLES = ".pz-point-zero > *";
-export default function PointDuBloc<C>({ type, nom, contexte, selecteur = ".cadre", obstacles = OBSTACLES, part, etiquette }: { type: string; nom: string; contexte: C; selecteur?: string; obstacles?: string; part?: number; etiquette?: string }) {
+export default function PointDuBloc<C>({ type, nom, contexte, selecteur = ".cadre", obstacles = OBSTACLES, part, etiquette, centre }: { type: string; nom: string; contexte: C; selecteur?: string; obstacles?: string; part?: number; etiquette?: string; centre?: Parameters<typeof Point>[0]["centre"] }) {
   const [pos, setPos] = useState<{ left: number; top: number; bord: string } | null>(null);
   useEffect(() => {
     let el: HTMLElement | null = null, obs: MutationObserver | null = null, raf = 0;
@@ -36,6 +36,6 @@ export default function PointDuBloc<C>({ type, nom, contexte, selecteur = ".cadr
   const modes = commandesDuBloc(type, contexte);
   if (!pos) return null;
   return <div className="lp-bloc" data-bord={pos.bord} style={{ left: pos.left, top: pos.top }}>
-    <Point contexte={"bloc-" + type} memoire={"bloc-" + type} ancrage="autour" guide="point-du-bloc" part={part} etiquette={`outils du bloc ${nom}` + (etiquette ? ", " + etiquette : "")} modes={modes} />
+    <Point centre={centre} contexte={"bloc-" + type} memoire={"bloc-" + type} ancrage="autour" guide="point-du-bloc" part={part} etiquette={`outils du bloc ${nom}` + (etiquette ? ", " + etiquette : "")} modes={modes} />
   </div>;
 }

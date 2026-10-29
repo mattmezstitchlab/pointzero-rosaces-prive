@@ -44,6 +44,7 @@ import { formatParDefaut, generer } from "./lib/motif5d/generer";
 import { OFFERTE_CLE } from "./components/edition/creation";
 import Sceau from "./components/Sceau";
 import { lireCode } from "./lib/motif5d/code";
+import { reprendre as reprendreTambour } from "./lib/tambour/capture";
 import { lireContenu } from "./galerie/api";
 const Exposer = lazy(() => import("./galerie/Exposer"));
 
@@ -531,6 +532,18 @@ export default function App() {
       p.provenance = { kind: "galerie", source: "Galerie des Vivants", author: r.pseudo, license: "Usage personnel", personalOnly: true };
       void useImportedPattern(p).then(ok => { if (ok) notify(`« ${r.titre} », de ${r.pseudo}, est dans votre atelier : une copie pour votre usage personnel.`); });
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  /* le Tambour vivant : « Broder ce motif » dépose l'ouvrage dans la session de l'onglet, puis ouvre l'atelier avec « ?tambour=1 » */
+  const tambourVu = useRef(false);
+  useEffect(() => {
+    if (tambourVu.current) return; tambourVu.current = true;
+    let oui = false; try { oui = new URLSearchParams(window.location.search).has("tambour"); } catch { return; }
+    if (!oui) return;
+    try { const u = new URL(window.location.href); u.searchParams.delete("tambour"); window.history.replaceState(window.history.state, "", u.pathname + u.search + u.hash); } catch { /* rien */ }
+    const p = reprendreTambour();
+    if (!p) { notify("L’ouvrage du Tambour n’a pas été retrouvé : il reste dans l’onglet où il a été pris."); return; }
+    void useImportedPattern(p).then(ok => { if (ok) notify("Votre motif du Tambour est dans l’atelier, avec sa photo. Il est enregistré dans Mes ouvrages, sur cet appareil."); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const offerteVue = useRef(false);

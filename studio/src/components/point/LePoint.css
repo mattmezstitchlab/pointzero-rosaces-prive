@@ -172,3 +172,12 @@ html[data-pz-motion="reduce"] .lp-compact { animation: none; }
 .lp-scene-hote { display: block; }
 .lp-anneau.lp-scene { position: relative; z-index: auto; animation: none; }
 .lp-scene-hote .lp-liste { position: relative; left: auto; right: auto; bottom: auto; max-height: none; }
+
+/* le raccourci du centre (mode Tambour seulement) : la sphère reste la même, un signe sombre posé dessus, jamais de texte */
+.lp-centre-action { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 64px; height: 64px; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; }
+.lp-centre-action .lp-centre { transition: transform .18s ease; }
+.lp-centre-action:hover .lp-centre { transform: scale(1.06); }
+.lp-centre-signe { position: absolute; inset: 0; display: grid; place-items: center; color: #1b1b1a; pointer-events: none; }
+.lp-centre-signe svg { width: 22px; height: 22px; }
+.lp-centre-actif .lp-centre { box-shadow: 0 0 0 3px rgba(255,255,255,.9), 0 0 28px rgba(201,184,255,.55); }
+html[data-pz-motion="reduce"] .lp-centre-action .lp-centre { transition: none; }
