@@ -8,6 +8,7 @@ import AccessibilityShell from "./components/AccessibilityShell";
 const EssaiImage = lazy(() => import("./essais/EssaiImage"));
 const Bureau = lazy(() => import("./bureau/Bureau"));
 const EssaiCarte = lazy(() => import("./essais/EssaiCarte"));
+const EssaiAime = lazy(() => import("./essais/EssaiAime"));
 
 /* essai privé : le bloc Image, piloté par le même Point (aucune autre application) */
 const essaiImage = /\/essai-image\/?$/.test(window.location.pathname);
@@ -15,11 +16,14 @@ const essaiImage = /\/essai-image\/?$/.test(window.location.pathname);
 const bureau = /\/bureau\/?$/.test(window.location.pathname);
 /* essai privé : la carte vivante (indépendante du studio) */
 const essaiCarte = /\/essai-carte\/?$/.test(window.location.pathname);
+/* essai privé : le socle visuel AIME, Jour et Nuit */
+const essaiAime = /\/essai-aime\/?$/.test(window.location.pathname);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     {bureau ? <Suspense fallback={null}><Bureau /></Suspense>
       : essaiCarte ? <Suspense fallback={null}><EssaiCarte /></Suspense>
+      : essaiAime ? <Suspense fallback={null}><EssaiAime /></Suspense>
       : essaiImage ? <AccessibilityShell><Suspense fallback={null}><EssaiImage /></Suspense></AccessibilityShell>
       : <AccessibilityShell><StorageRecoveryNotice/><App /></AccessibilityShell>}
   </StrictMode>

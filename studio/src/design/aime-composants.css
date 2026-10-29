@@ -1,0 +1,105 @@
+/*
+ * AIME — les composants communs, construits uniquement sur les tokens de design/aime.css.
+ * Aucune couleur écrite ici : changer de thème (Nuit, Jour) ne demande rien d'autre.
+ * Préfixe .aime- : rien ne déborde sur le studio existant.
+ */
+@import "./aime.css";
+
+[data-aime] *, [data-aime] *::before, [data-aime] *::after { box-sizing: border-box; }
+[data-aime] ::selection { background: var(--aime-selection); color: var(--aime-selection-texte); }
+[data-aime] :focus-visible { outline: 2px solid var(--aime-focus); outline-offset: 3px; }
+
+/* — Typographie : des titres moyens, la fin qui s'estompe (référence « Consulting ») — */
+.aime-titre { margin: 0; font-weight: var(--aime-titre-graisse); letter-spacing: var(--aime-titre-chasse); line-height: 1.02; font-size: clamp(38px, 6vw, 76px); color: var(--aime-texte); text-wrap: balance; }
+.aime-titre .aime-fondu { color: var(--aime-titre-fondu); }
+.aime-titre--capitales { text-transform: uppercase; letter-spacing: -.02em; line-height: .95; font-weight: 650; }
+.aime-titre--moyen { font-size: clamp(26px, 3.2vw, 40px); }
+.aime-sur { margin: 0; font-size: 11.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--aime-texte-3); }
+.aime-chapo { margin: 0; font-size: clamp(15px, 1.25vw, 17px); line-height: 1.55; color: var(--aime-texte-2); max-width: 44ch; }
+
+/* — La puce : une information courte dans une pilule de verre — */
+.aime-puce { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 4px 12px 4px 6px; border-radius: var(--aime-pilule);
+  background: var(--aime-verre); box-shadow: inset 0 0 0 1px var(--aime-verre-bord); backdrop-filter: blur(var(--aime-flou)); font-size: 13px; font-weight: 500; color: var(--aime-texte); }
+.aime-puce .aime-point { width: 20px; height: 20px; }
+
+/* — Boutons : la pilule pleine, la pilule de verre, le contour, et leurs états — */
+.aime-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; padding: 0 20px; border: 0; border-radius: var(--aime-pilule);
+  font: inherit; font-size: 14.5px; font-weight: 550; letter-spacing: -.005em; text-decoration: none; cursor: pointer; white-space: nowrap;
+  transition: background var(--aime-duree) var(--aime-courbe), color var(--aime-duree), box-shadow var(--aime-duree), transform var(--aime-duree) var(--aime-courbe); }
+.aime-btn:active { transform: scale(.98); }
+.aime-btn--primaire { background: var(--aime-primaire); color: var(--aime-primaire-texte); box-shadow: 0 1px 0 rgba(255,255,255,.4) inset, 0 6px 18px rgba(0,0,0,.18); }
+.aime-btn--primaire:hover { background: var(--aime-primaire-survol); }
+.aime-btn--secondaire { background: var(--aime-secondaire); color: var(--aime-secondaire-texte); box-shadow: inset 0 0 0 1px var(--aime-bordure-forte); backdrop-filter: blur(var(--aime-flou)); }
+.aime-btn--secondaire:hover { box-shadow: inset 0 0 0 1px var(--aime-texte-3); }
+.aime-btn--contour { background: transparent; color: var(--aime-texte); box-shadow: inset 0 0 0 1px var(--aime-bordure-champ); }
+.aime-btn--droit { border-radius: var(--aime-r-petit); }                /* la variante rectangulaire (référence « Lumière ») */
+.aime-btn--petit { min-height: 36px; padding: 0 14px; font-size: 13.5px; }
+.aime-btn[disabled], .aime-btn[aria-disabled="true"] { background: var(--aime-desactive-fond); color: var(--aime-desactive); box-shadow: none; cursor: not-allowed; transform: none; }
+.aime-btn-fleche { display: inline-grid; place-items: center; width: 26px; height: 26px; margin-right: -10px; border-radius: 50%; background: var(--aime-primaire-texte); color: var(--aime-primaire); font-size: 14px; }
+.aime-btn--danger { background: var(--aime-erreur-fond); color: var(--aime-erreur); box-shadow: inset 0 0 0 1px var(--aime-erreur); }
+
+/* — La navigation : une pilule de verre, l'élément courant en relief (référence « Consulting ») — */
+.aime-nav { display: inline-flex; align-items: center; gap: 2px; padding: 4px; border-radius: var(--aime-pilule); background: var(--aime-verre);
+  box-shadow: inset 0 0 0 1px var(--aime-verre-bord), var(--aime-ombre); backdrop-filter: blur(var(--aime-flou)); }
+.aime-nav a, .aime-nav button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; border: 0; border-radius: var(--aime-pilule);
+  background: transparent; color: var(--aime-texte-2); font: inherit; font-size: 13.5px; font-weight: 500; text-decoration: none; cursor: pointer; }
+.aime-nav a:hover, .aime-nav button:hover { color: var(--aime-texte); }
+.aime-nav [aria-current="page"], .aime-nav [aria-pressed="true"], .aime-nav [aria-selected="true"] { background: var(--aime-surface-2); color: var(--aime-texte); box-shadow: inset 0 0 0 1px var(--aime-bordure); }
+/* la navigation blanche en capitales (référence « Lumière »), posée sur une photographie */
+.aime-nav--blanche { gap: 0; padding: 4px 6px; border-radius: var(--aime-r-petit); background: #ffffff; box-shadow: 0 8px 24px rgba(0,0,0,.18); backdrop-filter: none; }
+.aime-nav--blanche a, .aime-nav--blanche button { color: #0e0e10; font-size: 12.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; border-radius: 6px; }
+.aime-nav--blanche [aria-current="page"] { background: #ececea; box-shadow: none; color: #0e0e10; }
+
+/* — Le cadre : un média posé dans un bord épais et arrondi (référence « Lumière », troisième image) — */
+.aime-cadre { position: relative; padding: var(--aime-cadre-epaisseur); border-radius: var(--aime-r-cadre); background: var(--aime-cadre); box-shadow: var(--aime-ombre); }
+.aime-cadre-media { position: relative; overflow: hidden; border-radius: calc(var(--aime-r-cadre) - var(--aime-cadre-epaisseur)); isolation: isolate; }
+.aime-cadre-media > img, .aime-cadre-media > video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.aime-cadre--sombre { background: var(--aime-surface-2); box-shadow: inset 0 0 0 1px var(--aime-bordure-forte), var(--aime-ombre); }
+/* le contenu éditorial posé sur une photographie : toujours un voile sombre, un texte blanc */
+.aime-sur-photo { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; justify-content: space-between; padding: clamp(18px, 3vw, 36px);
+  background: var(--aime-voile); color: var(--aime-texte-sur-photo); }
+.aime-sur-photo .aime-titre, .aime-sur-photo .aime-chapo { color: var(--aime-texte-sur-photo); }
+.aime-sur-photo .aime-chapo { opacity: .88; }
+
+/* — La scène : un fond qui respire, un halo doux en haut, un flou photographique facultatif — */
+.aime-scene { position: relative; isolation: isolate; background: var(--aime-fond); }
+.aime-scene::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--aime-halo); pointer-events: none; }
+.aime-scene-flou { position: absolute; inset: 0; z-index: -2; overflow: hidden; }
+.aime-scene-flou img { width: 100%; height: 100%; object-fit: cover; filter: blur(28px) saturate(1.05); transform: scale(1.12); opacity: .55; }
+
+/* — Les surfaces : la carte pleine et la carte de verre — */
+.aime-carte { background: var(--aime-surface); border-radius: var(--aime-r-grand); box-shadow: inset 0 0 0 1px var(--aime-bordure); }
+.aime-verre { background: var(--aime-verre); border-radius: var(--aime-r-grand); box-shadow: inset 0 0 0 1px var(--aime-verre-bord), var(--aime-ombre); backdrop-filter: blur(var(--aime-flou)); -webkit-backdrop-filter: blur(var(--aime-flou)); }
+.aime-sur-photo .aime-verre { --aime-verre: rgba(20, 20, 22, .58); --aime-verre-bord: rgba(255,255,255,.14); color: #fff; }
+
+/* — Les champs — */
+.aime-champ { display: grid; gap: 6px; }
+.aime-champ label { font-size: 13px; font-weight: 550; color: var(--aime-texte); }
+.aime-champ input, .aime-champ textarea, .aime-champ select { width: 100%; min-height: 42px; padding: 9px 13px; border-radius: var(--aime-r-petit); border: 1px solid var(--aime-bordure-champ);
+  background: var(--aime-champ); color: var(--aime-texte); font: inherit; font-size: 14.5px; line-height: 1.45; }
+.aime-champ input::placeholder, .aime-champ textarea::placeholder { color: var(--aime-texte-3); }
+.aime-champ :is(input, textarea, select):focus-visible { outline: 2px solid var(--aime-focus); outline-offset: 1px; border-color: var(--aime-focus); }
+.aime-champ :is(input, textarea, select):disabled { background: var(--aime-desactive-fond); color: var(--aime-desactive); border-color: var(--aime-bordure); }
+.aime-champ [aria-invalid="true"] { border-color: var(--aime-erreur); }
+.aime-champ .aime-aide { font-size: 12.5px; color: var(--aime-texte-3); }
+.aime-champ .aime-erreur { font-size: 12.5px; font-weight: 600; color: var(--aime-erreur); }
+.aime-case { display: inline-flex; align-items: center; gap: 10px; min-height: 40px; font-size: 14px; }
+.aime-case input { width: 18px; height: 18px; accent-color: var(--aime-primaire); }
+
+/* — Les onglets (un groupe de choix) — */
+.aime-onglets { display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--aime-pilule); background: var(--aime-surface-2); box-shadow: inset 0 0 0 1px var(--aime-bordure); }
+.aime-onglets button { min-height: 34px; padding: 0 14px; border: 0; border-radius: var(--aime-pilule); background: transparent; color: var(--aime-texte-2); font: inherit; font-size: 13.5px; font-weight: 550; cursor: pointer; }
+.aime-onglets [aria-pressed="true"], .aime-onglets [aria-selected="true"] { background: var(--aime-surface); color: var(--aime-texte); box-shadow: 0 1px 2px rgba(0,0,0,.12), inset 0 0 0 1px var(--aime-bordure); }
+
+/* — Le Point : la sphère nacrée, identique dans les deux thèmes — */
+.aime-point { display: inline-block; width: 28px; height: 28px; border-radius: 50%; background: var(--aime-nacre);
+  box-shadow: inset -3px -4px 8px rgba(120, 100, 200, .25), inset 3px 3px 6px rgba(255,255,255,.9), 0 2px 8px rgba(0,0,0,.25); flex: none; }
+
+/* — Les états — */
+.aime-etat { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--aime-texte-2); }
+.aime-etat::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.aime-etat--ok { color: var(--aime-succes); }
+.aime-etat--erreur { color: var(--aime-erreur); }
+
+@media (prefers-reduced-motion: reduce) { [data-aime] .aime-btn { transition: none; } }
+@media (forced-colors: active) { [data-aime] .aime-btn, [data-aime] .aime-nav, [data-aime] .aime-verre, [data-aime] .aime-carte { border: 1px solid CanvasText; } }
