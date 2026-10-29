@@ -42,9 +42,10 @@ describe("Le Point · le noyau", () => {
     expect(secteurVise(-50, 50, 4, 36, -45)).toBe(3);  // bas gauche
     expect(secteurVise(20, -20, 4, 36, -45)).toBeNull();
   });
-  it("présentation : anneau sur grand écran, arc compact sur téléphone, liste si on la choisit", () => {
+  it("présentation : anneau sur grand écran, panneau compact sur téléphone, arc ou liste si on les choisit", () => {
     expect(presentationPour("auto", 1440)).toBe("anneau");
-    expect(presentationPour("auto", 390)).toBe("arc");
+    expect(presentationPour("auto", 390)).toBe("panneau");
+    expect(presentationPour("arc", 390)).toBe("arc");
     expect(presentationPour("liste", 1440)).toBe("liste");
     expect(lirePresentation()).toBe("auto");
     ecrirePresentation("liste"); expect(lirePresentation()).toBe("liste");
@@ -243,8 +244,25 @@ describe("Le même Point dans le compositeur 5D", () => {
 describe("Le Point selon le support", () => {
   const largeur = (w: number) => Object.defineProperty(window, "innerWidth", { configurable: true, value: w });
   afterEach(() => largeur(1024));
-  it("sur téléphone : le même menu en arc compact, Confort premier et focalisé, pictogrammes nommés", async () => {
+  it("sur téléphone, par défaut : un panneau compact au-dessus du Point, le dock reste là ; même menu, même clavier", async () => {
     largeur(390);
+    await ouvrirAtelier();
+    await cliquer(lePoint());
+    const p = document.querySelector<HTMLElement>(".lp-compact")!;
+    expect(p.getAttribute("data-presentation")).toBe("panneau");
+    expect(p.getAttribute("role")).toBe("menu");
+    expect(secteurs().map(s => s.dataset.mode)).toEqual(["confort", "loupe", "guide", "broderie"]);
+    expect(document.activeElement).toBe(secteurs()[0]);
+    expect(secteurs().map(s => s.textContent)).toEqual(["Confort", "Loupe", "Guide", "Broderie"]);
+    expect(container!.querySelector(".pzs-bottom")).toBeTruthy();
+    await touche(document.activeElement, "ArrowDown");
+    expect((document.activeElement as HTMLElement).dataset.mode).toBe("loupe");
+    await touche(document.activeElement, "Escape");
+    expect(document.activeElement).toBe(lePoint());
+  });
+  it("sur téléphone, au choix : le même menu en arc compact, Confort premier et focalisé, pictogrammes nommés", async () => {
+    largeur(390);
+    localStorage.setItem(PRESENTATION_CLE, "arc");
     await ouvrirAtelier();
     await cliquer(lePoint());
     expect(document.querySelector(".lp-arc")?.getAttribute("data-presentation")).toBe("arc");
@@ -275,10 +293,11 @@ describe("Le Point selon le support", () => {
     largeur(390);
     await ouvrirAtelier();
     await cliquer(lePoint());
+    expect(document.querySelector("[data-presentation]")).toBeTruthy();
     const dessous = container!.querySelector<HTMLButtonElement>(".pz-point-zero-composer")!;
     await act(async () => { dessous.dispatchEvent(new Event("pointerdown", { bubbles: true })); dessous.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); });
     await attendre();
-    expect(document.querySelector(".lp-arc")).toBeNull();
+    expect(document.querySelector("[data-presentation]")).toBeNull();
     expect(container!.querySelector(".cr")).toBeNull(); // le compositeur ne s'est pas ouvert par mégarde
   });
   it("la loupe est ronde par défaut, carrée au choix, et s'en souvient", async () => {

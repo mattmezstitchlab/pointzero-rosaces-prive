@@ -144,7 +144,7 @@ export default function Cadre({ pattern: P, readOnly, plus, onSet, onBegin, onLi
   return <div ref={racine} className={"cadre" + (fant ? " cadre-tire" : "") + (occupe ? " cadre-occupe" : "")} data-guide="cadre">
     <div className="cadre-contour" aria-hidden="true" />
     {fant && <div className="cadre-fantome" aria-hidden="true"><span>{fant.x1 - fant.x0} × {fant.y1 - fant.y0}</span></div>}
-    <div className="cadre-tete" role="group" aria-label={`Le cadre : ${P.name}`}>
+    <div className="cadre-tete" data-defile role="group" aria-label={`Le cadre : ${P.name}`}>
       {!readOnly && <button type="button" className="cadre-deplacer" aria-label="Déplacer le motif dans le cadre (glisser)" title="Glisser pour déplacer le motif dans le cadre"
         onPointerDown={debut("motif")} onPointerMove={bouge} onPointerUp={fin} onPointerCancel={fin}
         onKeyDown={e => { const d = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowDown: [0, 1], ArrowUp: [0, -1] }[e.key]; if (!d) return; e.preventDefault(); onSet(decaler(latest.current.P, d[0], d[1])); }}>

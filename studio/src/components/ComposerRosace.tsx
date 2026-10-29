@@ -141,7 +141,7 @@ export default function ComposerRosace({ depart, lecture = false, onBroder, onFe
   const m = final ? mesures(final.pattern) : null;
   const murCouleurs = useMemo(() => mur ? RECETTES.map(r => { const rc = lireCode(r.code)!, [w, h] = formatParDefaut(rc.signature); return generer({ ...rc, w, h }).pattern.palette.map(i => FLOSS[i].hex); }) : [], [mur]);
   const code = recette ? codeDe(recette) : "";
-  const tailleVignette = petit ? 128 : 168, tailleSceau = etape >= 5 ? (petit ? 120 : 150) : petit ? 132 : 200;
+  const tailleVignette = petit ? (typeof window !== "undefined" && window.innerWidth < 360 ? 104 : 128) : 168, tailleSceau = etape >= 5 ? (petit ? 120 : 150) : petit ? 132 : 200;
 
   return <div className="cr" role="dialog" aria-modal="true" aria-labelledby="cr-titre" ref={dialogue} onKeyDown={clavier}>
     <p className="sr-only" role="status" aria-live="polite">{annonce}</p>

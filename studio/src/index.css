@@ -2510,7 +2510,7 @@ html[data-pz-motion="reduce"] .pz-guided-lens { transition: none; }
 .cadre-trace { position: fixed; border: 1.5px solid #0a6cff; background: rgba(10,108,255,.08); pointer-events: none; }
 .cadre-trace span { position: absolute; left: 0; top: -30px; padding: 3px 8px; border-radius: 7px; background: #0a6cff; color: #fff; font: 600 12px/1.5 ui-monospace, "SF Mono", Menlo, monospace; white-space: nowrap; }
 @media (max-width: 720px) {
-  .cadre-tete { top: calc(var(--fy0) - 40px); height: 32px; font-size: 12px; gap: 6px; }
+  .cadre-tete { top: calc(var(--fy0) - 40px); height: 32px; font-size: 12px; gap: 6px; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; }
   .cadre-cm { display: none; }
   .cadre-nom { max-width: 90px; }
 }
@@ -2584,4 +2584,65 @@ html[data-pz-motion="reduce"] .pz-guided-lens { transition: none; }
   .cr-vignette { transition: none; }
   .sceau-anneau, .sceau-onde { animation: none; }
   .sceau-onde { display: none; }
+}
+
+/* ===== Mobile : une seule interface, rien de coupé sans indice ===== */
+/* un rang qui défile le dit : fondu et flèche du côté où il reste des boutons ; le défilement s'arrête sur un bouton entier */
+[data-defile].pzs-row, .pzs-bottom[data-defile] { scroll-snap-type: x proximity; }
+[data-defile].pzs-row > *, .pzs-bottom[data-defile] > * { scroll-snap-align: start; }
+.pzs-row[data-plus="droite"], .pzs-bottom[data-plus="droite"] { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
+.pzs-row[data-plus="gauche"], .pzs-bottom[data-plus="gauche"] { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent); }
+.pzs-row[data-plus="deux"], .pzs-bottom[data-plus="deux"] { -webkit-mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
+/* grand écran : les verbes, les vues et Ouvrages gardent leur mot ; les pictogrammes des vues restent discrets */
+.pzs-verbe svg, .pzs-ouvrages svg { width: 17px; height: 17px; }
+.pzs-vue > svg { display: none; }
+.pzs-ouvrages { gap: 7px; }
+.pzs-titre .pzs-avatar { display: inline-grid; place-items: center; width: 26px; height: 26px; margin-right: 8px; border-radius: 50%; background: #0b0b0c; color: #fff; font-size: 11px; vertical-align: middle; }
+.pzs-aide-bouton { margin-left: 8px; width: 32px; height: 32px; border-radius: 50%; border: 1px solid #d6d5cf; background: #fff; color: #0b0b0c; display: inline-grid; place-items: center; vertical-align: middle; cursor: pointer; }
+/* le point zéro : deux actions */
+.pz-point-zero-titre { flex-direction: row !important; align-items: center; gap: 10px !important; pointer-events: auto; }
+.pz-point-zero-aide { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #d6d5cf; background: #fff; color: #0b0b0c; font: inherit; font-weight: 700; cursor: pointer; }
+.pz-point-zero-bulle { max-width: 280px; font-size: 14px; line-height: 1.4; pointer-events: auto; }
+@media (max-width: 720px) {
+  /* verbes du haut : pictogramme et mot dessous, sans compteur ; quatre tiennent à 320 px */
+  .pzs-tool.pzs-verbe { flex-direction: column; justify-content: center; gap: 1px; min-width: 46px; height: 46px; padding: 0 4px; font-size: 10.5px; font-weight: 600; letter-spacing: -.01em; }
+  .pzs-tool.pzs-verbe svg { width: 18px; height: 18px; }
+  .pzs-verbe .pzs-count { display: none; }
+  .pzs-ouvrages { min-width: 44px; padding: 0 10px; } .pzs-ouvrages .pzs-lib { display: none; }
+  /* dock du bas : pictogramme et mot court ; la Loupe passe par le Point, pour que tout tienne sans défiler */
+  .pzs-bottom { gap: 3px; padding: 4px; max-width: calc(100vw - 16px); }
+  .pzs-bottom .lp-point { width: 44px; height: 44px; }
+  .pzs-seg { gap: 3px; }
+  .pzs-seg button.pzs-vue, .pzs-btm.pzs-vue { flex-direction: column; gap: 1px; min-width: 44px; height: 46px; padding: 0 3px; font-size: 10px; font-weight: 600; }
+  .pzs-vue > svg { display: block; width: 18px; height: 18px; }
+  .pzs-bottom .pzs-sep, .pzs-bottom .pzs-loupe-btn { display: none; }
+  /* le point zéro tient dans la grille */
+  .pz-point-zero { gap: 10px; transform: translate(-50%, -30px); }
+  .pz-point-zero-bouton { width: 68px; height: 68px; font-size: 32px; }
+  .pz-point-zero p b { font-size: 17px; }
+  /* la loupe : petite, à droite, au-dessus du dock ; le point zéro s'efface tant qu'elle est ouverte */
+  .pzs-loupe-dock { width: min(206px, calc(100vw - 20px)); }
+  body:has(.pzs-loupe-dock) .pz-point-zero { display: none; }
+  /* Mes ouvrages : les deux actions passent l'une sous l'autre si besoin, entières ; deux cartes par rang */
+  .pzs-mini { flex-wrap: wrap; }
+  .pzs-fichiers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+  .pzs-fichiers > li { width: auto !important; min-width: 0; }
+}
+@media (max-width: 720px) {
+  /* barre du haut sur téléphone : pas de séparateurs ; la recherche passe dans le menu (☰ → Chercher) pour laisser la place aux quatre verbes */
+  .pzs-ligne { gap: 3px; }
+  .pzs-ligne > .pzs-sep { display: none; }
+  .pzs-ligne > .pzs-loupe { display: none; }
+  .pzs-tool.pzs-icon { width: 42px; min-width: 42px; padding: 0; justify-content: center; }
+}
+@media (max-width: 360px) {
+  .pzs-tool.pzs-verbe { min-width: 42px; font-size: 10px; letter-spacing: -.02em; }
+  .pzs-bottom { gap: 2px; }
+  .pzs-seg { gap: 2px; }
+  .pzs-seg button.pzs-vue, .pzs-btm.pzs-vue { font-size: 9.5px; letter-spacing: -.02em; padding: 0 2px; }
+}
+@media (max-width: 340px) {
+  /* 320 px : les verbes gardent leur pictogramme ; leur mot reste lu par le lecteur d'écran */
+  .pzs-tool.pzs-verbe { min-width: 38px; }
+  .pzs-tool.pzs-verbe .pzs-lib { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }

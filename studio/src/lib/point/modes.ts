@@ -76,8 +76,9 @@ export function hotePortail(depuis: Element | null): Element {
 
 /* ——— Présentation selon le support : un seul Point, trois façons d'ouvrir ses modes ——— */
 
-/** anneau : le cercle complet (ordinateur) ; arc : un quart de cercle collé au Point (téléphone) ; liste : un panneau du bas, en mots. */
-export type Presentation = "anneau" | "arc" | "liste";
+/** anneau : le cercle complet (ordinateur) ; panneau : une grille compacte juste au-dessus du Point (téléphone) ;
+ * arc : un quart de cercle collé au Point (au choix) ; liste : chaque mode écrit en entier (au choix). */
+export type Presentation = "anneau" | "panneau" | "arc" | "liste";
 export type ChoixPresentation = "auto" | "arc" | "liste";
 export const PRESENTATION_CLE = "pointzero:point:presentation";
 export const LARGEUR_TELEPHONE = 720;
@@ -88,10 +89,15 @@ export function lirePresentation(): ChoixPresentation {
 export function ecrirePresentation(v: ChoixPresentation): boolean {
   try { if (v === "auto") localStorage.removeItem(PRESENTATION_CLE); else localStorage.setItem(PRESENTATION_CLE, v); return true; } catch { return false; }
 }
-/** Automatique : l'anneau quand l'écran est large, l'arc compact sur téléphone (ou en zoom fort, qui rétrécit la largeur utile). */
+/** Automatique : l'anneau quand l'écran est large, le panneau compact sur téléphone (ou en zoom fort, qui rétrécit la largeur utile). */
 export function presentationPour(choix: ChoixPresentation, largeur: number): Presentation {
   if (choix !== "auto") return choix;
-  return largeur < LARGEUR_TELEPHONE ? "arc" : "anneau";
+  return largeur < LARGEUR_TELEPHONE ? "panneau" : "anneau";
+}
+
+/** Le panneau compact : posé juste au-dessus du Point, sur toute la largeur utile, jamais hors de l'écran. */
+export function placePanneau(haut: number, hauteurEcran: number, marge = 8) {
+  return { left: marge, right: marge, bottom: Math.max(marge, hauteurEcran - haut + marge) };
 }
 
 /**

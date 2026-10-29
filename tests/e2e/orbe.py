@@ -12,6 +12,13 @@ def ok(c, nom):
 def capture(pg, nom):
     if CAP: os.makedirs(CAP, exist_ok=True); pg.screenshot(path=os.path.join(CAP, nom + '.png'))
 
+def ouvrir_loupe(pg):
+    """La Loupe : bouton du dock sur grand écran ; sur téléphone, elle passe par le Point."""
+    btn = pg.get_by_role('button', name='Loupe : la grille agrandie sous le pointeur')
+    if btn.is_visible(): btn.click()
+    else: pg.locator('.lp-point').first.click(); pg.wait_for_timeout(200); pg.locator('[data-presentation] [data-mode=loupe]').click()
+    pg.wait_for_timeout(200)
+
 def boite(pg, sel):
     return pg.evaluate("""s => { const r = [...document.querySelectorAll(s)].map(e => e.getBoundingClientRect()).filter(b => b.width && b.height);
       if (!r.length) return null; const x = Math.min(...r.map(b => b.left)), y = Math.min(...r.map(b => b.top));
@@ -94,7 +101,7 @@ def docks(b, largeur, hauteur, nom):
     code = pg.locator('.dg-pastille .dg-code').first.inner_text(); pg.locator('.dg-pastille').first.click(); pg.wait_for_timeout(200)
     ok(pg.locator('.dg-pastille').count() == 0 and code in pg.locator('.pzs-top').inner_text(), f'{nom} : toucher une pastille rend le fil actif et replie le dock')
     pg.locator('.pzs-up').click(); pg.wait_for_timeout(150)
-    pg.get_by_role('button', name='Loupe : la grille agrandie sous le pointeur').click(); pg.wait_for_timeout(200)
+    ouvrir_loupe(pg)
     g = pg.locator('.cadre-contour').bounding_box()  # le cadre : la grille de l'ouvrage
     pg.mouse.move(g['x'] + g['width'] * .2, g['y'] + g['height'] * .05); pg.wait_for_timeout(150); a1 = pg.locator('.pzs-loupe-dock').inner_text()
     pg.mouse.move(g['x'] + g['width'] * .8, g['y'] + g['height'] * .1); pg.wait_for_timeout(150); a2 = pg.locator('.pzs-loupe-dock').inner_text()
@@ -110,9 +117,9 @@ def docks(b, largeur, hauteur, nom):
     ok(px > 0 and anim == 'dg-scintille', f'{nom} : la pastille du fil brodé montre ses pixels qui scintillent ({px} pixels)')
     capture(pg, f'docks-{nom}-scintille')
     pg.keyboard.press('Escape')
-    pg.locator('.pzs-profil').click(); pg.wait_for_timeout(200)
+    pg.locator('.pzs-ouvrages').click(); pg.wait_for_timeout(200)
     t = pg.locator('.pzs-bloc').inner_text()
-    ok('Mes ouvrages' in t and 'Nouvelle grille' in t and 'Votre espace AIME' not in t and 'BurO' not in t, f'{nom} : Mes ouvrages dans le dock, sans BurO ni Espace AIME')
+    ok('Mes ouvrages' in t and 'Nouveau motif' in t and 'Votre espace AIME' not in t and 'BurO' not in t, f'{nom} : Mes ouvrages dans le dock, sans BurO ni Espace AIME')
     pg.goto(B + '/buro'); pg.wait_for_timeout(600)
     ok(pg.locator('#mm-titre').count() == 1, f'{nom} : l’ancienne adresse /buro mène à l’accueil')
     ctx.close()
@@ -188,8 +195,8 @@ def rosace(b, largeur, hauteur, nom):
     pg = ctx.new_page(); pg.on('pageerror', lambda e: erreurs.append(str(e))); pg.set_default_timeout(8000)
     pg.add_init_script("localStorage.setItem('pointzero:visite-docks:v1','vue')")
     pg.goto(B + '/atelier'); pg.wait_for_timeout(900)
-    bas = [x for x in pg.evaluate("() => [...document.querySelectorAll('.pzs-bottom button:not(.pzs-cercle)')].map(b => (b.innerText.trim() || b.getAttribute('aria-label') || '').split(' :')[0])") if x]
-    ok(bas == ['Picto', 'À plat', 'Patron', 'Réaliste', 'Tout voir', 'Loupe'], f'{nom} : le dock du bas est réduit à Picto, À plat, Patron, Réaliste, Tout voir, Loupe {bas}')
+    bas = [x for x in pg.evaluate("() => [...document.querySelectorAll('.pzs-bottom button:not(.pzs-cercle)')].filter(b => b.offsetParent).map(b => (b.innerText.trim() || b.getAttribute('aria-label') || '').split(' :')[0])") if x]
+    ok(bas == (['Symboles', 'À plat', 'Patron', 'Réaliste', 'Tout voir', 'Loupe'] if largeur > 720 else ['Symboles', 'À plat', 'Patron', 'Réaliste', 'Tout voir']), f'{nom} : le dock du bas : Symboles, les trois lectures, Tout voir' + (', Loupe' if largeur > 720 else ' (la Loupe passe par le Point)') + f' {bas}')
     pg.get_by_role('button', name='Composer une rosace').first.click(); pg.wait_for_selector('#cr-titre')
     ok(pg.locator('#cr-titre').inner_text() == 'Quelle forme ?' and pg.locator('[role="radio"]').count() == 4, f'{nom} : Composer une rosace ouvre la première question, quatre images')
     capture(pg, f'rosace-{nom}-question')
@@ -328,7 +335,7 @@ COUVERTURE = """m => [...document.querySelectorAll('.cr-vignette')].map(v => { c
 def point_telephone(b):
     """Sur téléphone, le menu du Point ne doit pas masquer les quatre choix du compositeur : arc compact contre liste."""
     mesures = {}
-    for pres in ('arc', 'liste'):
+    for pres in ('panneau', 'arc', 'liste'):
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, has_touch=True, is_mobile=True)
         pg = ctx.new_page(); pg.set_default_timeout(8000)
         pg.on('pageerror', lambda e: erreurs.append(str(e)))
@@ -358,7 +365,7 @@ def point_telephone(b):
         ok(pn and pn['y'] >= 0 and pn['b'] <= 844, f'telephone ({pres}) : Confort s’ouvre dans l’écran')
         capture(pg, f'telephone-{pres}-confort')
         ctx.close()
-    ok(max(mesures['arc']) <= 25, f'telephone : l’arc compact laisse les quatre choix visibles ({mesures["arc"]} % recouverts)')
+    ok(max(mesures['panneau']) <= 25, f'telephone : le panneau compact (par défaut) laisse les quatre choix visibles ({mesures["panneau"]} % recouverts)')
 
 with sync_playwright() as p:
     b = p.chromium.launch()

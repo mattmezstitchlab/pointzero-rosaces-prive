@@ -26,7 +26,7 @@ export default function PanneauConfort({ onFermer, onAnnonce }: { onFermer: () =
   const set = (patch: Partial<Preferences>) => changer({ ...p, ...patch });
   const pc = (x: number) => Math.round(x * 100) + " %";
 
-  return <section ref={racine} className="lp-panneau" role="dialog" aria-modal="false" aria-labelledby={titre}
+  return <section ref={racine} className="lp-panneau" data-defile role="dialog" aria-modal="false" aria-labelledby={titre}
     onKeyDown={e => { e.stopPropagation(); /* flèches, Retour arrière… restent aux réglages, pas au contexte */ if (e.key === "Escape") { e.preventDefault(); onFermer(); } }}>
     <header className="lp-panneau-tete">
       <h2 id={titre}>Confort de lecture</h2>
@@ -88,7 +88,7 @@ export default function PanneauConfort({ onFermer, onAnnonce }: { onFermer: () =
     <fieldset className="lp-groupe">
       <legend>Le menu du Point</legend>
       <div className="lp-choix">
-        {([["auto", "Automatique", "anneau sur grand écran, arc compact sur téléphone"], ["arc", "Arc compact", "pictogrammes collés au Point"], ["liste", "Liste en mots", "chaque mode écrit en entier, depuis le bas"]] as const).map(([v, nom, aide]) =>
+        {([["auto", "Automatique", "anneau sur grand écran, panneau compact sur téléphone"], ["arc", "Arc compact", "pictogrammes collés au Point"], ["liste", "Liste en mots", "chaque mode écrit en entier, depuis le bas"]] as const).map(([v, nom, aide]) =>
           <label key={v}><input type="radio" name={titre + "menu"} checked={menu === v} onChange={() => { ecrirePresentation(v); setMenu(v); onAnnonce(`Menu du Point : ${nom.toLowerCase()}.`); }} /><span>{nom}<span className="lp-aide">{aide}</span></span></label>)}
       </div>
     </fieldset>

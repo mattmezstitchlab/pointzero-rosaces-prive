@@ -51,7 +51,7 @@ export default function OuvragesBloc({ courant, ouvrir, importer }: { courant?: 
         </button>
       </li>)}
     </ul>
-    {liste && !liste.length && <p className="pzs-note">Aucun ouvrage enregistré sur cet appareil pour l’instant : déposez une image, un PDF ou un projet pour commencer.</p>}
-    {liste && liste.length > 0 && <p className="pzs-note">Touchez un ouvrage pour l’ouvrir, ou glissez-le sur la grille. Depuis l’ordinateur, déposez un fichier ici ou directement sur la grille.</p>}
+    {liste && !liste.length && <p className="pzs-note">Aucun ouvrage pour l’instant : déposez une image, un PDF ou un projet.</p>}
+    {/* l'explication est derrière le « ? » de Mes ouvrages : la liste reste lisible */}
   </>;
 }

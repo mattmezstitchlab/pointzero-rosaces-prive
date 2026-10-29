@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as PE, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { anneau, dispositionArc, hotePortail, lirePresentation, nomAccessible, positionDe, presentationPour, secteurVise, tourner, type ModePoint, type Presentation } from "../../lib/point/modes";
+import { anneau, dispositionArc, hotePortail, lirePresentation, nomAccessible, placePanneau, positionDe, presentationPour, secteurVise, tourner, type ModePoint, type Presentation } from "../../lib/point/modes";
 import "./LePoint.css";
 
 /**
@@ -65,12 +65,14 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
   const [pos, setPos] = useState({ left: 8, top: 8 });
   const [pres, setPres] = useState<Presentation>("anneau");
   const [arc, setArc] = useState<ReturnType<typeof dispositionArc> | null>(null);
+  const [panneau, setPanneau] = useState({ left: 8, right: 8, bottom: 80 });
   /* l'anneau s'ouvre au-dessus du Point, sans jamais sortir de l'écran ; sur téléphone, l'arc reste collé au Point */
   const placer = () => {
     const r = bouton.current?.getBoundingClientRect(); if (!r) return;
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2, w = window.innerWidth || 1024;
     const p = presentationPour(lirePresentation(), w); setPres(p);
     if (p === "arc") setArc(dispositionArc(n, cx, cy, w));
+    setPanneau(placePanneau(r.top, window.innerHeight || 800));
     setPos({ left: Math.max(8, Math.min(cx - COTE / 2, w - COTE - 8)), top: Math.max(8, r.top - COTE - 10) });
   };
   const basculer = () => { if (ouvert) fermer(); else { placer(); setFocus(0); setOuvert(true); } };
@@ -129,8 +131,12 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
       {/* le mot du mode choisi, juste au-delà de sa pastille, vers l'extérieur de l'arc */}
       {m && (() => { const a = (d.angles[focus] * Math.PI) / 180, r = rayon + 50; return <span className="lp-arc-mot" aria-hidden="true" style={{ left: centre.x + r * Math.cos(a), top: centre.y + r * Math.sin(a) }}>{m.nom}</span>; })()}
     </div>; };
+  /* téléphone : un panneau compact juste au-dessus du Point ; le dock reste visible et reconnaissable dessous */
+  const panneau_ = () => <div {...propsMenu} className="lp-compact" data-defile data-presentation="panneau" aria-orientation="vertical" style={panneau}>
+    {liste.map((m, i) => item(m, i, undefined, <>{m.icone && <span className="lp-compact-icone" aria-hidden="true">{m.icone}</span>}<span>{m.nom}</span></>, " lp-case-mode"))}
+  </div>;
   /* au choix (Confort) : une liste en mots, depuis le bas de l'écran */
-  const liste_ = () => <div {...propsMenu} className="lp-liste" data-presentation="liste" aria-orientation="vertical">
+  const liste_ = () => <div {...propsMenu} className="lp-liste" data-defile data-presentation="liste" aria-orientation="vertical">
     <p className="lp-liste-titre" aria-hidden="true">Le Point</p>
     {liste.map((m, i) => item(m, i, undefined, <><span className="lp-liste-nom">{m.icone && <span className="lp-liste-icone" aria-hidden="true">{m.icone}</span>}{m.nom}</span><span className="lp-liste-aide">{m.aide}</span></>, " lp-ligne"))}
   </div>;
@@ -148,7 +154,7 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
       </svg>
       {onde > 0 && <span key={onde} className="lp-onde" aria-hidden="true" />}
     </button>
-    {ouvert && createPortal(pres === "liste" ? liste_() : pres === "arc" && arc ? arc_(arc) : anneau_(), hotePortail(bouton.current))}
+    {ouvert && createPortal(pres === "liste" ? liste_() : pres === "panneau" ? panneau_() : pres === "arc" && arc ? arc_(arc) : anneau_(), hotePortail(bouton.current))}
     <span className="lp-annonce" role="status" aria-live="polite">{annonce}</span>
   </div>;
 }

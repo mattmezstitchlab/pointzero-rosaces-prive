@@ -127,6 +127,7 @@ export default function App() {
   const [prefs, setPrefs] = useState(initialPreferences), [inventory, setInventory] = useState(readInventory), [saving, setSaving] = useState("Sauvegarde locale"), [toast, setToast] = useState("");
   const [tracer, setTracer] = useState(false);
   /** Composer une rosace : ouvert depuis le point zéro, le + du Cadre, ou un lien ?rosace= (lecture seule, sans compte) */
+  const [aidePointZero, setAidePointZero] = useState(false);
   const [composer, setComposer] = useState<{ depart?: string | null; lecture?: boolean } | null>(() => {
     try { const c = new URLSearchParams(window.location.search).get("rosace"); return c && lireCode(c) ? { depart: c, lecture: true } : null; } catch { return null; }
   });
@@ -560,8 +561,10 @@ export default function App() {
         <button type="button" className="pz-point-zero-bouton" onClick={() => actionImportRef.current?.click()} aria-label="Importer au point zéro : une image, un patron PDF ou un projet">
           <span aria-hidden="true">+</span>
         </button>
-        <p><b>Importer</b><span>une image, un patron PDF, un projet — ou glissez-le ici</span></p>
-        <p className="pz-point-zero-ou">ou choisissez Dessiner, en haut, et commencez</p>
+        {/* deux actions, pas de paragraphe : l'explication est derrière « ? », à la demande */}
+        <p className="pz-point-zero-titre"><b>Importer</b>
+          <button type="button" className="pz-point-zero-aide" aria-expanded={aidePointZero} aria-controls="pz-aide-zero" onClick={() => setAidePointZero(v => !v)}>?<span className="sr-only"> Aide : que peut-on importer ?</span></button></p>
+        {aidePointZero && <p id="pz-aide-zero" className="pz-point-zero-bulle">Une image, un patron PDF ou un projet (.json, .oxs) ; vous pouvez aussi le glisser sur la grille. Pour dessiner case par case : Dessiner, en haut.</p>}
         <button type="button" className="pz-point-zero-composer" data-guide="composer" onClick={() => setComposer({})}><Sceau signature={{ structure: 0, trace: 2, densite: 1, echelle: 1, palette: 1 }} faits={4} taille={30} />Composer une rosace</button>
       </div>}
     {composer && <ComposerRosace depart={composer.depart} lecture={composer.lecture} onFermer={() => { setComposer(null); retirerParametreRosace(); }}

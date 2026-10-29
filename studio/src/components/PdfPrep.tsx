@@ -568,7 +568,7 @@ export default function PdfPrep({
   };
 
   return (
-    <div
+    <div data-studio="import-pdf"
       className={`glass-strong flex flex-col overflow-hidden bg-[#0e0e11] ${
         embedded ? (studioEmbedded ? "h-[min(85dvh,980px)] min-h-[600px] w-full rounded-[6px] border border-white/15" : "h-[860px] w-full rounded-[26px] ring-1 ring-white/10") : integrated ? "fixed inset-x-0 bottom-0 top-[58px] z-[35]" : "fixed inset-0 z-[75]"
       }`}

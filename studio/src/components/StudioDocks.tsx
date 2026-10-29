@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import OuvragesBloc from "./OuvragesBloc";
 import { ToolIcon } from "./ToolIcons";
-import { ArrowLeft, Compass, LayoutGrid, Menu, Redo2, Search, Spool, Undo2, X } from "lucide-react";
+import { ArrowLeft, CircleHelp, Compass, Folder, Grid3x3, LayoutGrid, Maximize, Menu, Palette, Pencil, Redo2, Search, Shapes, Share2, Sparkles, Spool, Square, Undo2, X } from "lucide-react";
 import { GrilleOutils, GROUPES_BRODER, GROUPES_DESSIN, Loupe, Nuancier } from "./DockGrilles";
 import type { Pattern } from "../lib/pattern";
 import { FLOSS } from "../lib/dmc";
@@ -89,22 +89,41 @@ const DRAW_MORE: [Tool, string][] = [["half", "Demi-point"], ["quarter", "Quart"
 const STITCH: [Tool, string][] = [["hand", "Main"], ["mark", "Marquer"], ["block", "Bloc 10 × 10"], ["row", "Ligne"], ["pick", "Pipette"], ["details", "Détails"], ["park", "Parking"], ["unpick", "À défaire"], ["note", "Note"]];
 const BEGINNER = new Set<Tool>(["hand", "cross", "erase", "pick", "mark"]);
 const VIEWS: [ViewMode, string][] = [["flat", "À plat"], ["pattern", "Patron"], ["real", "Réaliste"]];
+const ICONES_VUE: Record<string, ReactNode> = { flat: <Square aria-hidden="true" />, pattern: <Grid3x3 aria-hidden="true" />, real: <Sparkles aria-hidden="true" /> };
 const LABELS: Record<Exclude<DockPath, null>, string> = { dessiner: "Dessiner", fils: "Fils", broder: "Broder", partager: "Partager", visibilite: "Visibilité" };
 const PARENT: Partial<Record<Exclude<DockPath, null>, DockPath>> = { visibilite: "partager" };
 /* la ligne courte de Broder : les gestes les plus fréquents ; tout le reste est dans la grille */
 const STITCH_VITE: [Tool, string][] = [["hand", "Main"], ["mark", "Marquer"], ["block", "Bloc 10 × 10"], ["row", "Ligne"]];
 
-function Tool_({ children, pressed, onClick, disabled, haspopup, count, soon, label, guide }: { children: ReactNode; pressed?: boolean; onClick?: () => void; disabled?: boolean; haspopup?: boolean; count?: number; soon?: boolean; label?: string; guide?: string }) {
-  return <button type="button" data-guide={guide} className={"pzs-tool" + (label ? " pzs-icon pzs-picto" : "")} aria-label={label} title={label} aria-pressed={pressed === undefined ? undefined : pressed} aria-haspopup={haspopup ? "true" : undefined}
+function Tool_({ children, pressed, onClick, disabled, haspopup, count, soon, label, guide, verbe }: { children: ReactNode; pressed?: boolean; onClick?: () => void; disabled?: boolean; haspopup?: boolean; count?: number; soon?: boolean; label?: string; guide?: string; verbe?: boolean }) {
+  return <button type="button" data-guide={guide} className={"pzs-tool" + (label ? " pzs-icon pzs-picto" : "") + (verbe ? " pzs-verbe" : "")} aria-label={label} title={label} aria-pressed={pressed === undefined ? undefined : pressed} aria-haspopup={haspopup ? "true" : undefined}
     disabled={disabled} onClick={onClick} data-on={pressed ? "1" : undefined}>
     {children}{count !== undefined && <span className="pzs-count" aria-hidden="true">{count}</span>}
     {soon && <span className="pzs-soon">Bientôt</span>}
   </button>;
 }
 
+/**
+ * Un rang qui défile, dit clairement : quand il déborde, un fondu et une flèche montrent qu'il y a d'autres boutons,
+ * de quel côté ; le bouton qui reçoit le focus est ramené entièrement à l'écran. Jamais de bouton coupé sans indice.
+ */
+function useDefile() {
+  const ref = useRef<HTMLElement | null>(null);
+  const maj = () => { const e = ref.current; if (!e) return; const g = e.scrollLeft > 2, d = e.scrollLeft + e.clientWidth < e.scrollWidth - 2;
+    e.dataset.plus = g && d ? "deux" : g ? "gauche" : d ? "droite" : ""; };
+  useLayoutEffect(maj);
+  useEffect(() => { const e = ref.current; if (!e) return;
+    const focus = (ev: FocusEvent) => { const t = ev.target as HTMLElement; try { t.scrollIntoView({ block: "nearest", inline: "nearest" }); } catch { /* jsdom */ } };
+    e.addEventListener("scroll", maj, { passive: true }); e.addEventListener("focusin", focus); window.addEventListener("resize", maj);
+    return () => { e.removeEventListener("scroll", maj); e.removeEventListener("focusin", focus); window.removeEventListener("resize", maj); }; }, []);
+  return ref;
+}
+
 export default function StudioDocks(p: Props) {
+  const rangHaut = useDefile(), rangBas = useDefile();
   const [bloc, setBloc] = useState<Bloc>(null);
   const [loupe, setLoupe] = useState(false);
+  const [aideOuvrages, setAideOuvrages] = useState(false);
   const [q, setQ] = useState("");
   const [genre, setGenre] = useState<Genre>("tout");
   const [moi, setMoi] = useState<{ name?: string; email?: string; image?: string } | null>(null);
@@ -172,10 +191,11 @@ export default function StudioDocks(p: Props) {
     {VISIBILITY_ORDER.map(v => <Tool_ key={v} pressed={p.visibility === v} onClick={() => p.onVisibility(v)}><VisibilityOrb value={v} size={20} />{VISIBILITY[v].label}</Tool_>)}
   </>;
   else items = <>
-    <Tool_ guide="dessiner" haspopup count={DRAW.length + DRAW_MORE.length} pressed={p.workspace === "create"} onClick={() => { p.onWorkspace("create"); p.onPath("dessiner"); setBloc("outils"); }}>Dessiner</Tool_>
-    <Tool_ guide="broder" haspopup count={STITCH.length + 1} pressed={p.workspace === "stitch"} onClick={() => { p.onWorkspace("stitch"); p.onPath("broder"); setBloc("outils"); }}>Broder</Tool_>
-    <Tool_ guide="fils" haspopup count={2} onClick={() => { p.onPath("fils"); setBloc("nuancier"); }}>Fils</Tool_>
-    <Tool_ guide="partager" haspopup count={5} onClick={() => p.onPath("partager")}>Partager</Tool_>
+    {/* les verbes : un pictogramme et un mot ; sur téléphone, le mot passe sous le pictogramme, les quatre tiennent sans défiler */}
+    <Tool_ guide="dessiner" verbe haspopup count={DRAW.length + DRAW_MORE.length} pressed={p.workspace === "create"} onClick={() => { p.onWorkspace("create"); p.onPath("dessiner"); setBloc("outils"); }}><Pencil aria-hidden="true" /><span className="pzs-lib">Dessiner</span></Tool_>
+    <Tool_ guide="broder" verbe haspopup count={STITCH.length + 1} pressed={p.workspace === "stitch"} onClick={() => { p.onWorkspace("stitch"); p.onPath("broder"); setBloc("outils"); }}><Spool aria-hidden="true" /><span className="pzs-lib">Broder</span></Tool_>
+    <Tool_ guide="fils" verbe haspopup count={2} onClick={() => { p.onPath("fils"); setBloc("nuancier"); }}><Palette aria-hidden="true" /><span className="pzs-lib">Fils</span></Tool_>
+    <Tool_ guide="partager" verbe haspopup count={5} onClick={() => p.onPath("partager")}><Share2 aria-hidden="true" /><span className="pzs-lib">Partager</span></Tool_>
   </>;
 
   const ql = sansAccents(q.trim());
@@ -208,7 +228,7 @@ export default function StudioDocks(p: Props) {
           <span className="pzs-sep" aria-hidden="true" />
           {aime ? <a className="pzs-tool pzs-marque" href="/" aria-label="AIME, Le Monde AIME">AIME<sup aria-hidden="true">®</sup></a> : <span className="pzs-tool pzs-marque">Point Zéro</span>}
           <span className="pzs-sep" aria-hidden="true" />
-          <div className="pzs-row" data-guide="outils">
+          <div className="pzs-row" data-guide="outils" data-defile ref={el => { rangHaut.current = el; }}>
             {p.path && <>
               <button ref={upRef} type="button" className="pzs-tool pzs-up" aria-label="Remonter d’un niveau" onClick={up}><ArrowLeft size={18} aria-hidden="true" /></button>
               <span className="pzs-parent">{LABELS[p.path]}</span>
@@ -223,17 +243,19 @@ export default function StudioDocks(p: Props) {
           <button type="button" data-guide="chercher" className="pzs-tool pzs-icon pzs-loupe" aria-label={bloc === "chercher" ? "Fermer la recherche" : "Chercher un fil, un outil ou une fonction de la grille"} title="Chercher dans la grille" aria-expanded={bloc === "chercher"} aria-controls="pzs-bloc" onClick={() => ouvrir("chercher")}>
             {bloc === "chercher" ? <X size={17} aria-hidden="true" /> : <Search size={18} aria-hidden="true" />}
           </button>
-          <button type="button" data-guide="profil" className="pzs-tool pzs-icon pzs-profil" aria-label={"Mes ouvrages, et inviter quelqu’un à rejoindre la grille" + (moi?.name ? ", " + moi.name : "")} title="Mes ouvrages et inviter" aria-expanded={bloc === "inviter"} aria-controls="pzs-bloc" onClick={() => ouvrir("inviter")}>
-            {moi?.image ? <img className="pzs-avatar" src={moi.image} alt="" /> : <span className="pzs-avatar" aria-hidden="true">{moi ? initiales(moi.name || moi.email || "") : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="9" r="3.6" /><path d="M5 19.5c1.4-3.2 4-4.7 7-4.7s5.6 1.5 7 4.7" /></svg>}</span>}
-            <span className="pzs-plus" aria-hidden="true">+</span>
+          {/* Mes ouvrages : un dossier, nommé, toujours dans la barre du haut (le compte s'affiche dans le dossier) */}
+          <button type="button" data-guide="profil" className="pzs-tool pzs-ouvrages" aria-label={"Mes ouvrages" + (moi?.name ? ", " + moi.name : "")} title="Mes ouvrages" aria-expanded={bloc === "inviter"} aria-controls="pzs-bloc" onClick={() => ouvrir("inviter")}>
+            <Folder size={18} aria-hidden="true" /><span className="pzs-lib">Ouvrages</span>
           </button>
         </div>
         {bloc && <div id="pzs-bloc" className="pzs-bloc" ref={blocRef}>
           {bloc === "menu" && <>
-            <div id="pzs-menu" className="pzs-bloc-corps">
+            <div id="pzs-menu" className="pzs-bloc-corps" data-defile>
               <ul className="pzs-bloc-menu">
                 {aime && <li><a href="/">Le Monde AIME</a></li>}
                 <li><button type="button" onClick={() => { setBloc(null); p.actions.home(); }}>Accueil Point Zéro</button></li>
+                <li><button type="button" onClick={() => setBloc("inviter")}>Mes ouvrages</button></li>
+                <li><button type="button" onClick={() => setBloc("chercher")}>Chercher</button></li>
                 <li><button type="button" onClick={() => { setBloc(null); p.actions.settings(); }}>Réglages et aide</button></li>
                 {p.actions.visite && <li><button type="button" onClick={() => { setBloc(null); p.actions.visite!(); }}>Revoir la visite avec Le Point</button></li>}
               </ul>
@@ -245,7 +267,7 @@ export default function StudioDocks(p: Props) {
             </div>
           </>}
           {bloc === "outils" && <>
-            <div className="pzs-bloc-corps">
+            <div className="pzs-bloc-corps" data-defile>
               {p.path === "broder"
                 ? <GrilleOutils groupes={GROUPES_BRODER} outil={p.tool} onOutil={choisir} filtre={p.level === "beginner" ? (id => BEGINNER.has(id) || id === p.tool || id === "block" || id === "row") : undefined} desactive={id => !!p.readOnly && id !== "hand"} plus={[["Suivi de broderie", () => { setBloc(null); p.actions.follow(); }]]} />
                 : <GrilleOutils groupes={GROUPES_DESSIN} outil={p.tool} onOutil={choisir} filtre={p.level === "beginner" ? (id => BEGINNER.has(id) || id === p.tool) : undefined} desactive={id => !!p.readOnly && id !== "hand"}
@@ -258,7 +280,7 @@ export default function StudioDocks(p: Props) {
             </div>
           </>}
           {bloc === "nuancier" && p.pattern && <>
-            <div className="pzs-bloc-corps">
+            <div className="pzs-bloc-corps" data-defile>
               <Nuancier pattern={p.pattern} couleur={p.couleur ?? 0} onCouleur={idx => { p.onCouleur?.(idx); setBloc(null); }} />
             </div>
             <div className="pzs-mini" role="group" aria-label="Fils">
@@ -267,7 +289,7 @@ export default function StudioDocks(p: Props) {
             </div>
           </>}
           {bloc === "chercher" && <>
-            <div className="pzs-bloc-corps">
+            <div className="pzs-bloc-corps" data-defile>
               <label htmlFor="pzs-cherche" className="sr-only">Chercher un fil, un outil ou une fonction</label>
               <input id="pzs-cherche" className="pzs-champ" type="search" autoComplete="off" placeholder="Chercher : 310, rouge, croix, calques, exporter…" value={q} onChange={e => setQ(e.target.value)} />
               <p className="pzs-note" role="status">{q.trim() ? trouves.length + " résultat" + (trouves.length > 1 ? "s" : "") : "Les fils du motif, les outils et les fonctions de la grille"}</p>
@@ -282,14 +304,15 @@ export default function StudioDocks(p: Props) {
             </div>
           </>}
           {bloc === "inviter" && <>
-            <div className="pzs-bloc-corps">
-              <p className="pzs-titre">Mes ouvrages{moi?.name ? " · " + moi.name.split(" ")[0] : ""}</p>
+            <div className="pzs-bloc-corps" data-defile>
+              <p className="pzs-titre">{moi ? (moi.image ? <img className="pzs-avatar" src={moi.image} alt="" /> : <span className="pzs-avatar" aria-hidden="true">{initiales(moi.name || moi.email || "")}</span>) : null}Mes ouvrages{moi?.name ? " · " + moi.name.split(" ")[0] : ""}
+                <button type="button" className="pzs-aide-bouton" aria-expanded={aideOuvrages} aria-controls="pzs-aide-ouvrages" onClick={() => setAideOuvrages(v => !v)}><CircleHelp size={16} aria-hidden="true" /><span className="sr-only">Aide sur Mes ouvrages</span></button></p>
               {p.ouvrages && <OuvragesBloc courant={p.ouvrages.courant} ouvrir={id => { setBloc(null); p.ouvrages!.ouvrir(id); }} importer={f => { setBloc(null); p.ouvrages!.importer(f); }} />}
-              <p className="pzs-note">Inviter : quelqu’un regarde l’ouvrage en direct, depuis son appareil, pendant que vous brodez.{!moi && aime ? " Entrez dans AIME pour retrouver vos ouvrages sur tous vos appareils." : moi ? " Vos ouvrages sont rangés sur votre compte AIME et sur cet appareil." : ""}</p>
+              {aideOuvrages && <p id="pzs-aide-ouvrages" className="pzs-note">Touchez un ouvrage pour l’ouvrir ; déposez un fichier pour l’importer. « Partager en direct » : quelqu’un regarde l’ouvrage ouvert, depuis son appareil.{!moi && aime ? " Entrez dans AIME pour retrouver vos ouvrages partout." : moi ? " Vos ouvrages sont sur votre compte AIME et sur cet appareil." : ""}</p>}
             </div>
             <div className="pzs-mini" role="group" aria-label="Nouvel ouvrage et invitation">
-              <button type="button" onClick={() => { setBloc(null); p.actions.nouveau(); }}>+ Nouvelle grille</button>
-              <button type="button" onClick={() => { setBloc(null); p.actions.share(); }}>+ Inviter à rejoindre la grille</button>
+              <button type="button" onClick={() => { setBloc(null); p.actions.nouveau(); }}>+ Nouveau motif</button>
+              <button type="button" onClick={() => { setBloc(null); p.actions.share(); }}>Partager en direct</button>
               {aime && !moi && <a href="/entrer">Entrer dans AIME</a>}
             </div>
           </>}
@@ -300,7 +323,7 @@ export default function StudioDocks(p: Props) {
     </header>
 
     {loupe && p.pattern && <div className="pzs-loupe-dock"><Loupe pattern={p.pattern} /><button type="button" className="pzs-loupe-fermer" aria-label="Fermer la loupe" onClick={() => setLoupe(false)}><X size={16} aria-hidden="true" /></button></div>}
-    <nav className="pzs-bottom" aria-label="Se repérer dans le studio" onKeyDown={e => { if (e.key === "Escape" && loupe) { e.preventDefault(); setLoupe(false); return; } if (e.key === "Escape" && modes) { e.preventDefault(); setModes(false); cercleRef.current?.focus(); } }}>
+    <nav className="pzs-bottom" aria-label="Se repérer dans le studio" data-defile ref={el => { rangBas.current = el; }} onKeyDown={e => { if (e.key === "Escape" && loupe) { e.preventDefault(); setLoupe(false); return; } if (e.key === "Escape" && modes) { e.preventDefault(); setModes(false); cercleRef.current?.focus(); } }}>
       {/* Le Point, contrôleur universel : Confort (toujours premier), Loupe, Guide, puis le métier (Broderie : Repères, Fils, Progression) */}
       {p.sansPoint ? null : <Point contexte="broderie" refBouton={cercleRef} part={prog} teinte={teinte}
         etiquette={"Dock en mode " + (MODES.find(m => m[0] === modeBas)?.[1] ?? "") + (total ? ", patron brodé à " + Math.round(prog * 100) + " %" : "")}
@@ -320,12 +343,13 @@ export default function StudioDocks(p: Props) {
         : modeBas === "progression" ? <Progression progression={p.progression} onCouleur={p.onCouleur} />
         : <>
       {/* le dock du bas, réduit à l'essentiel : le nom de l'ouvrage est dans l'étiquette du Cadre ; le zoom à la molette, aux touches + et −, ou à deux doigts */}
-      <button type="button" data-guide="symboles" className="pzs-btm" aria-pressed={p.symbols} aria-label="Picto : les symboles par-dessus les couleurs" onClick={p.onSymbols}>Picto</button>
+      {/* Symboles (le mot des brodeuses), les trois lectures, Tout voir, la Loupe. Sur téléphone : pictogramme et mot court, tout tient sans défiler ; la Loupe y passe par le Point. */}
+      <button type="button" data-guide="symboles" className="pzs-btm pzs-vue" aria-pressed={p.symbols} aria-label="Symboles : les symboles par-dessus les couleurs" onClick={p.onSymbols}><Shapes aria-hidden="true" /><span className="pzs-lib">Symboles</span></button>
       <div className="pzs-seg" data-guide="lectures" role="group" aria-label="Affichage de la grille">
-        {VIEWS.map(([id, name]) => <button key={id} type="button" aria-pressed={p.view === id} onClick={() => p.onView(id)}>{name}</button>)}
+        {VIEWS.map(([id, name]) => <button key={id} type="button" className="pzs-vue" aria-pressed={p.view === id} onClick={() => p.onView(id)}>{ICONES_VUE[id]}<span className="pzs-lib">{name}</span></button>)}
       </div>
       <span className="pzs-sep" aria-hidden="true" />
-      <button type="button" data-guide="tout-voir" className="pzs-btm pzs-light" onClick={p.zoom.fit}>Tout voir</button>
+      <button type="button" data-guide="tout-voir" className="pzs-btm pzs-light pzs-vue" onClick={p.zoom.fit}><Maximize aria-hidden="true" /><span className="pzs-lib">Tout voir</span></button>
       <button type="button" data-guide="loupe" className="pzs-btm pzs-loupe-btn" aria-pressed={loupe} aria-label="Loupe : la grille agrandie sous le pointeur" title="Loupe" onClick={() => setLoupe(v => !v)}><Search size={17} aria-hidden="true" /><span className="pzs-loupe-txt">Loupe</span></button>
         </>}
     </nav>

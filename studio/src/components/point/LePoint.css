@@ -80,3 +80,12 @@ html[data-pz-motion="reduce"] .lp-anneau { animation: none; }
 html[data-pz-motion="reduce"] .lp-arc, html[data-pz-motion="reduce"] .lp-liste { animation: none; }
 @media (prefers-reduced-motion: reduce) { .lp-arc, .lp-liste { animation: none; } }
 @media (max-width: 720px) { .lp-panneau { max-height: 62vh; } }
+
+/* Téléphone : le panneau compact. Deux colonnes de modes, pictogramme et mot, juste au-dessus du Point ; le dock reste visible. */
+.lp-compact { position: fixed; z-index: 90; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 8px; border-radius: 16px; background: #0b0b0c; box-shadow: 0 0 0 1px #3a3a38, 0 -14px 40px rgba(11,11,12,.28); max-height: 50vh; overflow: auto; animation: lp-ouvre .14s ease-out; }
+.lp-secteur.lp-case-mode { position: static; transform: none; justify-content: flex-start; width: 100%; min-width: 0; min-height: 48px; padding: 0 12px; border-radius: 12px; font-size: 15px; gap: 10px; }
+.lp-compact-icone { display: inline-flex; } .lp-compact-icone svg { width: 20px; height: 20px; }
+.lp-case-mode .lp-marque { margin-left: auto; order: 3; }
+html[data-pz-motion="reduce"] .lp-compact { animation: none; }
+@media (prefers-reduced-motion: reduce) { .lp-compact { animation: none; } }
+@media (max-width: 300px) { .lp-compact { grid-template-columns: 1fr; } }

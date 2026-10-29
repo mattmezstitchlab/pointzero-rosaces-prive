@@ -63,10 +63,10 @@ it("ne lance pas deux ouvertures pendant l’archivage du projet actif", async (
 it("une nouvelle grille ne remplace pas l’ouvrage si son archivage échoue",async()=>{
   await mountAndImport("patron.pdf","application/pdf");
   await act(async()=>[...host!.querySelectorAll("button")].find(b=>b.textContent==="Valider puzzle test")!.click());
-  // Une nouvelle grille se crée depuis Mes ouvrages, sous le rond du profil.
-  await act(async()=>host!.querySelector<HTMLButtonElement>(".pzs-profil")!.click());
+  // Une nouvelle grille se crée depuis Mes ouvrages, le dossier de la barre du haut.
+  await act(async()=>host!.querySelector<HTMLButtonElement>(".pzs-ouvrages")!.click());
   vi.mocked(saveLibrary).mockRejectedValueOnce(new Error("quota"));
-  await act(async()=>[...host!.querySelectorAll<HTMLButtonElement>(".pzs-mini button")].find(b=>b.textContent==="+ Nouvelle grille")!.click());
+  await act(async()=>[...host!.querySelectorAll<HTMLButtonElement>(".pzs-mini button")].find(b=>b.textContent==="+ Nouveau motif")!.click());
   // Le Cadre : on trace son format, ou on choisit un format tout fait.
   expect(host!.textContent).toContain("Tracez votre format");
   await act(async()=>[...host!.querySelectorAll<HTMLButtonElement>(".cadre-formats button")].find(b=>b.textContent?.startsWith("Carré"))!.click());

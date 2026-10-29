@@ -140,8 +140,8 @@ describe("POINTZERO : atelier unique sans assistant", () => {
     await click(res);
     expect(container?.querySelector("#pzs-cherche")).toBeNull();
     expect(category("Gomme")?.getAttribute("aria-pressed")).toBe("true");
-    await click(button("Mes ouvrages, et inviter quelqu’un à rejoindre la grille"));
-    expect([...(container?.querySelectorAll(".pzs-bloc button") ?? [])].some(b => b.textContent === "+ Inviter à rejoindre la grille")).toBe(true);
+    await click(button("Mes ouvrages"));
+    expect([...(container?.querySelectorAll(".pzs-bloc button") ?? [])].some(b => b.textContent === "Partager en direct")).toBe(true);
     expect(container?.querySelector(".pzs-bloc .pzs-depot")).toBeTruthy();
   });
   it("ouvre et ferme le panneau Calques sans masquer la grille", async () => {
@@ -330,10 +330,10 @@ describe("POINTZERO : atelier unique sans assistant", () => {
     const choose = vi.spyOn(picker, "click");
     await click(button("Importer au point zéro : une image, un patron PDF ou un projet"));
     expect(choose).toHaveBeenCalled();
-    await click(container?.querySelector(".pzs-profil"));
+    await click(container?.querySelector(".pzs-ouvrages"));
     expect(container?.textContent).toContain("Mes ouvrages");
     expect(container?.textContent).not.toContain("Votre espace AIME");
-    await click([...(container?.querySelectorAll(".pzs-mini button") ?? [])].find(b => b.textContent === "+ Nouvelle grille"));
+    await click([...(container?.querySelectorAll(".pzs-mini button") ?? [])].find(b => b.textContent === "+ Nouveau motif"));
     expect(container?.querySelector('canvas[role="application"]')).toBeTruthy();
     expect(container?.querySelector("h1")).toBeNull(); // on reste dans l'atelier
   });
@@ -347,7 +347,7 @@ describe("POINTZERO : atelier unique sans assistant", () => {
     expect(JSON.stringify(JSON.parse(localStorage.getItem("pointzero:visibilite") ?? "{}"))).toContain("restreint");
     // le dock du bas est réduit à l'essentiel : la visibilité se lit dans Partager, en haut
     expect(bottom()?.textContent).not.toContain("Restreint");
-    expect([...(bottom()?.querySelectorAll("button") ?? [])].map(b => b.textContent?.trim()).filter(Boolean)).toEqual(["Picto", "À plat", "Patron", "Réaliste", "Tout voir", "Loupe"]);
+    expect([...(bottom()?.querySelectorAll("button") ?? [])].map(b => b.textContent?.trim()).filter(Boolean)).toEqual(["Symboles", "À plat", "Patron", "Réaliste", "Tout voir", "Loupe"]);
   });
   it("réutilise un seul panneau pour Fils, Suivi et Réglages, sans feuilles superposées", async () => {
     await mount();
