@@ -184,7 +184,7 @@ function MegaMenu() {
 }
 
 /* ——— la une : un grand visuel sobre, un grand titre blanc, de l'air ——— */
-function LaUne({ themeChoix }: { themeChoix: React.ReactNode }) {
+function LaUne() {
   return <section className="ea-une" data-aime="nuit" aria-labelledby="ea-une-titre">
     <div className="ea-une-visuel" aria-hidden="true">
       <img className="ea-une-image" src={IMG + "une/mariee-cosmos.webp"} alt="" />
@@ -192,7 +192,7 @@ function LaUne({ themeChoix }: { themeChoix: React.ReactNode }) {
     <div className="ea-une-haut">
       <p className="ea-marque ea-marque-photo"><span className="aime-point" aria-hidden="true" />AIME<sup>®</sup></p>
       <MegaMenu />
-      {themeChoix}
+      <span />
     </div>
     <div className="ea-une-bas">
       <h1 id="ea-une-titre" className="ea-une-titre">Un socle,<br />tous les univers.</h1>
@@ -249,7 +249,7 @@ export default function EssaiAime() {
   useEffect(() => { document.title = "Essai · socle visuel AIME"; }, []);
   return <div data-aime={theme} className="ea aime-scene">
     <span className="aime-perle ea-perle ea-perle-1" aria-hidden="true" /><span className="aime-perle ea-perle ea-perle-2" aria-hidden="true" /><span className="aime-perle ea-perle ea-perle-3" aria-hidden="true" />
-    <LaUne themeChoix={<div className="aime-segment ea-theme" role="group" aria-label="Thème">{CHOIX_THEMES.map(c => <button key={c.id} type="button" aria-pressed={choix === c.id} onClick={() => choisir(c.id)}>{c.nom}</button>)}</div>} />
+    <LaUne />
 
     {/* 1 · le cadre : la photographie dans un bord blanc arrondi, sur un fond flouté */}
     <section id="socle" className="ea-hero" aria-label="Le cadre">
@@ -387,6 +387,7 @@ export default function EssaiAime() {
 
     <footer className="ea-pied">
       <p className="ea-marque"><span className="aime-point" aria-hidden="true" />AIME<sup>®</sup> <span>Socle visuel</span></p>
+      <div className="aime-segment ea-theme ea-theme-pied" role="group" aria-label="Thème de cet essai">{CHOIX_THEMES.map(c => <button key={c.id} type="button" aria-pressed={choix === c.id} onClick={() => choisir(c.id)}>{c.nom}</button>)}</div>
       <p className="ea-pied-mentions">Essai privé. Police : Inter Tight (SIL OFL), auto-hébergée. Photographies : The Met (domaine public), reconstitutions générées annoncées, captures de l’atelier.</p>
     </footer>
   </div>;
