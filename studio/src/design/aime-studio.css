@@ -6,7 +6,8 @@
  */
 @import "@fontsource-variable/inter-tight/index.css";
 
-html[data-aime-studio] .pz-embroidery-studio { font-family: "Inter Tight Variable", "Inter Tight", "Inter", system-ui, sans-serif; }
+/* la police seulement sur le chrome : jamais sur le Cadre ni la toile (leur mise en page reste celle de l'outil) */
+html[data-aime-studio] :is(.pzs-head, .pzs-bottom) { font-family: "Inter Tight Variable", "Inter Tight", "Inter", system-ui, sans-serif; }
 html[data-aime-studio] :is(.pzs-tool, .pzs-cercle, .pzs-parent, .pzs-fichier, .pzs-depot, .pzs-champ) { border-radius: 12px; }
 html[data-aime-studio] :is(.pzs-marque, .pzs-brand) { font-weight: 650; }
 html[data-aime-studio] .pzs-tool[data-on="1"] { font-weight: 600; }

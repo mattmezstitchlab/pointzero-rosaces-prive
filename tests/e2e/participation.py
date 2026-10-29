@@ -74,6 +74,8 @@ with sync_playwright() as p:
     # dessiner dessus : la croix, une case dans le coin du cadre
     box = pg.evaluate("() => { const c = getComputedStyle(document.querySelector('.cadre')), v = k => parseFloat(c.getPropertyValue(k)); return { x: v('--fx0'), y: v('--fy0'), w: v('--fw'), h: v('--fh') }; }")
     vue_a_plat = lambda: (pg.locator('.pzs-seg button:has-text("À plat")').first.click(), pg.mouse.move(5, 450), pg.wait_for_timeout(400))
+    # la visite guidée s'ouvre à la première entrée : on la ferme, comme une personne, avant de dessiner
+    if pg.get_by_role('button', name='Passer la visite').count(): pg.get_by_role('button', name='Passer la visite').first.click(); pg.wait_for_timeout(300)
     vue_a_plat(); pg.keyboard.press('x'); pg.wait_for_timeout(200)
     X, Y = box['x'] + box['w'] * 0.03, box['y'] + box['h'] * 0.03
     avant = pg.screenshot(clip={'x': X - 3, 'y': Y - 3, 'width': 6, 'height': 6})
