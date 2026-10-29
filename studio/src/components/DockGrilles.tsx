@@ -121,7 +121,11 @@ export function Nuancier({ pattern, couleur, onCouleur }: { pattern: Pattern; co
 
 /** Le mode loupe : la grille agrandie là où l'on survole ou touche, dans le dock du bas. */
 export const SURVOL = "pointzero:survol";
+export const FORME_LOUPE_CLE = "pointzero:loupe:forme";
+const lireForme = (): "ronde" | "carree" => { try { return localStorage.getItem(FORME_LOUPE_CLE) === "carree" ? "carree" : "ronde"; } catch { return "ronde"; } };
 export function Loupe({ pattern }: { pattern: Pattern }) {
+  const [forme, setForme] = useState<"ronde" | "carree">(lireForme);
+  const changerForme = (f: "ronde" | "carree") => { setForme(f); try { localStorage.setItem(FORME_LOUPE_CLE, f); } catch { /* l'appareil refuse : le choix vaut pour cette visite */ } };
   const [focus, setFocus] = useState<StitchFocus & { source?: "pointeur" | "clavier" }>({ x: Math.floor(pattern.w / 2), y: Math.floor(pattern.h / 2) });
   useEffect(() => {
     const suivre = (e: Event) => { const d = (e as CustomEvent<StitchFocus & { source?: "pointeur" | "clavier" }>).detail; if (d) setFocus({ x: d.x, y: d.y, source: d.source ?? "pointeur" }); };
@@ -129,7 +133,12 @@ export function Loupe({ pattern }: { pattern: Pattern }) {
     return () => window.removeEventListener(SURVOL, suivre);
   }, []);
   return <div className="dg-loupe" role="region" aria-label="Loupe : la grille agrandie sous le pointeur ou à la case choisie au clavier">
-    <StitchMagnifier pattern={pattern} focus={focus} rayon={7} className="dg-loupe-vue" />
+    <div className="dg-loupe-formes" role="group" aria-label="Forme de la loupe">
+      <button type="button" aria-pressed={forme === "ronde"} onClick={() => changerForme("ronde")}>Ronde</button>
+      <button type="button" aria-pressed={forme === "carree"} onClick={() => changerForme("carree")}>Carrée · précise</button>
+      <span className="dg-loupe-source">{focus.source === "clavier" ? "suit le clavier" : "suit le pointeur"}</span>
+    </div>
+    <StitchMagnifier pattern={pattern} focus={focus} rayon={7} className="dg-loupe-vue" forme={forme} />
     <p className="dg-loupe-aide">{focus.source === "clavier"
       ? "La loupe suit la case choisie au clavier (flèches sur la grille). Elle ne modifie rien."
       : "Survolez la grille, touchez-la, ou choisissez une case aux flèches : la loupe suit. Elle ne modifie rien."}</p>

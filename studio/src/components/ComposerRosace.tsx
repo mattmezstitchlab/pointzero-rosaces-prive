@@ -7,6 +7,7 @@ import { cm, duree, mesures } from "../lib/cadre";
 import { FLOSS } from "../lib/dmc";
 import type { Pattern } from "../lib/pattern";
 import Point from "./point/Point";
+import { Compass, Move } from "lucide-react";
 import OrbeGuide, { type Etape } from "./OrbeGuide";
 import { secteurVise } from "../lib/point/modes";
 
@@ -195,8 +196,8 @@ export default function ComposerRosace({ depart, lecture = false, onBroder, onFe
     {/* le même Point que l'atelier : ici, Confort, Guide et Espace. Il ne crée rien : les choix restent dans les images. */}
     <div className="cr-point">
       <Point contexte="compositeur" guide="point-compositeur" etiquette={etape < 5 ? `Question ${etape + 1} sur 5` : "Votre motif"} modes={[
-        { id: "guide", nom: "Guide", aide: "comment composer, en quatre étapes", groupe: "socle", actif: guide, ouvrir: () => setGuide(v => !v) },
-        { id: "espace", nom: "Espace", aide: espace ? "gestes spatiaux activés : tirer le centre vers une image pour la choisir" : "gestes spatiaux désactivés : on choisit en touchant les images ou aux flèches", groupe: "creation", actif: espace, annonceEnPropre: true,
+        { id: "guide", nom: "Guide", icone: <Compass aria-hidden="true" />, aide: "comment composer, en quatre étapes", groupe: "socle", actif: guide, ouvrir: () => setGuide(v => !v) },
+        { id: "espace", nom: "Espace", icone: <Move aria-hidden="true" />, aide: espace ? "gestes spatiaux activés : tirer le centre vers une image pour la choisir" : "gestes spatiaux désactivés : on choisit en touchant les images ou aux flèches", groupe: "creation", actif: espace, annonceEnPropre: true,
           ouvrir: () => { setEspace(v => !v); setAnnonce(espace ? "Gestes spatiaux désactivés : touchez les images, ou utilisez les flèches." : "Gestes spatiaux activés : tirez le centre vers une image pour la choisir."); } },
       ]} />
     </div>

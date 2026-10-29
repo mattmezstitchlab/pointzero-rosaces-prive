@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import OuvragesBloc from "./OuvragesBloc";
 import { ToolIcon } from "./ToolIcons";
-import { ArrowLeft, LayoutGrid, Menu, Redo2, Search, Undo2, X } from "lucide-react";
+import { ArrowLeft, Compass, LayoutGrid, Menu, Redo2, Search, Spool, Undo2, X } from "lucide-react";
 import { GrilleOutils, GROUPES_BRODER, GROUPES_DESSIN, Loupe, Nuancier } from "./DockGrilles";
 import type { Pattern } from "../lib/pattern";
 import { FLOSS } from "../lib/dmc";
@@ -305,9 +305,9 @@ export default function StudioDocks(p: Props) {
       {p.sansPoint ? null : <Point contexte="broderie" refBouton={cercleRef} part={prog} teinte={teinte}
         etiquette={"Dock en mode " + (MODES.find(m => m[0] === modeBas)?.[1] ?? "") + (total ? ", patron brodé à " + Math.round(prog * 100) + " %" : "")}
         modes={[
-          { id: "loupe", nom: "Loupe", aide: "la grille agrandie sous le pointeur ou à la case choisie au clavier, sans rien modifier", groupe: "socle", actif: loupe, ouvrir: () => setLoupe(v => !v) },
-          ...(p.actions.visite ? [{ id: "guide", nom: "Guide", aide: "la visite du studio avec Le Point", groupe: "socle", ouvrir: () => p.actions.visite!() } satisfies ModePoint] : []),
-          { id: "broderie", nom: "Broderie", aide: "le dock du bas en Repères, Fils DMC ou Progression", groupe: "metier", actif: modes, ouvrir: () => { setModes(v => !v); requestAnimationFrame(() => document.querySelector<HTMLElement>(".pzs-modes [aria-pressed=\"true\"]")?.focus()); } },
+          { id: "loupe", nom: "Loupe", icone: <Search aria-hidden="true" />, aide: "la grille agrandie sous le pointeur ou à la case choisie au clavier, sans rien modifier", groupe: "socle", actif: loupe, ouvrir: () => setLoupe(v => !v) },
+          ...(p.actions.visite ? [{ id: "guide", nom: "Guide", icone: <Compass aria-hidden="true" />, aide: "la visite du studio avec Le Point", groupe: "socle", ouvrir: () => p.actions.visite!() } satisfies ModePoint] : []),
+          { id: "broderie", nom: "Broderie", icone: <Spool aria-hidden="true" />, aide: "le dock du bas en Repères, Fils DMC ou Progression", groupe: "metier", actif: modes, ouvrir: () => { setModes(v => !v); requestAnimationFrame(() => document.querySelector<HTMLElement>(".pzs-modes [aria-pressed=\"true\"]")?.focus()); } },
         ]} />}
       {modes
         ? <div className="pzs-modes" role="group" aria-label="Les modes du dock">

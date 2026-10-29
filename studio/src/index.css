@@ -2391,12 +2391,23 @@ html[data-pz-motion="reduce"] .pz-guided-lens { transition: none; }
 .pzs-loupe-btn { gap: 8px; }
 .pzs-loupe-dock { position: fixed; left: 50%; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 72px); transform: translateX(-50%); z-index: 41; width: min(340px, calc(100vw - 24px)); padding: 10px; border-radius: 18px; background: #1b1b1a; border: 1px solid #3a3a38; box-shadow: 0 20px 50px rgba(0,0,0,.35); color: #fff; }
 .dg-loupe-vue { color: #fff; }
-.dg-loupe-vue canvas { border-radius: 10px !important; }
+.dg-loupe-vue canvas[data-forme="carree"] { border-radius: 10px !important; }
+.dg-loupe-vue canvas[data-forme="ronde"] { border-radius: 50% !important; box-shadow: 0 0 0 2px rgba(255,255,255,.35); }
+.dg-loupe-formes { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; padding-right: 34px; }
+.dg-loupe-source { font-size: 11px; color: rgba(255,255,255,.7); }
+.dg-loupe-formes button { min-height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid rgba(255,255,255,.3); background: transparent; color: #fff; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.dg-loupe-formes button[aria-pressed="true"] { background: #fff; color: #0b0b0c; }
+.dg-loupe-formes button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .dg-loupe-aide { margin: 8px 2px 0; font-size: 12px; color: rgba(255,255,255,.62); }
 .pzs-loupe-fermer { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 9px; background: transparent; color: #fff; cursor: pointer; }
 .pzs-loupe-fermer:hover { background: rgba(255,255,255,.12); }
 .pzs-loupe-dock .mb-2 { padding-right: 34px; }
-@media (max-width: 720px) { .pzs-loupe-txt { display: none; } .pzs-loupe-dock { bottom: calc(max(16px, env(safe-area-inset-bottom)) + 64px); width: min(300px, calc(100vw - 24px)); } }
+@media (max-width: 720px) { .pzs-loupe-txt { display: none; }
+  /* sur téléphone, la loupe se fait petite et se range à droite : la grille reste visible au-dessus et à gauche */
+  .pzs-loupe-dock { bottom: calc(max(16px, env(safe-area-inset-bottom)) + 64px); left: auto; right: 10px; transform: none; width: 206px; padding: 8px; }
+  .pzs-loupe-dock .dg-loupe-aide { display: none; }
+  .pzs-loupe-dock .dg-loupe-formes button { min-height: 32px; padding: 0 9px; font-size: 12px; }
+  .pzs-loupe-dock .dg-loupe-vue .grid { font-size: 9px; gap: 2px; } }
 
 /* Le point zéro : au centre de la grille vide, le bouton d'import */
 .pz-point-zero { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -44px); z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 12px; pointer-events: none; text-align: center; }

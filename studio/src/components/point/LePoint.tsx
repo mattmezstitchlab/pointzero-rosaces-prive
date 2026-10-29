@@ -1,6 +1,6 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent as PE } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as PE, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { anneau, hotePortail, nomAccessible, positionDe, secteurVise, tourner, type ModePoint } from "../../lib/point/modes";
+import { anneau, dispositionArc, hotePortail, lirePresentation, nomAccessible, positionDe, presentationPour, secteurVise, tourner, type ModePoint, type Presentation } from "../../lib/point/modes";
 import "./LePoint.css";
 
 /**
@@ -10,6 +10,8 @@ import "./LePoint.css";
  * - Poignée, facultative : tirer le Point vers un secteur ouvre ce mode directement. Jamais le seul chemin.
  * L'anneau s'ouvre au niveau de la page (portail) : aucun dock ne le rogne. Il reste juste après le Point dans l'ordre de lecture du lecteur d'écran grâce au focus géré.
  * L'anneau est un index : chaque mode ouvre ensuite un panneau ordinaire (formulaire, liste), lisible au clavier.
+ * Selon le support, les mêmes modes s'ouvrent en anneau (ordinateur), en arc compact (téléphone) ou en liste (au choix, dans Confort).
+ * Les trois présentations sont le même menu : mêmes boutons, même ordre, mêmes touches, mêmes annonces.
  */
 const COTE = 264, RAYON = 80;
 
@@ -45,7 +47,10 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
   /* un clic ailleurs referme l'anneau, sans prendre le focus */
   useEffect(() => {
     if (!ouvert) return;
-    const dehors = (e: PointerEvent) => { const t = e.target as Node; if (!racine.current?.contains(t) && !anneauRef.current?.contains(t)) setOuvert(false); };
+    /* un toucher à côté referme le menu et s'arrête là : il ne choisit pas, par mégarde, ce qui est dessous */
+    const avaler = (e: Event) => { e.stopPropagation(); e.preventDefault(); };
+    const dehors = (e: PointerEvent) => { const t = e.target as Node; if (!racine.current?.contains(t) && !anneauRef.current?.contains(t)) {
+      setOuvert(false); document.addEventListener("click", avaler, { capture: true, once: true }); window.setTimeout(() => document.removeEventListener("click", avaler, { capture: true }), 600); } };
     document.addEventListener("pointerdown", dehors);
     return () => document.removeEventListener("pointerdown", dehors);
   }, [ouvert]);
@@ -58,10 +63,14 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
     m.ouvrir();
   };
   const [pos, setPos] = useState({ left: 8, top: 8 });
-  /* l'anneau s'ouvre au-dessus du Point, sans jamais sortir de l'écran (téléphone compris) */
+  const [pres, setPres] = useState<Presentation>("anneau");
+  const [arc, setArc] = useState<ReturnType<typeof dispositionArc> | null>(null);
+  /* l'anneau s'ouvre au-dessus du Point, sans jamais sortir de l'écran ; sur téléphone, l'arc reste collé au Point */
   const placer = () => {
     const r = bouton.current?.getBoundingClientRect(); if (!r) return;
-    const cx = r.left + r.width / 2, w = window.innerWidth || 1024;
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2, w = window.innerWidth || 1024;
+    const p = presentationPour(lirePresentation(), w); setPres(p);
+    if (p === "arc") setArc(dispositionArc(n, cx, cy, w));
     setPos({ left: Math.max(8, Math.min(cx - COTE / 2, w - COTE - 8)), top: Math.max(8, r.top - COTE - 10) });
   };
   const basculer = () => { if (ouvert) fermer(); else { placer(); setFocus(0); setOuvert(true); } };
@@ -91,6 +100,41 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
   const pt = (a: number) => { const t = a * Math.PI / 180; return (22 + 18 * Math.cos(t)).toFixed(2) + " " + (22 + 18 * Math.sin(t)).toFixed(2); };
   const arcs = Array.from({ length: 12 }, (_, k) => { const a0 = -90 + k * 30 + 5, a1 = a0 + 20; return "M " + pt(a0) + " A 18 18 0 0 1 " + pt(a1); });
 
+  const item = (m: ModePoint, i: number, style: CSSProperties | undefined, contenu: ReactNode, classe = "") =>
+    <button key={m.id} ref={el => { items.current[i] = el; }} type="button" role="menuitem" tabIndex={i === focus ? 0 : -1}
+      className={"lp-secteur lp-" + m.groupe + classe} data-mode={m.id} aria-label={nomAccessible(m)} title={m.aide}
+      style={style} onClick={() => choisir(i)} onFocus={() => setFocus(i)} onPointerEnter={() => setFocus(i)}>
+      {m.actif && <span className="lp-marque" aria-hidden="true" />}{contenu}
+    </button>;
+  const propsMenu = { ref: anneauRef, id: idMenu, role: "menu", "aria-label": "Les modes du Point", onKeyDown: onKeyMenu };
+  /* ordinateur : l'anneau complet */
+  const anneau_ = () => <div {...propsMenu} className="lp-anneau" data-presentation="anneau" aria-orientation="horizontal" style={{ width: COTE, height: COTE, left: pos.left, top: pos.top }}>
+    <svg className="lp-trace" width={COTE} height={COTE} aria-hidden="true">
+      <circle cx={COTE / 2} cy={COTE / 2} r={RAYON} fill="none" />
+      <line x1={COTE / 2} y1={COTE / 2 - RAYON - 30} x2={COTE / 2} y2={COTE / 2 - RAYON - 18} />
+    </svg>
+    <span className="lp-centre" aria-hidden="true" />
+    {liste.map((m, i) => { const { x, y } = positionDe(i, n, RAYON, COTE); return item(m, i, { left: x, top: y }, m.nom); })}
+  </div>;
+  /* téléphone : un quart d'arc collé au Point, pictogrammes, le mot du mode choisi affiché au creux de l'arc */
+  const arc_ = (d: ReturnType<typeof dispositionArc>) => { const { boite: bx, points, rayon, sens } = d;
+    const W = bx.right - bx.left, H = bx.bottom - bx.top, ox = -bx.left, oy = -bx.top;
+    const p0 = points[0], p1 = points[points.length - 1];
+    const centre = { x: d.centre.x + ox, y: d.centre.y + oy }; // le centre de l'arc : le Point lui-même
+    const bande = `M ${p0.x + ox} ${p0.y + oy} A ${rayon} ${rayon} 0 0 ${sens > 0 ? 1 : 0} ${p1.x + ox} ${p1.y + oy}`;
+    const m = liste[focus];
+    return <div {...propsMenu} className="lp-arc" data-presentation="arc" aria-orientation="vertical" style={{ left: bx.left, top: bx.top, width: W, height: H }}>
+      <svg className="lp-arc-bande" width={W} height={H} aria-hidden="true"><path d={bande} /></svg>
+      {liste.map((mm, i) => item(mm, i, { left: points[i].x + ox, top: points[i].y + oy }, mm.icone ?? <span className="lp-initiale">{mm.nom[0]}</span>, " lp-pastille"))}
+      {/* le mot du mode choisi, juste au-delà de sa pastille, vers l'extérieur de l'arc */}
+      {m && (() => { const a = (d.angles[focus] * Math.PI) / 180, r = rayon + 50; return <span className="lp-arc-mot" aria-hidden="true" style={{ left: centre.x + r * Math.cos(a), top: centre.y + r * Math.sin(a) }}>{m.nom}</span>; })()}
+    </div>; };
+  /* au choix (Confort) : une liste en mots, depuis le bas de l'écran */
+  const liste_ = () => <div {...propsMenu} className="lp-liste" data-presentation="liste" aria-orientation="vertical">
+    <p className="lp-liste-titre" aria-hidden="true">Le Point</p>
+    {liste.map((m, i) => item(m, i, undefined, <><span className="lp-liste-nom">{m.icone && <span className="lp-liste-icone" aria-hidden="true">{m.icone}</span>}{m.nom}</span><span className="lp-liste-aide">{m.aide}</span></>, " lp-ligne"))}
+  </div>;
+
   return <div className="lp" ref={racine}>
     <button ref={el => { bouton.current = el; if (refBouton) refBouton.current = el; }} type="button" data-guide={guide} className="pzs-cercle lp-point" aria-haspopup="menu" aria-expanded={ouvert} aria-controls={idMenu}
       aria-label={nom} title="Le Point : confort, loupe, guide…" onClick={onClick} onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerCancel={() => { tire.current = null; }}>
@@ -104,19 +148,7 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
       </svg>
       {onde > 0 && <span key={onde} className="lp-onde" aria-hidden="true" />}
     </button>
-    {ouvert && createPortal(<div ref={anneauRef} id={idMenu} className="lp-anneau" role="menu" aria-label="Les modes du Point" aria-orientation="horizontal" onKeyDown={onKeyMenu} style={{ width: COTE, height: COTE, left: pos.left, top: pos.top }}>
-      <svg className="lp-trace" width={COTE} height={COTE} aria-hidden="true">
-        <circle cx={COTE / 2} cy={COTE / 2} r={RAYON} fill="none" />
-        <line x1={COTE / 2} y1={COTE / 2 - RAYON - 30} x2={COTE / 2} y2={COTE / 2 - RAYON - 18} />
-      </svg>
-      <span className="lp-centre" aria-hidden="true" />
-      {liste.map((m, i) => { const { x, y } = positionDe(i, n, RAYON, COTE);
-        return <button key={m.id} ref={el => { items.current[i] = el; }} type="button" role="menuitem" tabIndex={i === focus ? 0 : -1}
-          className={"lp-secteur lp-" + m.groupe} data-mode={m.id} aria-label={nomAccessible(m)} title={m.aide}
-          style={{ left: x, top: y }} onClick={() => choisir(i)} onFocus={() => setFocus(i)}>
-          {m.actif && <span className="lp-marque" aria-hidden="true" />}{m.nom}
-        </button>; })}
-    </div>, hotePortail(bouton.current))}
+    {ouvert && createPortal(pres === "liste" ? liste_() : pres === "arc" && arc ? arc_(arc) : anneau_(), hotePortail(bouton.current))}
     <span className="lp-annonce" role="status" aria-live="polite">{annonce}</span>
   </div>;
 }

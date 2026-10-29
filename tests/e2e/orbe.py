@@ -1,7 +1,7 @@
 """Le studio de broderie, dans un vrai navigateur : l'orbe qui guide parcourt les deux docks, de bout en bout.
 Usage : cd studio && npx vite build && npx vite preview --port 4620, puis  python3 tests/e2e/orbe.py
 Captures (facultatif) : CAPTURES=<dossier> python3 tests/e2e/orbe.py"""
-import os, sys
+import os, sys, math
 from playwright.sync_api import sync_playwright
 
 B = os.environ.get('BASE', 'http://localhost:4620')
@@ -237,13 +237,18 @@ def le_point(b, largeur, hauteur, nom):
     pt = boite(pg, '.lp-point')
     ok(pt['r'] - pt['x'] >= 44 and pt['b'] - pt['y'] >= 44, f'{nom} : le Point fait au moins 44 × 44 px')
     pg.locator('.lp-point').focus(); pg.keyboard.press('Enter'); pg.wait_for_timeout(250)
-    a = boite(pg, '.lp-anneau')
+    a = boite(pg, '[data-presentation]')
     ok(a and a['x'] >= 0 and a['r'] <= largeur and a['y'] >= 0, f'{nom} : l’anneau s’ouvre entièrement dans l’écran')
-    sect = pg.evaluate("""() => [...document.querySelectorAll('.lp-anneau [role=menuitem]')].map(e => { const r = e.getBoundingClientRect(); return { m: e.dataset.mode, x: r.left, y: r.top, r: r.right, b: r.bottom }; })""")
+    sect = pg.evaluate("""() => [...document.querySelectorAll('[data-presentation] [role=menuitem]')].map(e => { const r = e.getBoundingClientRect(); return { m: e.dataset.mode, x: r.left, y: r.top, r: r.right, b: r.bottom }; })""")
     ok([s['m'] for s in sect][0] == 'confort' and all(s['r'] - s['x'] >= 44 and s['b'] - s['y'] >= 44 for s in sect), f'{nom} : Confort en premier, chaque secteur d’au moins 44 px')
-    chev = any(not (p['r'] <= q['x'] or q['r'] <= p['x'] or p['b'] <= q['y'] or q['b'] <= p['y']) for i, p in enumerate(sect) for q in sect[i+1:])
+    rond = pg.locator('[data-presentation=arc]').count() == 1  # dans l'arc, des pastilles rondes : on compare les distances entre centres
+    chev = any(((math.hypot((p['x'] + p['r']) / 2 - (q['x'] + q['r']) / 2, (p['y'] + p['b']) / 2 - (q['y'] + q['b']) / 2) < min(p['r'] - p['x'], q['r'] - q['x'])) if rond
+               else not (p['r'] <= q['x'] or q['r'] <= p['x'] or p['b'] <= q['y'] or q['b'] <= p['y'])) for i, p in enumerate(sect) for q in sect[i+1:])
     ok(not chev, f'{nom} : aucun secteur n’en recouvre un autre')
-    vus = pg.evaluate("""() => [...document.querySelectorAll('.lp-anneau [role=menuitem]')].every(e => { const r = e.getBoundingClientRect(); const h = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return h === e || e.contains(h); })""")
+    if rond:
+        dock = boite(pg, '.pzs-bottom')
+        ok(all(q['b'] <= dock['y'] for q in sect), f'{nom} : l’arc compact reste au-dessus du dock, sans couvrir ses boutons')
+    vus = pg.evaluate("""() => [...document.querySelectorAll('[data-presentation] [role=menuitem]')].every(e => { const r = e.getBoundingClientRect(); const h = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return h === e || e.contains(h); })""")
     ok(vus, f'{nom} : chaque secteur est réellement visible et cliquable (rien ne le recouvre ni ne le rogne)')
     ok(pg.evaluate("document.activeElement.dataset.mode") == 'confort', f'{nom} : le focus est sur Confort à l’ouverture')
     capture(pg, f'point-anneau-{nom}')
@@ -277,12 +282,12 @@ def point_contextes(b, largeur, hauteur, nom):
     pg.keyboard.press('Escape'); pg.wait_for_timeout(150)
     # Loupe au clavier
     pg.locator('.lp-point').click(); pg.wait_for_timeout(150)
-    pg.locator('.lp-anneau [data-mode=loupe]').click(); pg.wait_for_timeout(150)
+    pg.locator('[data-presentation] [data-mode=loupe]').click(); pg.wait_for_timeout(150)
     pg.locator('canvas[role=application]').focus(); pg.wait_for_timeout(100)
     a = pg.locator('.pzs-loupe-dock').inner_text()
     for k in ['ArrowRight', 'ArrowRight', 'ArrowDown']: pg.keyboard.press(k)
     pg.wait_for_timeout(150); a2 = pg.locator('.pzs-loupe-dock').inner_text()
-    ok('X 1 · Y 1' in a and 'X 3 · Y 2' in a2 and 'clavier' in a2, f'{nom} : la Loupe suit la case choisie au clavier')
+    ok('X 1 · Y 1' in a and 'X 3 · Y 2' in a2 and 'suit le clavier' in a2, f'{nom} : la Loupe suit la case choisie au clavier')
     ok(pg.locator('button[aria-label=Annuler]').is_disabled(), f'{nom} : la Loupe au clavier ne modifie pas l’ouvrage')
     capture(pg, f'contexte-loupe-clavier-{nom}')
     pg.locator('button[aria-label="Fermer la loupe"]').click(); pg.wait_for_timeout(100)
@@ -293,9 +298,9 @@ def point_contextes(b, largeur, hauteur, nom):
     pg.locator('.pz-point-zero-composer').click(); pg.wait_for_selector('.cr .cr-point .lp-point')
     ok(pg.locator('.lp-point').count() == 1, f'{nom} : dans le compositeur, toujours un seul Point')
     pg.locator('.lp-point').focus(); pg.keyboard.press('Enter'); pg.wait_for_timeout(250)
-    modes = pg.evaluate("[...document.querySelectorAll('.lp-anneau [role=menuitem]')].map(e => e.dataset.mode)")
+    modes = pg.evaluate("[...document.querySelectorAll('[data-presentation] [role=menuitem]')].map(e => e.dataset.mode)")
     ok(modes == ['confort', 'guide', 'espace'], f'{nom} : le Point du compositeur propose Confort, Guide, Espace ({modes})')
-    vus = pg.evaluate("""() => [...document.querySelectorAll('.lp-anneau [role=menuitem]')].every(e => { const r = e.getBoundingClientRect(); const h = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return h === e || e.contains(h); })""")
+    vus = pg.evaluate("""() => [...document.querySelectorAll('[data-presentation] [role=menuitem]')].every(e => { const r = e.getBoundingClientRect(); const h = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return h === e || e.contains(h); })""")
     ok(vus, f'{nom} : chaque secteur est visible et cliquable au-dessus du compositeur')
     capture(pg, f'contexte-2-compositeur-{nom}')
     pg.keyboard.press('ArrowRight'); pg.wait_for_timeout(100)
@@ -307,15 +312,53 @@ def point_contextes(b, largeur, hauteur, nom):
     c = pg.locator('.cr-centre').bounding_box(); x, y = c['x'] + c['width'] / 2, c['y'] + c['height'] / 2
     pg.mouse.move(x, y); pg.mouse.down(); pg.mouse.move(x + 70, y - 70, steps=6); pg.mouse.up(); pg.wait_for_timeout(250)
     ok('2 / 5' in pg.locator('.cr-sur').inner_text() and pg.locator('.cr-anneau').first.inner_text().startswith('1.'), f'{nom} : Espace actif, tirer le centre choisit une réponse')
-    pg.locator('.lp-point').click(); pg.wait_for_timeout(150); pg.locator('.lp-anneau [data-mode=espace]').click(); pg.wait_for_timeout(150)
+    pg.locator('.lp-point').click(); pg.wait_for_timeout(150); pg.locator('[data-presentation] [data-mode=espace]').click(); pg.wait_for_timeout(150)
     pg.mouse.move(x, y); pg.mouse.down(); pg.mouse.move(x + 70, y - 70, steps=6); pg.mouse.up(); pg.wait_for_timeout(250)
     ok('2 / 5' in pg.locator('.cr-sur').inner_text(), f'{nom} : Espace coupé, tirer ne choisit plus rien')
     pg.locator('.cr-reponses [role=radio]').first.click(); pg.wait_for_timeout(200)
     ok('3 / 5' in pg.locator('.cr-sur').inner_text(), f'{nom} : Espace coupé, les images restent choisissables')
-    pg.locator('.lp-point').click(); pg.wait_for_timeout(150); pg.locator('.lp-anneau [data-mode=guide]').click(); pg.wait_for_timeout(500)
+    pg.locator('.lp-point').click(); pg.wait_for_timeout(150); pg.locator('[data-presentation] [data-mode=guide]').click(); pg.wait_for_timeout(500)
     ok(pg.locator('#og-titre').inner_text() == 'Quatre réponses', f'{nom} : le Guide du compositeur démarre sur ses propres étapes')
     capture(pg, f'contexte-2-guide-compositeur-{nom}')
     ctx.close()
+
+COUVERTURE = """m => [...document.querySelectorAll('.cr-vignette')].map(v => { const r = v.getBoundingClientRect(); let dedans = 0, total = 0;
+    for (let x = r.left + 4; x < r.right; x += 8) for (let y = r.top + 4; y < r.bottom; y += 8) { total++; const h = document.elementFromPoint(x, y); if (h && h.closest('[data-presentation], .lp-panneau')) dedans++; }
+    return total ? Math.round(dedans / total * 100) : 0; })"""
+def point_telephone(b):
+    """Sur téléphone, le menu du Point ne doit pas masquer les quatre choix du compositeur : arc compact contre liste."""
+    mesures = {}
+    for pres in ('arc', 'liste'):
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, has_touch=True, is_mobile=True)
+        pg = ctx.new_page(); pg.set_default_timeout(8000)
+        pg.on('pageerror', lambda e: erreurs.append(str(e)))
+        pg.add_init_script(f"localStorage.setItem('pointzero:visite-docks:v1','vue'); localStorage.setItem('pointzero:point:presentation','{pres}')")
+        pg.goto(B + '/atelier'); pg.wait_for_selector('.lp-point')
+        pg.locator('.pz-point-zero-composer').click(); pg.wait_for_selector('.cr .lp-point')
+        pg.locator('.lp-point').focus(); pg.keyboard.press('Enter'); pg.wait_for_timeout(300)
+        ok(pg.locator(f'[data-presentation={pres}]').count() == 1, f'telephone : le menu s’ouvre en {pres}')
+        couv = pg.evaluate(COUVERTURE); mesures[pres] = couv
+        a = boite(pg, '[data-presentation]')
+        surface = round((a['r'] - a['x']) * (a['b'] - a['y']) / (390 * 844) * 100)
+        print(f'   mesure {pres} : surface du menu {surface} % de l’écran, choix recouverts {couv} %', flush=True)
+        ok(pg.evaluate("document.activeElement.dataset.mode") == 'confort', f'telephone ({pres}) : le focus est sur Confort')
+        pg.keyboard.press('ArrowDown'); pg.wait_for_timeout(80)
+        ok(pg.evaluate("document.activeElement.dataset.mode") == 'guide', f'telephone ({pres}) : les flèches parcourent les modes')
+        capture(pg, f'telephone-{pres}-compositeur')
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(150)
+        ok(max(pg.evaluate(COUVERTURE)) == 0 and pg.evaluate("document.activeElement.classList.contains('lp-point')"), f'telephone ({pres}) : refermé, plus rien ne masque les choix, le focus revient au Point')
+        # un toucher à côté referme sans choisir l'image dessous
+        pg.locator('.lp-point').tap(); pg.wait_for_timeout(250)
+        v = pg.locator('.cr-vignette').nth(1).bounding_box()
+        pg.touchscreen.tap(v['x'] + v['width'] / 2, v['y'] + 20); pg.wait_for_timeout(250)
+        ok(pg.locator('[data-presentation]').count() == 0 and '1 / 5' in pg.locator('.cr-sur').inner_text(), f'telephone ({pres}) : un toucher à côté referme le menu sans choisir d’image')
+        # Confort reste joignable et réglable
+        pg.locator('.lp-point').tap(); pg.wait_for_timeout(250); pg.locator('[data-presentation] [data-mode=confort]').tap(); pg.wait_for_timeout(250)
+        pn = boite(pg, '.lp-panneau')
+        ok(pn and pn['y'] >= 0 and pn['b'] <= 844, f'telephone ({pres}) : Confort s’ouvre dans l’écran')
+        capture(pg, f'telephone-{pres}-confort')
+        ctx.close()
+    ok(max(mesures['arc']) <= 25, f'telephone : l’arc compact laisse les quatre choix visibles ({mesures["arc"]} % recouverts)')
 
 with sync_playwright() as p:
     b = p.chromium.launch()
@@ -334,6 +377,7 @@ with sync_playwright() as p:
     le_point(b, 390, 844, 'telephone')
     point_contextes(b, 1440, 900, 'ordinateur')
     point_contextes(b, 390, 844, 'telephone')
+    point_telephone(b)
     b.close()
 ok(not erreurs, 'aucune erreur dans la page ' + str(erreurs[:3]))
 sys.exit(0 if all(resultats) else 1)

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { DEFAULT_ACCESS, readPrefs, savePrefs, type Preferences } from "../../lib/accessibilityCore";
 import { annonce, PROFILS } from "../../lib/point/confort";
+import { ecrirePresentation, lirePresentation, type ChoixPresentation } from "../../lib/point/modes";
 
 /**
  * Le mode Confort du Point : un formulaire ordinaire, sans geste.
@@ -10,6 +11,7 @@ import { annonce, PROFILS } from "../../lib/point/confort";
 export default function PanneauConfort({ onFermer, onAnnonce }: { onFermer: () => void; onAnnonce: (texte: string) => void }) {
   const [p, setP] = useState<Preferences>(readPrefs);
   const [erreur, setErreur] = useState("");
+  const [menu, setMenu] = useState<ChoixPresentation>(lirePresentation);
   const titre = useId(), racine = useRef<HTMLElement>(null);
   useEffect(() => { racine.current?.querySelector<HTMLElement>("button, input")?.focus(); }, []);
   useEffect(() => {
@@ -82,6 +84,13 @@ export default function PanneauConfort({ onFermer, onAnnonce }: { onFermer: () =
         <span>Lecture guidée<span className="lp-aide">Une bulle répète le nom de l’élément choisi au clavier, sans lui prendre le focus.</span></span></label>
       <label className="lp-case"><input type="checkbox" checked={p.privacyBlur} onChange={e => set({ privacyBlur: e.target.checked })} />
         <span>Affichage discret<span className="lp-aide">Floute les images : une protection visuelle, pas un chiffrement.</span></span></label>
+    </fieldset>
+    <fieldset className="lp-groupe">
+      <legend>Le menu du Point</legend>
+      <div className="lp-choix">
+        {([["auto", "Automatique", "anneau sur grand écran, arc compact sur téléphone"], ["arc", "Arc compact", "pictogrammes collés au Point"], ["liste", "Liste en mots", "chaque mode écrit en entier, depuis le bas"]] as const).map(([v, nom, aide]) =>
+          <label key={v}><input type="radio" name={titre + "menu"} checked={menu === v} onChange={() => { ecrirePresentation(v); setMenu(v); onAnnonce(`Menu du Point : ${nom.toLowerCase()}.`); }} /><span>{nom}<span className="lp-aide">{aide}</span></span></label>)}
+      </div>
     </fieldset>
     {erreur && <p className="lp-erreur" role="alert">{erreur}</p>}
   </section>;

@@ -1,6 +1,8 @@
 /* Le Point, contrôleur universel : le bouton, l'anneau des modes, le panneau Confort. Charte du studio : sombre, nacre, sobre. */
 .lp { position: relative; flex: none; display: flex; }
-.lp-point { position: relative; }
+/* le bouton du Point porte son propre style : il ne dépend d'aucune feuille d'un studio (portable vers d'autres projets AIME) */
+.lp-point { position: relative; flex: none; width: 50px; height: 46px; padding: 0; border: 0; border-radius: 11px; background: #0b0b0c; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.lp-point:hover { background: #000; }
 .lp-point:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .lp-onde { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; border: 2px solid rgba(201,184,255,.9); pointer-events: none; animation: lp-onde .7s ease-out forwards; }
 @keyframes lp-onde { from { transform: scale(.6); opacity: 1; } to { transform: scale(2.2); opacity: 0; } }
@@ -57,3 +59,24 @@ html[data-pz-motion="reduce"] .lp-anneau { animation: none; }
 .cr-centre:not(.cr-espace) { cursor: default; }
 /* le menu de marque AIME, en haut : plus une orbe, un menu */
 .pzs-orbe { color: #0b0b0c; }
+
+/* Téléphone : l'arc compact. Un quart de cercle collé au Point ; le contenu dessous reste visible autour. */
+.lp-arc { position: fixed; z-index: 90; pointer-events: none; animation: lp-ouvre .16s ease-out; }
+.lp-arc-bande { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+.lp-arc-bande path { fill: none; stroke: rgba(11,11,12,.94); stroke-width: 62; stroke-linecap: round; pointer-events: stroke; }
+.lp-secteur.lp-pastille { min-width: 48px; width: 48px; height: 48px; min-height: 48px; padding: 0; border-radius: 50%; pointer-events: auto; background: #1b1b1a; }
+.lp-pastille svg { width: 20px; height: 20px; }
+.lp-pastille .lp-marque { position: absolute; top: 3px; right: 3px; }
+.lp-initiale { font-size: 16px; font-weight: 700; }
+.lp-arc-mot { position: absolute; transform: translate(-50%, -50%); padding: 6px 10px; border-radius: 10px; background: #0b0b0c; color: #fff; font-size: 14px; font-weight: 700; white-space: nowrap; box-shadow: 0 0 0 1px #3a3a38; pointer-events: none; }
+
+/* Au choix : la liste en mots, depuis le bas. Le haut de l'écran reste visible. */
+.lp-liste { position: fixed; z-index: 90; left: 8px; right: 8px; bottom: 8px; max-height: 46vh; overflow: auto; padding: 8px; border-radius: 18px; background: #0b0b0c; box-shadow: 0 0 0 1px #3a3a38, 0 -20px 60px rgba(11,11,12,.3); animation: lp-ouvre .16s ease-out; }
+.lp-liste-titre { margin: 4px 8px 6px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,.7); }
+.lp-secteur.lp-ligne { position: static; transform: none; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; min-height: 52px; padding: 8px 12px; margin: 0 0 6px; border-radius: 12px; text-align: left; white-space: normal; line-height: 1.25; }
+.lp-liste-nom { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; }
+.lp-liste-icone svg { width: 18px; height: 18px; }
+.lp-liste-aide { font-weight: 400; font-size: 13px; color: rgba(255,255,255,.72); }
+html[data-pz-motion="reduce"] .lp-arc, html[data-pz-motion="reduce"] .lp-liste { animation: none; }
+@media (prefers-reduced-motion: reduce) { .lp-arc, .lp-liste { animation: none; } }
+@media (max-width: 720px) { .lp-panneau { max-height: 62vh; } }

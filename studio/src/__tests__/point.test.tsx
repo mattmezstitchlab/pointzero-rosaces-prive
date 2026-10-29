@@ -7,7 +7,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import App from "../App";
 import AccessibilityShell from "../components/AccessibilityShell";
-import { anneau, nomAccessible, positionDe, secteurVise, tourner, type ModePoint } from "../lib/point/modes";
+import { anneau, dispositionArc, ecrirePresentation, lirePresentation, nomAccessible, positionDe, presentationPour, PRESENTATION_CLE, secteurVise, tourner, type ModePoint } from "../lib/point/modes";
 import { annonce, PROFILS, reglagesActifs } from "../lib/point/confort";
 import { ACCESS_KEY, DEFAULT_ACCESS, readPrefs } from "../lib/accessibilityCore";
 
@@ -42,6 +42,24 @@ describe("Le Point · le noyau", () => {
     expect(secteurVise(-50, 50, 4, 36, -45)).toBe(3);  // bas gauche
     expect(secteurVise(20, -20, 4, 36, -45)).toBeNull();
   });
+  it("présentation : anneau sur grand écran, arc compact sur téléphone, liste si on la choisit", () => {
+    expect(presentationPour("auto", 1440)).toBe("anneau");
+    expect(presentationPour("auto", 390)).toBe("arc");
+    expect(presentationPour("liste", 1440)).toBe("liste");
+    expect(lirePresentation()).toBe("auto");
+    ecrirePresentation("liste"); expect(lirePresentation()).toBe("liste");
+    ecrirePresentation("auto"); expect(localStorage.getItem(PRESENTATION_CLE)).toBeNull();
+  });
+  it("l'arc compact : un quart de cercle vers le côté libre, boutons espacés d'au moins 52 px (pastilles de 48), sans sortir de l'écran", () => {
+    for (const n of [3, 4, 5]) {
+      const d = dispositionArc(n, 40, 800, 390);
+      expect(d.sens).toBe(1);
+      for (let i = 1; i < n; i++) expect(Math.hypot(d.points[i].x - d.points[i - 1].x, d.points[i].y - d.points[i - 1].y)).toBeGreaterThanOrEqual(52);
+      expect(Math.round(d.points[0].x)).toBe(40); // le premier mode (Confort) juste au-dessus du Point
+      expect(d.boite.left).toBeGreaterThanOrEqual(0); expect(d.boite.right).toBeLessThanOrEqual(390);
+    }
+    expect(dispositionArc(4, 350, 800, 390).sens).toBe(-1);
+  });
   it("le nom d'un secteur commence par son mot visible et dit s'il est actif", () => {
     expect(nomAccessible(m("Loupe", "socle", true))).toMatch(/^Loupe, actif : /);
   });
@@ -73,7 +91,7 @@ async function ouvrirAtelier() {
   await attendre();
 }
 const lePoint = () => container?.querySelector<HTMLButtonElement>(".lp-point");
-const secteurs = () => [...document.querySelectorAll<HTMLButtonElement>('.lp-anneau [role="menuitem"]')];
+const secteurs = () => [...document.querySelectorAll<HTMLButtonElement>('[data-presentation] [role="menuitem"]')];
 const cliquer = async (el: Element | null | undefined) => { expect(el).toBeTruthy(); await act(async () => { el!.dispatchEvent(new MouseEvent("click", { bubbles: true })); }); await attendre(); };
 const touche = async (el: Element | null | undefined, key: string) => { await act(async () => { el!.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true })); }); await attendre(); };
 const panneau = () => document.querySelector<HTMLElement>(".lp-panneau");
@@ -219,5 +237,57 @@ describe("Le même Point dans le compositeur 5D", () => {
     await touche(document.querySelector(".og-couche"), "Escape");
     expect(document.querySelector("#og-titre")).toBeNull();
     expect(container!.querySelector(".cr")).toBeTruthy();
+  });
+});
+
+describe("Le Point selon le support", () => {
+  const largeur = (w: number) => Object.defineProperty(window, "innerWidth", { configurable: true, value: w });
+  afterEach(() => largeur(1024));
+  it("sur téléphone : le même menu en arc compact, Confort premier et focalisé, pictogrammes nommés", async () => {
+    largeur(390);
+    await ouvrirAtelier();
+    await cliquer(lePoint());
+    expect(document.querySelector(".lp-arc")?.getAttribute("data-presentation")).toBe("arc");
+    expect(secteurs().map(s => s.dataset.mode)).toEqual(["confort", "loupe", "guide", "broderie"]);
+    expect(document.activeElement).toBe(secteurs()[0]);
+    expect(secteurs().every(s => !!s.querySelector("svg") && s.getAttribute("aria-label")!.startsWith(s.dataset.mode === "confort" ? "Confort" : s.getAttribute("aria-label")!.split(/[ ,:]/)[0]))).toBe(true);
+    expect(secteurs().map(s => s.getAttribute("aria-label")!.split(" :")[0])).toEqual(["Confort", "Loupe", "Guide", "Broderie"]);
+    expect(document.querySelector(".lp-arc-mot")?.textContent).toBe("Confort");
+    await touche(document.activeElement, "ArrowDown");
+    expect(document.querySelector(".lp-arc-mot")?.textContent).toBe("Loupe");
+    await touche(document.activeElement, "Escape");
+    expect(document.activeElement).toBe(lePoint());
+  });
+  it("la liste en mots se choisit dans Confort, et sert ensuite partout", async () => {
+    await ouvrirAtelier();
+    await cliquer(lePoint()); await cliquer(secteurs()[0]);
+    const liste = [...panneau()!.querySelectorAll("label")].find(l => l.textContent?.startsWith("Liste en mots"))!.querySelector("input")!;
+    await cliquer(liste);
+    expect(localStorage.getItem(PRESENTATION_CLE)).toBe("liste");
+    expect(container!.querySelector(".lp-annonce")?.textContent).toBe("Menu du Point : liste en mots.");
+    await touche(panneau(), "Escape");
+    await cliquer(lePoint());
+    expect(document.querySelector(".lp-liste")).toBeTruthy();
+    expect(secteurs()[0].textContent).toContain("taille du texte");
+    expect(document.activeElement).toBe(secteurs()[0]);
+  });
+  it("un toucher à côté du menu le referme sans rien choisir dessous", async () => {
+    largeur(390);
+    await ouvrirAtelier();
+    await cliquer(lePoint());
+    const dessous = container!.querySelector<HTMLButtonElement>(".pz-point-zero-composer")!;
+    await act(async () => { dessous.dispatchEvent(new Event("pointerdown", { bubbles: true })); dessous.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); });
+    await attendre();
+    expect(document.querySelector(".lp-arc")).toBeNull();
+    expect(container!.querySelector(".cr")).toBeNull(); // le compositeur ne s'est pas ouvert par mégarde
+  });
+  it("la loupe est ronde par défaut, carrée au choix, et s'en souvient", async () => {
+    await ouvrirAtelier();
+    await cliquer(lePoint()); await cliquer(secteurs()[1]);
+    const toile = () => container!.querySelector(".pzs-loupe-dock canvas")!;
+    expect(toile().getAttribute("data-forme")).toBe("ronde");
+    await cliquer([...container!.querySelectorAll(".dg-loupe-formes button")].find(b => b.textContent?.startsWith("Carrée")));
+    expect(toile().getAttribute("data-forme")).toBe("carree");
+    expect(localStorage.getItem("pointzero:loupe:forme")).toBe("carree");
   });
 });

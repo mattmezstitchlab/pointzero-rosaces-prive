@@ -3,10 +3,15 @@ import { createPortal } from "react-dom";
 import LePoint from "./LePoint";
 import PanneauConfort from "./PanneauConfort";
 import { hotePortail, type ModePoint } from "../../lib/point/modes";
+import { applyPrefs, readPrefs } from "../../lib/accessibilityCore";
 
 /** L'événement qui ouvre Confort de n'importe où (lien d'évitement, raccourci d'un autre studio). */
 export const OUVRIR_CONFORT = "pz:point:confort";
 export const ouvrirConfort = () => window.dispatchEvent(new CustomEvent(OUVRIR_CONFORT));
+
+/* le pictogramme de Confort, dessiné ici : le Point n'emporte aucune bibliothèque d'icônes */
+const ICONE_CONFORT = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <circle cx="12" cy="4.5" r="1.8" /><path d="M5 8.5l7 1.5 7-1.5M12 10v4.5M12 14.5l-3.5 6M12 14.5l3.5 6" /></svg>;
 
 /**
  * Le Point d'un contexte : le même composant partout. Il apporte toujours Confort (le réglage d'accès, premier)
@@ -25,6 +30,13 @@ export default function Point({ contexte, modes, part, teinte, etiquette, refBou
   const [annonce, setAnnonce] = useState("");
   const bouton = useRef<HTMLButtonElement | null>(null);
   const ref = refBouton ?? bouton;
+  /* les réglages de Confort s'appliquent dès que le Point est là, même dans un projet sans « coquille » d'accessibilité */
+  useEffect(() => {
+    applyPrefs(readPrefs());
+    const appliquer = (e: Event) => { const d = (e as CustomEvent).detail; if (d) applyPrefs(d); };
+    window.addEventListener("pz:accessibility", appliquer);
+    return () => window.removeEventListener("pz:accessibility", appliquer);
+  }, []);
   useEffect(() => {
     const ouvrir = () => setConfort(true);
     window.addEventListener(OUVRIR_CONFORT, ouvrir);
@@ -32,7 +44,7 @@ export default function Point({ contexte, modes, part, teinte, etiquette, refBou
   }, []);
   const fermer = () => { setConfort(false); requestAnimationFrame(() => ref.current?.focus()); };
   const tous: ModePoint[] = [
-    { id: "confort", nom: "Confort", aide: "taille du texte, contraste, thème, mouvement", groupe: "acces", actif: confort, ouvrir: () => setConfort(v => !v) },
+    { id: "confort", nom: "Confort", aide: "taille du texte, contraste, thème, mouvement", groupe: "acces", icone: ICONE_CONFORT, actif: confort, ouvrir: () => setConfort(v => !v) },
     /* ouvrir un autre mode referme Confort : un seul panneau à la fois */
     ...modes.map(m => ({ ...m, ouvrir: () => { setConfort(false); m.ouvrir(); } })),
   ];

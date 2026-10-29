@@ -4,6 +4,8 @@
  * Primitives de la grammaire circulaire employées ici : Centre (le Point), Anneau (les modes), Secteur (un mode),
  * Repère radial (le haut : Confort, toujours), Marque (un mode actif), Onde (l'annonce d'un changement), Poignée (tirer le Point).
  */
+import type { ReactNode } from "react";
+
 export type GroupeMode = "acces" | "socle" | "metier" | "creation";
 
 export interface ModePoint {
@@ -15,6 +17,8 @@ export interface ModePoint {
   groupe: GroupeMode;
   /** le mode est en cours (loupe ouverte, réglage actif…) : une marque sur le secteur, et le mot « actif » */
   actif?: boolean;
+  /** un pictogramme (svg) : montré dans l'arc compact, où il n'y a pas la place du mot ; le mot reste dit et affiché au focus */
+  icone?: ReactNode;
   /** le mode annonce lui-même ce qui change (une phrase plus précise que « Mode … activé ») */
   annonceEnPropre?: boolean;
   ouvrir: () => void;
@@ -68,4 +72,41 @@ export const nomAccessible = (m: ModePoint) => `${m.nom}${m.actif ? ", actif" : 
  */
 export function hotePortail(depuis: Element | null): Element {
   return depuis?.closest('[role="dialog"][aria-modal="true"]') ?? document.body;
+}
+
+/* ——— Présentation selon le support : un seul Point, trois façons d'ouvrir ses modes ——— */
+
+/** anneau : le cercle complet (ordinateur) ; arc : un quart de cercle collé au Point (téléphone) ; liste : un panneau du bas, en mots. */
+export type Presentation = "anneau" | "arc" | "liste";
+export type ChoixPresentation = "auto" | "arc" | "liste";
+export const PRESENTATION_CLE = "pointzero:point:presentation";
+export const LARGEUR_TELEPHONE = 720;
+
+export function lirePresentation(): ChoixPresentation {
+  try { const v = localStorage.getItem(PRESENTATION_CLE); return v === "arc" || v === "liste" ? v : "auto"; } catch { return "auto"; }
+}
+export function ecrirePresentation(v: ChoixPresentation): boolean {
+  try { if (v === "auto") localStorage.removeItem(PRESENTATION_CLE); else localStorage.setItem(PRESENTATION_CLE, v); return true; } catch { return false; }
+}
+/** Automatique : l'anneau quand l'écran est large, l'arc compact sur téléphone (ou en zoom fort, qui rétrécit la largeur utile). */
+export function presentationPour(choix: ChoixPresentation, largeur: number): Presentation {
+  if (choix !== "auto") return choix;
+  return largeur < LARGEUR_TELEPHONE ? "arc" : "anneau";
+}
+
+/**
+ * L'arc compact : un quart de cercle autour du Point, ouvert vers le haut et vers le côté où il y a de la place.
+ * Les boutons sont espacés d'au moins `pas` px le long de l'arc ; le rayon grandit avec le nombre de modes.
+ */
+export function dispositionArc(n: number, cx: number, cy: number, largeur: number, pas = 54, bouton = 48) {
+  const sens = cx < largeur / 2 ? 1 : -1; // 1 : l'arc s'ouvre vers la droite
+  /* de la verticale jusqu'à 30° au-dessus de l'horizontale : la dernière pastille reste au-dessus du dock, sans couvrir ses boutons */
+  const ouverture = 60;
+  const rayon = Math.max(96, Math.ceil(((n - 1) * pas) / ((ouverture * Math.PI) / 180)));
+  const angles = Array.from({ length: n }, (_, i) => -90 + (n > 1 ? (ouverture * i) / (n - 1) : ouverture / 2) * sens);
+  const points = angles.map(a => { const t = (a * Math.PI) / 180; return { x: cx + rayon * Math.cos(t), y: cy + rayon * Math.sin(t) }; });
+  const marge = bouton / 2 + 8;
+  const boite = { left: Math.min(cx, ...points.map(p => p.x)) - marge, top: Math.min(cy, ...points.map(p => p.y)) - marge,
+    right: Math.max(cx, ...points.map(p => p.x)) + marge, bottom: Math.max(cy, ...points.map(p => p.y)) + marge };
+  return { sens, rayon, angles, points, boite, centre: { x: cx, y: cy } };
 }
