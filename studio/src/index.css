@@ -2620,8 +2620,13 @@ html[data-pz-motion="reduce"] .pz-guided-lens { transition: none; }
   .pz-point-zero { gap: 10px; transform: translate(-50%, -30px); }
   .pz-point-zero-bouton { width: 68px; height: 68px; font-size: 32px; }
   .pz-point-zero p b { font-size: 17px; }
-  /* la loupe : petite, à droite, au-dessus du dock ; le point zéro s'efface tant qu'elle est ouverte */
-  .pzs-loupe-dock { width: min(206px, calc(100vw - 20px)); }
+  /* la loupe : en largeur et basse (la grille agrandie à gauche, ses informations à droite) ; le point zéro s'efface tant qu'elle est ouverte */
+  .pzs-loupe-dock { left: 10px !important; right: 10px !important; width: auto !important; transform: none !important; }
+  .pzs-loupe-dock .dg-loupe-vue { display: grid; grid-template-columns: 124px minmax(0, 1fr); column-gap: 10px; align-items: start; }
+  .pzs-loupe-dock .dg-loupe-vue > :first-child { grid-column: 1 / -1; }
+  .pzs-loupe-dock .dg-loupe-vue > canvas { grid-column: 1; }
+  .pzs-loupe-dock .dg-loupe-vue > .grid { grid-column: 2; grid-template-columns: 1fr !important; align-content: start; margin-top: 0 !important; font-size: 11px !important; }
+  .pz-point-zero { max-width: calc(100vw - 120px); }
   body:has(.pzs-loupe-dock) .pz-point-zero { display: none; }
   /* Mes ouvrages : les deux actions passent l'une sous l'autre si besoin, entières ; deux cartes par rang */
   .pzs-mini { flex-wrap: wrap; }
@@ -2642,6 +2647,7 @@ html[data-pz-motion="reduce"] .pz-guided-lens { transition: none; }
   .pzs-seg button.pzs-vue, .pzs-btm.pzs-vue { font-size: 9.5px; letter-spacing: -.02em; padding: 0 2px; }
 }
 @media (max-width: 340px) {
+  .pz-point-zero { max-width: 150px; }
   /* 320 px : les verbes gardent leur pictogramme ; leur mot reste lu par le lecteur d'écran */
   .pzs-tool.pzs-verbe { min-width: 38px; }
   .pzs-tool.pzs-verbe .pzs-lib { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

@@ -12,6 +12,10 @@ import { LEVEL_LABELS, type InterfaceLevel } from "../lib/interfaceLevel";
 import { VISIBILITY, VISIBILITY_ORDER, type Visibility } from "../lib/visibility";
 import VisibilityOrb from "./VisibilityOrb";
 import Point, { ouvrirConfort } from "./point/Point";
+import PointDuBloc from "./point/PointDuBloc";
+import "./blocs/broderie";
+import type { ContexteBroderie } from "./blocs/broderie";
+import { ecrireEssaiBloc, lireEssaiBloc } from "../lib/point/registre";
 import type { ModePoint } from "../lib/point/modes";
 
 /**
@@ -124,6 +128,8 @@ export default function StudioDocks(p: Props) {
   const [bloc, setBloc] = useState<Bloc>(null);
   const [loupe, setLoupe] = useState(false);
   const [aideOuvrages, setAideOuvrages] = useState(false);
+  /* essai : les outils sur le bloc (le Point posé sur le Cadre) au lieu du dock du bas ; réversible depuis le menu */
+  const [essaiBloc, setEssaiBloc] = useState(lireEssaiBloc);
   const [q, setQ] = useState("");
   const [genre, setGenre] = useState<Genre>("tout");
   const [moi, setMoi] = useState<{ name?: string; email?: string; image?: string } | null>(null);
@@ -256,6 +262,7 @@ export default function StudioDocks(p: Props) {
                 <li><button type="button" onClick={() => { setBloc(null); p.actions.home(); }}>Accueil Point Zéro</button></li>
                 <li><button type="button" onClick={() => setBloc("inviter")}>Mes ouvrages</button></li>
                 <li><button type="button" onClick={() => setBloc("chercher")}>Chercher</button></li>
+                <li><button type="button" aria-pressed={essaiBloc} onClick={() => { const v = !essaiBloc; ecrireEssaiBloc(v); setEssaiBloc(v); setBloc(null); }}>{essaiBloc ? "Revenir au dock du bas" : "Essai : les outils sur le bloc"}</button></li>
                 <li><button type="button" onClick={() => { setBloc(null); p.actions.settings(); }}>Réglages et aide</button></li>
                 {p.actions.visite && <li><button type="button" onClick={() => { setBloc(null); p.actions.visite!(); }}>Revoir la visite avec Le Point</button></li>}
               </ul>
@@ -323,6 +330,13 @@ export default function StudioDocks(p: Props) {
     </header>
 
     {loupe && p.pattern && <div className="pzs-loupe-dock"><Loupe pattern={p.pattern} /><button type="button" className="pzs-loupe-fermer" aria-label="Fermer la loupe" onClick={() => setLoupe(false)}><X size={16} aria-hidden="true" /></button></div>}
+    {essaiBloc ? (p.sansPoint ? null : <PointDuBloc<ContexteBroderie> type="broderie" nom={p.patternName} contexte={{
+      symboles: !!p.symbols, patron: p.view === "pattern", loupe,
+      points: () => { p.onWorkspace("create"); p.onPath("dessiner"); setBloc("outils"); },
+      fils: () => { p.onPath("fils"); setBloc("nuancier"); },
+      basculerSymboles: p.onSymbols, basculerPatron: () => p.onView(p.view === "pattern" ? "real" : "pattern"),
+      basculerLoupe: () => setLoupe(v => !v), toutVoir: p.zoom.fit,
+    }} />) : <>
     <nav className="pzs-bottom" aria-label="Se repérer dans le studio" data-defile ref={el => { rangBas.current = el; }} onKeyDown={e => { if (e.key === "Escape" && loupe) { e.preventDefault(); setLoupe(false); return; } if (e.key === "Escape" && modes) { e.preventDefault(); setModes(false); cercleRef.current?.focus(); } }}>
       {/* Le Point, contrôleur universel : Confort (toujours premier), Loupe, Guide, puis le métier (Broderie : Repères, Fils, Progression) */}
       {p.sansPoint ? null : <Point contexte="broderie" refBouton={cercleRef} part={prog} teinte={teinte}
@@ -353,6 +367,7 @@ export default function StudioDocks(p: Props) {
       <button type="button" data-guide="loupe" className="pzs-btm pzs-loupe-btn" aria-pressed={loupe} aria-label="Loupe : la grille agrandie sous le pointeur" title="Loupe" onClick={() => setLoupe(v => !v)}><Search size={17} aria-hidden="true" /><span className="pzs-loupe-txt">Loupe</span></button>
         </>}
     </nav>
+    </>}
   </>;
 }
 

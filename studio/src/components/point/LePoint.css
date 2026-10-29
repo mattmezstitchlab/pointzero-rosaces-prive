@@ -89,3 +89,13 @@ html[data-pz-motion="reduce"] .lp-arc, html[data-pz-motion="reduce"] .lp-liste {
 html[data-pz-motion="reduce"] .lp-compact { animation: none; }
 @media (prefers-reduced-motion: reduce) { .lp-compact { animation: none; } }
 @media (max-width: 300px) { .lp-compact { grid-template-columns: 1fr; } }
+
+/* Le Point d'un bloc : posé sur le bord du bloc sélectionné, il suit le bloc quand on le déplace ou qu'on zoome */
+.lp-bloc { position: fixed; z-index: 38; padding: 3px; border-radius: 14px; background: #0b0b0c; box-shadow: 0 0 0 2px rgba(201,184,255,.85), 0 10px 26px rgba(11,11,12,.28); }
+.lp-bloc .lp-point { width: 44px; height: 44px; }
+
+/* essai bloc, téléphone : Confort et la Loupe s'ouvrent au-dessus du Point du bloc */
+@media (max-width: 720px) {
+  .lp-panneau { bottom: var(--pz-bas-libre, 84px); max-height: calc(100vh - var(--pz-bas-libre, 84px) - 90px); }
+  .pzs-loupe-dock { bottom: var(--pz-bas-libre, calc(max(16px, env(safe-area-inset-bottom)) + 64px)) !important; }
+}

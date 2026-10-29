@@ -56,7 +56,7 @@ AUDIT = r"""portee => {
 # Défaut : un dock sur le contenu, une surface ouverte sur un dock, deux surfaces ouvertes l'une sur l'autre.
 # Voulu : une surface ouverte au-dessus du contenu (elle se referme).
 CHEVAUCHE = r"""() => {
-  const groupe = { docks: ['.pzs-top:not(.pzs-ouvert)', '.pzs-bottom', '.cr-point'], ouverts: ['.pzs-top.pzs-ouvert', '.lp-panneau', '[data-presentation]', '.pzs-loupe-dock'], contenu: ['.pz-point-zero > *', '.cadre-tete'] };
+  const groupe = { docks: ['.pzs-top:not(.pzs-ouvert)', '.pzs-bottom', '.cr-point', '.lp-bloc'], ouverts: ['.pzs-top.pzs-ouvert', '.lp-panneau', '[data-presentation]', '.pzs-loupe-dock'], contenu: ['.pz-point-zero > *', '.cadre-tete'] };
   const vis = []; for (const [g, sels] of Object.entries(groupe)) for (const s of sels) for (const e of document.querySelectorAll(s)) {
     const r = e.getBoundingClientRect(); if (!(r.width > 1 && r.height > 1 && getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden')) continue;
     const h = document.elementFromPoint(Math.min(innerWidth - 1, Math.max(0, r.left + r.width / 2)), Math.min(innerHeight - 1, Math.max(0, r.top + r.height / 2)));
@@ -75,6 +75,7 @@ CHEVAUCHE = r"""() => {
 def etats(pg, largeur):
     """Chaque état réel : un nom, comment l'atteindre, la zone à auditer (None : toute la page)."""
     def point(): pg.locator('.lp-point').first.click(); pg.wait_for_timeout(250)
+    # (essai bloc : le Point est sur le bord du Cadre ; les mêmes états s'atteignent par lui)
     def mode(m): point(); pg.locator(f'[data-presentation] [data-mode={m}]').click(); pg.wait_for_timeout(300)
     yield 'cadre-vide', None
     yield 'point-ouvert', (point, '[data-presentation]')
@@ -89,6 +90,7 @@ def passe(b, largeur, variante):
     hauteur = 740 if largeur <= 360 else 844
     ctx = b.new_context(viewport={'width': largeur, 'height': hauteur}, has_touch=True, is_mobile=True, reduced_motion='reduce' if variante != 'standard' else 'no-preference')
     init = "localStorage.setItem('pointzero:visite-docks:v1','vue');"
+    if os.environ.get('ESSAI_BLOC'): init += "localStorage.setItem('pointzero:essai:outils-sur-le-bloc','1');"
     if variante == 'texte-150':
         init += "localStorage.setItem('pointzero:accessibility:v1', JSON.stringify({version:1,theme:'system',vision:'standard',fontScale:1.5,lineHeight:1.5,spacing:0,contrast:'normal',reduceMotion:true,enhancedFocus:false,readingGuide:false,privacyBlur:false,accent:'#7562ce'}));"
     ctx.add_init_script(init)

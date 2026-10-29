@@ -13,10 +13,14 @@ import "./LePoint.css";
  * Selon le support, les mêmes modes s'ouvrent en anneau (ordinateur), en arc compact (téléphone) ou en liste (au choix, dans Confort).
  * Les trois présentations sont le même menu : mêmes boutons, même ordre, mêmes touches, mêmes annonces.
  */
-const COTE = 264, RAYON = 80;
+/* l'anneau grandit avec le nombre de modes : au-delà de cinq, le rayon s'élargit pour que les mots ne se touchent pas */
+const rayonPour = (n: number) => (n <= 5 ? 80 : 80 + (n - 5) * 16);
+const cotePour = (n: number) => 2 * rayonPour(n) + 104;
 
-export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette, guide = "cercle", annonceExterne, refBouton }: {
+export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette, guide = "cercle", annonceExterne, refBouton, ancrage = "dessus" }: {
   modes: ModePoint[];
+  /** dessus : l'anneau s'ouvre au-dessus du Point (dans un dock) ; autour : centré sur le Point (sur le bord d'un bloc) */
+  ancrage?: "dessus" | "autour";
   /** pour rendre le focus au Point depuis l'extérieur (un panneau qui se ferme) */
   refBouton?: { current: HTMLButtonElement | null };
   /** l'Arc de remplissage : 0 à 1 (ici, l'avancement du patron) */
@@ -41,6 +45,7 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
   const tireTraite = useRef(false);
   const idMenu = useId();
   const n = liste.length;
+  const RAYON = rayonPour(n), COTE = cotePour(n);
 
   useEffect(() => { if (annonceExterne) setAnnonce(annonceExterne); }, [annonceExterne]);
   useEffect(() => { if (ouvert) items.current[focus]?.focus(); }, [ouvert, focus]);
@@ -73,7 +78,9 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
     const p = presentationPour(lirePresentation(), w); setPres(p);
     if (p === "arc") setArc(dispositionArc(n, cx, cy, w));
     setPanneau(placePanneau(r.top, window.innerHeight || 800));
-    setPos({ left: Math.max(8, Math.min(cx - COTE / 2, w - COTE - 8)), top: Math.max(8, r.top - COTE - 10) });
+    const h = window.innerHeight || 800;
+    const top = ancrage === "autour" ? cy - COTE / 2 : r.top - COTE - 10;
+    setPos({ left: Math.max(8, Math.min(cx - COTE / 2, w - COTE - 8)), top: Math.max(8, Math.min(top, h - COTE - 8)) });
   };
   const basculer = () => { if (ouvert) fermer(); else { placer(); setFocus(0); setOuvert(true); } };
 
