@@ -27,6 +27,8 @@ export interface ReglagesOne {
   favoris: string[];
   identite: { prenom: string; ville: string; langue: "fr" };
   rencontre: { etape: number; terminee: boolean };
+  /** la personne a choisi elle-même son thème (sinon .0NE reste en Jour, le blanc AIME) */
+  themeChoisi?: boolean;
 }
 export interface PreferencesOne extends ReglagesOne {
   affichage: Preferences;
@@ -81,6 +83,7 @@ export function lireReglages(): ReglagesOne {
     besoins: Array.isArray(brut.besoins) ? brut.besoins.filter((b): b is IdBesoin => BESOINS.some(x => x.id === b)) : [],
     favoris: Array.isArray(brut.favoris) ? brut.favoris.filter((f): f is string => typeof f === "string" && /^[a-z][a-z0-9-]{1,31}$/.test(f)).slice(0, 24) : [...d.favoris],
     identite: { prenom: texte(id.prenom), ville: texte(id.ville), langue: "fr" },
+    themeChoisi: bool(brut.themeChoisi, false),
     rencontre: { etape: typeof r.etape === "number" && r.etape >= 0 && r.etape <= 10 ? Math.floor(r.etape) : 0, terminee: bool(r.terminee, false) },
   };
 }
@@ -126,4 +129,11 @@ export function proposerPourBesoins(p: PreferencesOne, ids: IdBesoin[]): Prefere
 export function reinitialiserOne(): PreferencesOne {
   const p: PreferencesOne = { ...structuredClone(DEFAUT_ONE), affichage: { ...DEFAULT_ACCESS }, presentation: "auto", synchronisation: "locale" };
   ecrireOne(p); return p;
+}
+
+/** Le thème de .0NE : le blanc AIME par défaut ; la Nuit seulement si la personne l'a choisie (ou a choisi de suivre son appareil). */
+export function themeOne(p: PreferencesOne = lireOne()): "jour" | "nuit" {
+  if (p.affichage.theme === "dark") return "nuit";
+  if (p.affichage.theme === "system" && p.themeChoisi) return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "nuit" : "jour";
+  return "jour";
 }

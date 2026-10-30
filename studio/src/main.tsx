@@ -15,6 +15,7 @@ const Tambour = lazy(() => import("./tambour/Tambour"));
 const EssaiTraversee = lazy(() => import("./essais/EssaiTraversee"));
 const PremiereRencontre = lazy(() => import("./one/PremiereRencontre"));
 const Mosaique = lazy(() => import("./one/Mosaique"));
+const DisqueUnivers = lazy(() => import("./one/DisqueUnivers"));
 const Terminal = lazy(() => import("./one/Terminal"));
 const FilmLumiere = lazy(() => import("./film/lumiere/Film"));
 const VivreLumiere = lazy(() => import("./film/lumiere/Vivre"));
@@ -40,6 +41,8 @@ const oneTerminal = /\/one\/terminal\/?$/.test(window.location.pathname);
 /* la preuve isolée de l'Orbe relationnelle, sur le Disque Terminal (le Terminal validé reste à /one/terminal) */
 const oneTerminalOrbe = /\/one\/terminal-orbe\/?$/.test(window.location.pathname);
 const oneUnivers = /\/one(\/univers)?\/?$/.test(window.location.pathname);
+/* l'ancienne mosaïque (présentations), gardée pour comparaison */
+const oneMosaique = /\/one\/mosaique\/?$/.test(window.location.pathname);
 /* LUMIERE : la première séquence expérimentale (branche privée lumiere-film) */
 const filmLumiere = /\/one\/lumiere\/?$/.test(window.location.pathname);
 const vivreLumiere = /\/one\/lumiere\/vivre\/?$/.test(window.location.pathname);
@@ -62,9 +65,10 @@ createRoot(document.getElementById("root")!).render(
       : onePremiere ? <AccessibilityShell><Suspense fallback={null}><PremiereRencontre /></Suspense></AccessibilityShell>
       : oneTerminalOrbe ? <AccessibilityShell><Suspense fallback={null}><Terminal relation /></Suspense></AccessibilityShell>
       : oneTerminal ? <AccessibilityShell><Suspense fallback={null}><Terminal /></Suspense></AccessibilityShell>
-      : oneUnivers ? <AccessibilityShell><Suspense fallback={null}><Mosaique /></Suspense></AccessibilityShell>
+      : oneUnivers ? <AccessibilityShell><Suspense fallback={null}><DisqueUnivers /></Suspense></AccessibilityShell>
+      : oneMosaique ? <AccessibilityShell><Suspense fallback={null}><Mosaique /></Suspense></AccessibilityShell>
       : essaiTraversee ? <AccessibilityShell><Suspense fallback={null}><EssaiTraversee /></Suspense></AccessibilityShell>
       : essaiImage ? <AccessibilityShell><Suspense fallback={null}><EssaiImage /></Suspense></AccessibilityShell>
       : <AccessibilityShell><StorageRecoveryNotice/><App /></AccessibilityShell>}
-  </GardeExperience>{!filmLumiere && !vivreLumiere && <NavigationConvergence />}</StrictMode>
+  </GardeExperience>{!filmLumiere && !vivreLumiere && !oneUnivers && <NavigationConvergence />}</StrictMode>
 );

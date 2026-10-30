@@ -11,7 +11,7 @@ import { adresseUnivers, commandesDesUnivers } from "../components/one/commandes
 import { IconeOne } from "../components/one/icones";
 import { NOMS_STATUTS, universPublics, type Univers } from "../lib/one/contrat";
 import { enregistrerUnivers, suivreUnivers, tousLesUnivers, UNIVERS_DEMONSTRATION } from "../lib/one/univers";
-import { appliquerOne, lireOne } from "../lib/one/preferences";
+import { appliquerOne, lireOne, themeOne } from "../lib/one/preferences";
 import type { ModePoint } from "../lib/point/modes";
 import "../design/aime.css";
 import "./one.css";
@@ -32,7 +32,7 @@ export default function Mosaique() {
   const [, setV] = useState(0);
   const [ouvert, setOuvert] = useState<string | null>(() => /^#u-/.test(window.location.hash) ? window.location.hash.slice(3) : null);
   const p = useMemo(lireOne, []);
-  const theme = p.affichage.theme === "system" ? (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "nuit" : "jour") : p.affichage.theme === "dark" ? "nuit" : "jour";
+  const theme = themeOne(p);
   useEffect(() => { appliquerOne(p); }, [p]);
   useEffect(() => suivreUnivers(() => setV(v => v + 1)), []);
   /* la preuve du registre : ?demo=1 enregistre un univers fictif, annoncé comme tel ; aucune ligne de composant en plus */

@@ -4,6 +4,7 @@
  * Et la garde : si une expérience échoue (erreur, module introuvable), elle propose de revenir à .0NE — jamais d'écran vide.
  */
 import { Component, useEffect, useRef, useState, type ReactNode } from "react";
+import { lireRetour } from "../lib/one/contextes";
 import "./convergence.css";
 
 const S = import.meta.env.BASE_URL;
@@ -28,7 +29,10 @@ export function NavigationConvergence({ base = S }: { base?: string } = {}) {
     return () => { window.removeEventListener("keydown", k, true); window.removeEventListener("pointerdown", dehors); };
   }, [ouvert]);
   const ici = window.location.pathname.replace(/\/+$/, "");
+  /* venu du Disque (Broder, Ouvrir…) : le retour au contexte exact, en un geste */
+  const retour = /\/one(\/univers)?$/.test(ici) ? null : lireRetour();
   return <nav className="cv-nav" aria-label="Navigation de la version candidate">
+    {retour && !ouvert && <a className="cv-retour" href={retour.adresse}><span className="cv-orbe" aria-hidden="true" />Revenir à .0NE · {retour.nom}</a>}
     {ouvert && <div className="cv-nav-panneau" ref={panneau} id="cv-nav-panneau">
       {LIENS.map(l => <a key={l.chemin} href={l.chemin} aria-current={ici === l.chemin.replace(/\/+$/, "") ? "page" : undefined}>{l.nom}</a>)}
       {history.length > 1 && <button type="button" onClick={() => history.back()}>Revenir à la page précédente</button>}

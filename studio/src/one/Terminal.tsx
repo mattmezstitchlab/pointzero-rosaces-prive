@@ -13,7 +13,7 @@ import { COMMANDES, commande, FAMILLES, LUMIERES, type Lumiere, type VueCentre }
 import { Moteur, preparerEspace, REGLAGES_DEFAUT, type Reglages, type Resultat } from "../lib/terminal/moteur";
 import { dossierDisponible, espaceDisponible, joindre, ouvrirDossierOrdinateur, ouvrirEspaceEssai, type Fs } from "../lib/terminal/fs";
 import { decorer, Indicateurs, type Indicateur } from "../lib/point/indicateurs";
-import { appliquerOne, ecrireOne, lireOne } from "../lib/one/preferences";
+import { appliquerOne, ecrireOne, lireOne, themeOne } from "../lib/one/preferences";
 import { Orbe, type Choix, type Intention, type Reponse } from "../lib/orbe/relation";
 import { UniversTerminal } from "../lib/terminal/relation";
 import OrbeRelation, { type PointRelationnel } from "../components/one/OrbeRelation";
@@ -37,7 +37,7 @@ const lireReglages = (): Reglages => { try { const r = JSON.parse(localStorage.g
 /** relation : la preuve isolée de l’Orbe relationnelle (/one/terminal-orbe) ; sans elle, le Terminal validé, inchangé */
 export default function Terminal({ relation = false }: { relation?: boolean } = {}) {
   const prefs = useMemo(lireOne, []);
-  const theme = prefs.affichage.theme === "system" ? (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "nuit" : "jour") : prefs.affichage.theme === "dark" ? "nuit" : "jour";
+  const theme = themeOne(prefs);
   useEffect(() => { appliquerOne(prefs); }, [prefs]);
   const [moteur, setMoteur] = useState<Moteur | null>(null);
   const [centre, setCentre] = useState<VueCentre>({ genre: "message", ton: "encours", titre: "Ouverture de l’espace d’essai…" });

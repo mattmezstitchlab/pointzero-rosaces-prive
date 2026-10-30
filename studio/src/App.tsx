@@ -44,6 +44,7 @@ import { formatParDefaut, generer } from "./lib/motif5d/generer";
 import { OFFERTE_CLE } from "./components/edition/creation";
 import Sceau from "./components/Sceau";
 import { lireCode } from "./lib/motif5d/code";
+import { lireRetour } from "./lib/one/contextes";
 import { reprendre as reprendreTambour } from "./lib/tambour/capture";
 import { lireContenu } from "./galerie/api";
 const Exposer = lazy(() => import("./galerie/Exposer"));
@@ -246,7 +247,12 @@ export default function App() {
     let fini = false;
     void (async () => {
       const connecte = await estConnecte(); if (fini) return; setCompteAime(connecte);
-      if (!connecte) return;
+      if (!connecte) {
+        /* depuis le Disque (.0NE → Bureau → Ouvrir) : l'ouvrage choisi, rangé sur cet appareil */
+        const local = new URLSearchParams(window.location.search).get("ouvrage");
+        if (local) { const r = (await listProjects()).find(x => x.id === local), p = r && getProject(r); if (p && !fini) void loadPattern(p); else if (!fini) notify("Cet ouvrage n’est pas sur cet appareil."); }
+        return;
+      }
       const ecrits = await tirerDuCompte().catch(() => [] as string[]);
       const id = new URLSearchParams(window.location.search).get("ouvrage");
       if (id) { const r = (await listProjects()).find(x => x.id === id), p = r && getProject(r); if (p && !fini) void loadPattern(p); else if (!fini) notify("Cet ouvrage n’est pas dans votre espace AIME."); }
@@ -390,7 +396,7 @@ export default function App() {
   const atelierLibre = studioMode === "embroidery" && !pdfFile && !promptOpen && !compositionInput && !file && !autoImage;
   /* l'orbe qui guide : à la première ouverture de l'atelier, elle présente les deux docks, outil par outil */
   const [visite, setVisite] = useState(false);
-  useEffect(() => { if (atelierLibre && !panel && !showWelcome && !composer && !visiteVue()) setVisite(true); }, [atelierLibre, panel, showWelcome, composer]);
+  useEffect(() => { if (atelierLibre && !panel && !showWelcome && !composer && !visiteVue() && !lireRetour()) setVisite(true); }, [atelierLibre, panel, showWelcome, composer]);
   useEffect(() => {
     if (!atelierLibre) return;
     const utile = (e: DragEvent) => { const t = Array.from(e.dataTransfer?.types ?? []); return t.includes(OUVRAGE_DRAG_TYPE) || t.includes("Files"); };

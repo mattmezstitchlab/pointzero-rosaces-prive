@@ -10,7 +10,7 @@ import DisqueOne from "../components/one/DisqueOne";
 import { commandesDesUnivers } from "../components/one/commandes";
 import { IconeOne } from "../components/one/icones";
 import { ACCENTS, type Preferences } from "../lib/accessibilityCore";
-import { appliquerOne, BESOINS, ecrireOne, lireOne, proposerPourBesoins, type Cibles, type IdBesoin, type PreferencesOne } from "../lib/one/preferences";
+import { appliquerOne, BESOINS, ecrireOne, lireOne, proposerPourBesoins, type Cibles, type IdBesoin, type PreferencesOne, themeOne } from "../lib/one/preferences";
 import { NOMS_STATUTS } from "../lib/one/contrat";
 import { suivreUnivers, tousLesUnivers } from "../lib/one/univers";
 import "../design/aime.css";
@@ -54,7 +54,7 @@ export default function PremiereRencontre() {
   const maj = (suite: PreferencesOne, dire?: string) => { setEnregistre(ecrireOne(suite)); setP(suite); if (dire) setAnnonce(dire); };
   const affichage = (patch: Partial<Preferences>, dire?: string) => maj({ ...p, affichage: { ...p.affichage, ...patch } }, dire);
   const aller = (n: number) => { maj({ ...p, rencontre: { etape: n, terminee: p.rencontre.terminee || n === ETAPES.length - 1 } }); requestAnimationFrame(() => titre.current?.focus()); window.scrollTo({ top: 0 }); };
-  const theme = p.affichage.theme === "system" ? (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "nuit" : "jour") : p.affichage.theme === "dark" ? "nuit" : "jour";
+  const theme = themeOne(p);
   const univers = tousLesUnivers();
   const modes = useMemo(() => commandesDesUnivers(univers, p.favoris), [univers.length, p.favoris.join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const prenom = p.identite.prenom.trim();
@@ -94,7 +94,7 @@ export default function PremiereRencontre() {
     <p className="one-texte">Regardez l’aperçu au centre du Disque : il change à chaque réglage. Ce n’est pas un examen de la vue, et rien ne remplace vos lunettes.</p>
     <Choix nom="Taille des caractères" portee="partout" valeur={p.affichage.fontScale} options={[[1, "100 %"], [1.12, "112 %"], [1.25, "125 %"], [1.5, "150 %"], [1.75, "175 %"]]} changer={v => affichage({ fontScale: v }, `Texte à ${Math.round(v * 100)} %.`)} />
     <Choix<Cibles> nom="Taille des commandes" portee="partout" valeur={p.interaction.cibles} options={[["standard", "Standard"], ["grandes", "Grandes"], ["tres-grandes", "Très grandes"]]} changer={v => maj({ ...p, interaction: { ...p.interaction, cibles: v } }, "Taille des commandes changée.")} />
-    <Choix nom="Thème" portee="partout" valeur={p.affichage.theme} options={[["system", "Automatique"], ["light", "Jour"], ["dark", "Nuit"]]} changer={v => affichage({ theme: v }, "Thème changé.")} />
+    <Choix nom="Thème" portee="partout" valeur={p.themeChoisi || p.affichage.theme !== "system" ? p.affichage.theme : "light"} options={[["light", "Jour"], ["dark", "Nuit"], ["system", "Selon l’appareil"]]} changer={v => maj({ ...p, themeChoisi: true, affichage: { ...p.affichage, theme: v } }, "Thème changé.")} />
     <Choix nom="Contraste" portee="partout" valeur={p.affichage.contrast} options={[["normal", "Normal"], ["strong", "Renforcé"]]} changer={v => affichage({ contrast: v }, "Contraste changé.")} />
     <Choix nom="Espacement du texte" portee="partout" valeur={p.affichage.lineHeight >= 1.8 ? 2 : p.affichage.lineHeight >= 1.65 ? 1 : 0} options={[[0, "Standard"], [1, "Aéré"], [2, "Très aéré"]]}
       changer={v => affichage({ lineHeight: [1.5, 1.65, 1.8][v], spacing: [0, 0.03, 0.06][v] }, "Espacement changé.")} />
@@ -163,7 +163,7 @@ export default function PremiereRencontre() {
     <h1 ref={titre} tabIndex={-1}>{prenom ? `${prenom}, tout est prêt.` : "Tout est prêt."}</h1>
     <p className="one-texte">Vos réglages sont appliqués et suivent vos univers sur cet appareil. Vous pouvez les modifier à tout moment depuis le Disque (Mes réglages, ou Confort).</p>
     <ul className="one-resume">
-      <li>Texte à {Math.round(p.affichage.fontScale * 100)} %, commandes {p.interaction.cibles === "standard" ? "standard" : p.interaction.cibles === "grandes" ? "grandes" : "très grandes"}, thème {p.affichage.theme === "system" ? "automatique" : p.affichage.theme === "dark" ? "Nuit" : "Jour"}</li>
+      <li>Texte à {Math.round(p.affichage.fontScale * 100)} %, commandes {p.interaction.cibles === "standard" ? "standard" : p.interaction.cibles === "grandes" ? "grandes" : "très grandes"}, thème {p.affichage.theme === "system" ? (p.themeChoisi ? "selon l’appareil" : "Jour") : p.affichage.theme === "dark" ? "Nuit" : "Jour"}</li>
       <li>Menu du Point : {p.presentation === "liste" ? "en liste écrite" : p.presentation === "arc" ? "en arc" : "automatique"}{p.affichage.reduceMotion ? ", effets réduits" : ""}</li>
       <li>Univers favoris : {p.favoris.map(id => univers.find(u => u.id === id)?.nom).filter(Boolean).join(", ") || "aucun"}</li>
       <li>Synchronisation : réglages gardés sur cet appareil seulement</li>
