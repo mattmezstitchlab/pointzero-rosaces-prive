@@ -124,7 +124,9 @@ export default function Galerie() {
         <p className="aime-sur">Point Zéro</p>
         <h1 id="ga-titre" className="aime-titre ga-titre">{vue === "miennes" ? <>Mes œuvres <span className="aime-fondu">exposées.</span></> : <>La Galerie <span className="aime-fondu">des Vivants.</span></>}</h1>
         <p className="aime-chapo">{vue === "miennes" ? "Les œuvres que vous avez exposées. Retirer une œuvre la fait disparaître de la galerie, avec ses cœurs ; votre ouvrage reste dans Mes ouvrages." : "Des motifs dessinés et exposés par celles et ceux qui brodent avec Point Zéro. Chaque œuvre s’ouvre dans votre atelier, pour votre usage personnel."}</p>
-        {erreur && <p className="ga-note" role="alert">{erreur}</p>}
+        {erreur && <><p className="ga-note" role="alert">{erreur}</p>
+          <p className="ga-note">La galerie s’ouvrira avec les comptes. En attendant, l’atelier fonctionne sans compte : vos ouvrages restent sur cet appareil.</p>
+          <a className="aime-btn aime-btn--primaire" href={BASE + "atelier"}>Ouvrir l’atelier</a></>}
         {!oeuvres && !erreur && <p className="ga-note">Un instant…</p>}
         {oeuvres && oeuvres.length === 0 && <p className="ga-note">{vue === "miennes" ? "Vous n’avez encore rien exposé. Dans l’atelier : Partager, puis Exposer." : "Aucune œuvre exposée pour l’instant. La première pourrait être la vôtre : dans l’atelier, Partager, puis Exposer."}</p>}
         {oeuvres && oeuvres.length > 0 && <ul className="ga-mur">{oeuvres.map(o => <li key={o.id} className="ga-mur-case">

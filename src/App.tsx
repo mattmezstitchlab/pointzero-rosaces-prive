@@ -28,13 +28,13 @@ const PAGES: Record<string, [() => React.JSX.Element, string]> = {
   '/boutique': [Boutique, 'LE MONDE AIME — Boutique'],
   '/musique': [Musique, 'LE MONDE AIME — La journée en musique'],
 };
-/* anciennes adresses : elles mènent toutes à l'accueil LE MONDE AIME (rien ne casse pour qui les a gardées) */
-const ANCIENNES: Record<string, string> = { '/charte': '/', '/monde': '/' };
-/* l'accueil du site, c'est le studio de broderie (/studio/, une application à part : on y entre par un vrai chargement de page) */
+/* « Le Monde AIME » est la page des projets : /monde y mène (et non plus à la landing Broderie) */
+const ANCIENNES: Record<string, string> = { '/charte': '/projets', '/monde': '/projets' };
+/* l'accueil du site (en production) : le studio de broderie ; sur l'aperçu, vercel.json ouvre d'abord le film LUMIERE */
 const STUDIO = '/studio/';
 export default function App() {
   const chemin = useChemin().replace(/\/+$/, '') || '/';
-  useEffect(() => { if (chemin === '/') window.location.replace(STUDIO); else if (ANCIENNES[chemin]) aller(ANCIENNES[chemin]); }, [chemin]);
+  useEffect(() => { if (chemin === '/') window.location.replace(STUDIO); else if (ANCIENNES[chemin]) aller(ANCIENNES[chemin] + window.location.search + window.location.hash); }, [chemin]);
   const fiche = /^\/reseau\/([a-z0-9-]{1,60})$/.exec(chemin);
   const projet = /^\/projets\/([a-z0-9-]{1,60})$/.exec(chemin);
   const [Page, titre] = PAGES[ANCIENNES[chemin] || chemin] || [Introuvable, 'LE MONDE AIME — Page introuvable'];

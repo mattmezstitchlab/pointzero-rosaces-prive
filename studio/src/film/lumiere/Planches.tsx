@@ -124,5 +124,15 @@ export default function Planches() {
   }, []);
   return <main style={{ background: "#000", minHeight: "100vh" }} aria-label="LUMIERE, planches de référence">
     {img && <img src={img} alt="Planche de référence LUMIERE" style={{ width: "100%", display: "block" }} />}
+    {/* sans planche choisie, la page n'est plus noire : elle dit ce qu'elle est et propose les quatre planches (rien n'est rendu avant le choix) */}
+    {!new URLSearchParams(window.location.search).get("p") && <nav aria-label="Les planches" style={{ color: "#fff", padding: "12vh 24px", maxWidth: 640, margin: "0 auto", fontFamily: "inherit" }}>
+      <p style={{ fontSize: 12, letterSpacing: ".16em", textTransform: "uppercase", opacity: .7, margin: 0 }}>LUMIERE · préproduction</p>
+      <h1 style={{ fontSize: "clamp(28px, 5vw, 44px)", fontWeight: 600, margin: "8px 0 12px" }}>Les planches de référence</h1>
+      <p style={{ opacity: .8, lineHeight: 1.5, margin: "0 0 20px" }}>Des images 3840 × 2160 rendues par les moteurs du film, à joindre aux générations vidéo. Le rendu prend quelques secondes.</p>
+      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexWrap: "wrap", gap: 10 }}>
+        {([["orbe", "L’Orbe"], ["disque", "Le Disque"], ["gold", "Gold"], ["prairie", "La prairie"]] as const).map(([k, l]) =>
+          <li key={k}><a href={`?p=${k}`} style={{ display: "inline-flex", alignItems: "center", minHeight: 44, padding: "0 18px", borderRadius: 999, border: "1px solid rgba(255,255,255,.4)", color: "#fff", textDecoration: "none" }}>{l}</a></li>)}
+      </ul>
+    </nav>}
   </main>;
 }

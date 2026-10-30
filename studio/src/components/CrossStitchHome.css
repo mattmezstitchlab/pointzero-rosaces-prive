@@ -267,3 +267,7 @@ html:has(.cross-stitch-home) { scroll-padding-top: 110px; scroll-padding-bottom:
 .tout-liste > div { border-top-color: rgba(10,10,11,.1); }
 .pzh-foot-cols :is(button, a) { font-weight: 500; }
 .pzh-way strong, .pzh-drop strong { font-weight: 550; }
+
+/* des cibles d’au moins 24 px de haut dans les sommaires (WCAG 2.5.8) */
+.ix ol a, .mm-sommaire a { min-height: 24px; display: inline-flex; align-items: center; }
+.ix ol a { display: flex; }

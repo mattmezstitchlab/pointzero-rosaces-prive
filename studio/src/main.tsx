@@ -57,6 +57,11 @@ const accueil = /\/accueil\/?$/.test(window.location.pathname);
 const essaiTraversee = /\/essai-traversee\/?$/.test(window.location.pathname);
 
 appliquerApercuAime();
+/* le titre de l'onglet dit où l'on est (sinon, celui de la landing Broderie s'affichait partout) ; une page qui connaît mieux son titre le remplace */
+const TITRES: [boolean, string][] = [[explorer, "Explorer les prototypes — AIME"], [bureau, "Le Bureau — AIME"], [onePremiere, "Première rencontre — .0NE"],
+  [oneTerminalOrbe, "Disque Terminal, l’orbe relationnelle — .0NE"], [oneTerminal, "Disque Terminal — .0NE"], [oneMosaique, "Tous les univers — .0NE"],
+  [planchesLumiere, "LUMIERE — les planches"], [essaiCarte, "Essai · la carte vivante"], [essaiTraversee, "Essai · la traversée du Point"]];
+const titre = TITRES.find(([v]) => v)?.[1]; if (titre) document.title = titre;
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode><GardeExperience>

@@ -27,7 +27,11 @@
       "destination": "/api/comptes?__lien=:chemin*"
     },
     {
-      "source": "/((?!api/|media/|assets/|studio/).*)",
+      "source": "/:fiche(projets|reseau)/:cle",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/:page(projets|aime-wedding|admin|a-propos|point-zero|buro|reseau|entrer|a-plus|boutique|musique|charte|monde)",
       "destination": "/index.html"
     }
   ],

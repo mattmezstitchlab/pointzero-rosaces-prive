@@ -1,4 +1,4 @@
-import StudioDocks, { type BlocDemande, type DockPath } from "./components/StudioDocks";
+import StudioDocks, { lireNav0, type BlocDemande, type DockPath } from "./components/StudioDocks";
 import { VISIBILITY, visibilityOf, writeVisibility } from "./lib/visibility";
 import { readInterfaceLevel, INTERFACE_LEVEL_KEY, type InterfaceLevel } from "./lib/interfaceLevel";
 import { EVENEMENT_NIVEAU } from "./lib/point/profils";
@@ -396,7 +396,8 @@ export default function App() {
   const atelierLibre = studioMode === "embroidery" && !pdfFile && !promptOpen && !compositionInput && !file && !autoImage;
   /* l'orbe qui guide : à la première ouverture de l'atelier, elle présente les deux docks, outil par outil */
   const [visite, setVisite] = useState(false);
-  useEffect(() => { if (atelierLibre && !panel && !showWelcome && !composer && !visiteVue() && !lireRetour()) setVisite(true); }, [atelierLibre, panel, showWelcome, composer]);
+  /* avec le tambour (navigation .0), la visite des docks ne s'impose plus : elle décrit une autre interface ; elle reste proposée par la landing */
+  useEffect(() => { if (atelierLibre && !panel && !showWelcome && !composer && !visiteVue() && !lireRetour() && !lireNav0()) setVisite(true); }, [atelierLibre, panel, showWelcome, composer]);
   useEffect(() => {
     if (!atelierLibre) return;
     const utile = (e: DragEvent) => { const t = Array.from(e.dataTransfer?.types ?? []); return t.includes(OUVRAGE_DRAG_TYPE) || t.includes("Files"); };
