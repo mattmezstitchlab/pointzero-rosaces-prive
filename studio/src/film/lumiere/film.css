@@ -1,0 +1,45 @@
+/* LUMIERE — la page du film. Noir profond pendant le film ; le blanc AIME à la fin. */
+.lf { position: fixed; inset: 0; background: #020309; color: #f2f1f7; font-family: var(--aime-police, "Inter", system-ui, sans-serif); overflow: hidden; }
+.lf-cadre { position: absolute; inset: 0; }
+.lf-toile, .lf-calque { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.lf-barre { position: absolute; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; opacity: .82; transition: opacity .3s; }
+.lf-barre:hover, .lf-barre:focus-within { opacity: 1; }
+.lf-bouton { min-height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,.28); background: rgba(10,10,18,.55); color: #f2f1f7; font: inherit; font-size: .92rem; cursor: pointer; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.lf-bouton[aria-pressed="true"] { border-color: rgba(201,184,255,.8); }
+.lf-bouton:disabled { opacity: .4; cursor: default; }
+.lf-plein { background: #f4f2fb; color: #111; border-color: #f4f2fb; }
+.lf-bouton:focus-visible, .lf-lien:focus-visible { outline: 3px solid #c9b8ff; outline-offset: 2px; }
+.lf-lien { background: none; border: 0; color: #d9d6e6; font: inherit; font-size: .92rem; text-decoration: underline; cursor: pointer; padding: 8px 4px; min-height: 40px; }
+.lf-passer { position: relative; }
+.lf-sous-titre { position: absolute; left: 50%; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 56px); transform: translateX(-50%); width: min(720px, calc(100% - 32px)); margin: 0; text-align: center; font-size: .95rem; line-height: 1.45; color: #ece9f6; text-shadow: 0 1px 8px rgba(0,0,0,.9); }
+.lf-sous-titre b { display: block; font-size: .75rem; letter-spacing: .14em; text-transform: uppercase; color: #c9c3e0; margin-bottom: 2px; font-weight: 600; }
+
+.lf-accueil, .lf-texte, .lf-fixe { display: grid; place-items: center; overflow-y: auto; background: radial-gradient(ellipse at 50% 40%, #0d0c1c 0%, #020309 70%); }
+.lf-accueil-corps, .lf-texte-corps { width: min(640px, calc(100% - 32px)); padding: 48px 0; text-align: center; }
+.lf-point { display: block; width: 14px; height: 14px; margin: 0 auto 28px; border-radius: 50%; background: var(--aime-nacre, radial-gradient(circle at 32% 30%, #fff, #d9e8ff 22%, #c9b8ff 48%, #ffd6ec 72%, #b9f0e4)); box-shadow: 0 0 18px 4px rgba(201,184,255,.45), 0 0 60px 10px rgba(201,184,255,.15); }
+.lf-sur { margin: 0 0 8px; font-size: .78rem; letter-spacing: .2em; text-transform: uppercase; color: #b9b4cf; }
+.lf h1 { margin: 0 0 12px; font-weight: 500; font-size: clamp(1.9rem, 5vw, 3rem); letter-spacing: -.01em; }
+.lf h2 { margin: 18px 0 4px; font-weight: 600; font-size: 1.05rem; }
+.lf-chapeau { margin: 0 auto 28px; max-width: 46ch; color: #d8d5e6; line-height: 1.55; }
+.lf-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; margin-top: 20px; }
+.lf-note { margin: 18px 0 0; font-size: .82rem; color: #a7a3bc; }
+.lf-fichier { display: block; margin: 26px auto 0; max-width: 46ch; font-size: .82rem; color: #a7a3bc; }
+.lf-fichier input { display: block; margin: 8px auto 0; color: #d8d5e6; font: inherit; }
+.lf-texte ol { list-style: none; padding: 0; margin: 20px 0; text-align: left; }
+.lf-texte li p, .lf-fixe p { color: #d8d5e6; line-height: 1.6; margin: 0; }
+.lf-image { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 14px; margin: 14px 0 6px; background: #05060d; }
+.lf-fixe .lf-texte-corps { text-align: left; } .lf-fixe .lf-actions { justify-content: flex-start; }
+
+/* le contrôle de montage */
+.lf-controle { position: absolute; left: 16px; right: 16px; top: 14px; padding: 10px 14px 26px; border-radius: 14px; background: rgba(6,6,12,.72); backdrop-filter: blur(8px); font-size: .8rem; }
+.lf-mesure { margin: 0 0 6px; font-family: "JetBrains Mono", ui-monospace, monospace; color: #e8e6f2; }
+.lf-controle input[type=range] { width: 100%; }
+.lf-reperes { position: relative; height: 18px; }
+.lf-reperes button { position: absolute; top: 2px; transform: translateX(-50%) rotate(-30deg); transform-origin: top center; padding: 0; border: 0; background: none; color: #c9c3e0; font: inherit; font-size: .66rem; cursor: pointer; white-space: nowrap; }
+
+/* la fin : le voile blanc et le Point qui rejoint la marque .0NE */
+.lf-voile { position: fixed; inset: 0; z-index: 50; background: #fbfbfd; pointer-events: none; display: grid; place-items: center; }
+.lf-orbe { width: 22px; height: 22px; border-radius: 50%; background: var(--aime-nacre, radial-gradient(circle at 32% 30%, #fff, #d9e8ff 22%, #c9b8ff 48%, #ffd6ec 72%, #b9f0e4)); box-shadow: 0 6px 16px rgba(201,184,255,.55); transform-origin: center; }
+
+@media (max-width: 600px) { .lf-bouton { padding: 0 12px; font-size: .86rem; } .lf-sous-titre { font-size: .86rem; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 104px); } }
+@media (prefers-reduced-motion: reduce) { .lf * { transition: none !important; } }

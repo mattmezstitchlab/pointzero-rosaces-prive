@@ -16,6 +16,7 @@ const EssaiTraversee = lazy(() => import("./essais/EssaiTraversee"));
 const PremiereRencontre = lazy(() => import("./one/PremiereRencontre"));
 const Mosaique = lazy(() => import("./one/Mosaique"));
 const Terminal = lazy(() => import("./one/Terminal"));
+const FilmLumiere = lazy(() => import("./film/lumiere/Film"));
 
 /* essai privé : le bloc Image, piloté par le même Point (aucune autre application) */
 const essaiImage = /\/essai-image\/?$/.test(window.location.pathname);
@@ -36,6 +37,8 @@ const oneTerminal = /\/one\/terminal\/?$/.test(window.location.pathname);
 /* la preuve isolée de l'Orbe relationnelle, sur le Disque Terminal (le Terminal validé reste à /one/terminal) */
 const oneTerminalOrbe = /\/one\/terminal-orbe\/?$/.test(window.location.pathname);
 const oneUnivers = /\/one(\/univers)?\/?$/.test(window.location.pathname);
+/* LUMIERE : la première séquence expérimentale (branche privée lumiere-film) */
+const filmLumiere = /\/one\/lumiere\/?$/.test(window.location.pathname);
 const essaiTraversee = /\/essai-traversee\/?$/.test(window.location.pathname);
 
 appliquerApercuAime();
@@ -47,6 +50,7 @@ createRoot(document.getElementById("root")!).render(
       : essaiAime ? <Suspense fallback={null}><EssaiAime /></Suspense>
       : galerie ? <Suspense fallback={null}><Galerie /></Suspense>
       : tambour ? <AccessibilityShell><Suspense fallback={null}><Tambour /></Suspense></AccessibilityShell>
+      : filmLumiere ? <AccessibilityShell><Suspense fallback={null}><FilmLumiere /></Suspense></AccessibilityShell>
       : onePremiere ? <AccessibilityShell><Suspense fallback={null}><PremiereRencontre /></Suspense></AccessibilityShell>
       : oneTerminalOrbe ? <AccessibilityShell><Suspense fallback={null}><Terminal relation /></Suspense></AccessibilityShell>
       : oneTerminal ? <AccessibilityShell><Suspense fallback={null}><Terminal /></Suspense></AccessibilityShell>

@@ -2,3 +2,7 @@ node_modules
 dist
 .vercel
 .env*
+
+# LUMIERE : les extraits audio privés ne vont jamais dans le dépôt ni dans le paquet
+studio/public/lumiere-prive/
+*.wav
