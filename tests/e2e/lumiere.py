@@ -13,7 +13,7 @@ with sync_playwright() as p:
     def page(**kw):
         ctx = b.new_context(viewport=kw.pop('viewport', {'width': 1280, 'height': 760}), **kw)
         pg = ctx.new_page(); req = []; err = []
-        pg.on('request', lambda r: req.append(r.url)); pg.on('pageerror', lambda e: err.append(str(e)))
+        pg.on('request', lambda r: req.append(r.url) if r.method != 'HEAD' else None)   # HEAD : on demande seulement si la musique existe, rien n'est téléchargé; pg.on('pageerror', lambda e: err.append(str(e)))
         return ctx, pg, req, err
 
     # 1. l'accueil : rien ne démarre, aucun son n'est chargé sans geste

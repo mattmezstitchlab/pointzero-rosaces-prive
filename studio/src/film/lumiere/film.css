@@ -43,3 +43,14 @@
 
 @media (max-width: 600px) { .lf-bouton { padding: 0 12px; font-size: .86rem; } .lf-sous-titre { font-size: .86rem; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 104px); } }
 @media (prefers-reduced-motion: reduce) { .lf * { transition: none !important; } }
+
+/* la musique absente en ligne : dit clairement, avec un geste pour la choisir */
+.lf-son-absent { margin: 22px auto 0; max-width: 46ch; padding: 12px 16px; border-radius: 14px; border: 1px solid rgba(201,184,255,.45); background: rgba(201,184,255,.08); text-align: left; font-size: .88rem; line-height: 1.5; color: #e4e1f0; }
+.lf-son-absent p { margin: 0; } .lf-son-absent p + p { margin-top: 6px; color: #c9c5da; }
+.lf-fichier { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: 40px; margin: 14px auto 0; padding: 0 16px; border-radius: 999px; border: 1px dashed rgba(255,255,255,.35); font-size: .88rem; color: #d8d5e6; cursor: pointer; max-width: none; }
+.lf-fichier-visible { border-style: solid; border-color: rgba(201,184,255,.8); color: #fff; }
+.lf-fichier input { position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0; width: 100%; }
+.lf-fichier:focus-within { outline: 3px solid #c9b8ff; outline-offset: 2px; }
+.lf-pret { color: #9ee6b4; }
+.lf-message { margin: 14px auto 0; max-width: 46ch; padding: 10px 14px; border-radius: 12px; background: #f4f2fb; color: #111; font-size: .9rem; }
+.lf-message-film { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); width: min(560px, calc(100% - 32px)); box-sizing: border-box; text-align: center; z-index: 5; }

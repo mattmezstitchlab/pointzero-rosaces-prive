@@ -34,6 +34,16 @@ export default function Film() {
   const [sousTitres, setSousTitres] = useState(true);
   const [annonce, setAnnonce] = useState("");
   const [sonEtat, setSonEtat] = useState<"absent" | "pret" | "manquant" | "choisi">("absent");
+  /* la musique est-elle servie ici ? (en ligne : non, tant que les droits ne sont pas validés) — on vérifie le TYPE : une page HTML n'est pas un son */
+  const [dispo, setDispo] = useState<boolean | null>(null);
+  const [message, setMessage] = useState("");
+  const fichier = useRef<HTMLInputElement>(null);
+  const apresChoix = useRef(false);
+  useEffect(() => {
+    if (capture) return;
+    fetch(URL_EXTRAIT, { method: "HEAD" }).then(r => setDispo(r.ok && /audio|wav|octet/.test(r.headers.get("content-type") ?? ""))).catch(() => setDispo(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!message) return; const k = window.setTimeout(() => setMessage(""), 7000); return () => window.clearTimeout(k); }, [message]);
   const [vol, setVol] = useState(false);
   const toile = useRef<HTMLCanvasElement>(null), calque = useRef<HTMLCanvasElement>(null), cadre = useRef<HTMLDivElement>(null);
   const rendu = useRef<Rendu | null>(null);
@@ -101,7 +111,7 @@ export default function Film() {
       horloge.current = { debut: ctx.currentTime + 0.02, t0: depuis, audio };
     } else {
       horloge.current = { debut: performance.now(), t0: depuis };
-      if (avecSon) setAnnonce("L’extrait sonore n’est pas présent ici : le film se joue en silence.");
+      if (avecSon) { const m = "La musique n’est pas disponible ici : le film se joue en silence. Revenez à l’accueil du film pour la choisir sur votre appareil."; setAnnonce(m); setMessage(m); }
     }
     setLecture(true);
   }, [chargerExtrait]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -163,15 +173,22 @@ export default function Film() {
       <h1>La naissance du Point</h1>
       <p className="lf-chapeau">Une séquence expérimentale de 44 secondes, sur un passage de « {EXTRAIT.morceau} ». Elle est facultative.</p>
       <div className="lf-actions">
-        <button type="button" className="lf-bouton lf-plein" onClick={() => void commencer(true)}>Regarder avec le son</button>
+        <button type="button" className="lf-bouton lf-plein" onClick={() => { if (dispo === false && !tampon.current) { apresChoix.current = true; fichier.current?.click(); } else void commencer(true); }}>{dispo === false && !tampon.current ? "Regarder avec le son (choisir la musique)" : "Regarder avec le son"}</button>
         <button type="button" className="lf-bouton" onClick={() => void commencer(false)}>Regarder sans le son</button>
         <button type="button" className="lf-bouton" onClick={() => setEtat("texte")}>Lire la version texte</button>
         <button type="button" className="lf-lien" onClick={() => versRencontre(false)}>Passer et commencer la Première rencontre</button>
         <a className="lf-lien" href={import.meta.env.BASE_URL + "explorer"}>Explorer tous les prototypes</a>
       </div>
-      <label className="lf-fichier">Extrait sonore privé absent ? Choisissez-le sur cet appareil (l’extrait ou le WAV original) :
-        <input type="file" accept="audio/wav,.wav" onChange={e => { const f = e.target.files?.[0]; if (f) void chargerExtrait(f).then(ok => setAnnonce(ok ? "Extrait chargé : il reste sur cet appareil." : "Ce fichier n’a pas pu être lu.")); }} /></label>
-      {sonEtat === "choisi" && <p className="lf-note">Extrait chargé depuis cet appareil ; rien n’est envoyé.</p>}
+      {dispo === false && sonEtat !== "choisi" && <div className="lf-son-absent" role="note">
+        <p><b>La musique n’est pas publiée sur cette version en ligne</b> (les droits ne sont pas encore validés).</p>
+        <p>Pour l’entendre, choisissez « 12-La Fleur Du Ciel.wav » (le WAV original, ou l’extrait) sur cet appareil. Il est lu ici et n’est envoyé nulle part.</p>
+      </div>}
+      <label className={"lf-fichier" + (dispo === false ? " lf-fichier-visible" : "")}>{sonEtat === "choisi" ? "Changer de fichier" : "Choisir la musique sur cet appareil"}
+        <input ref={fichier} type="file" accept="audio/wav,.wav,audio/*" onChange={e => { const f = e.target.files?.[0]; if (!f) return; tampon.current = null;
+          void chargerExtrait(f).then(ok => { const m = ok ? "Musique prête : elle reste sur cet appareil." : "Ce fichier n’a pas pu être lu comme un son."; setAnnonce(m); setMessage(m);
+            if (ok && apresChoix.current) { apresChoix.current = false; void commencer(true); } }); }} /></label>
+      {sonEtat === "choisi" && <p className="lf-note lf-pret">✓ Musique prête, depuis cet appareil ; rien n’est envoyé.</p>}
+      {message && <p className="lf-message" role="status">{message}</p>}
       <p className="lf-note">Prototype privé · le son ne démarre que si vous le choisissez · Échap pour passer à tout moment.</p>
       <p className="sr-only" aria-live="polite">{annonce}</p>
     </div>
@@ -206,6 +223,7 @@ export default function Film() {
       </div>
       {sousTitres && <p className="lf-sous-titre" aria-live="polite"><b>{tab.nom}</b> {tab.texte}</p>}
       {controle && <Controle t={t} aller={aller} />}
+      {message && <p className="lf-message lf-message-film" role="status">{message}</p>}
       <p className="sr-only" aria-live="polite">{annonce}</p>
     </>}
   </main>;
