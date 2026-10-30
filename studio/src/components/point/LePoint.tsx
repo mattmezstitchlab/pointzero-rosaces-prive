@@ -148,6 +148,7 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
     }
     noter(m);
     if (!scene) fermer(false);
+    else if (m.revientAuPoint && profondeur) { setChemin([]); setPage(0); setFocus(0); }
     setOnde(o => o + 1);
     if (!m.annonceEnPropre) setAnnonce(profondeur === 0 ? `Mode ${m.nom} ${m.actif ? "désactivé" : "activé"}.` : m.actif !== undefined ? `${m.nom} ${m.actif ? "désactivé" : "activé"}.` : `${m.nom} : choisi.`);
     m.ouvrir();

@@ -27,7 +27,7 @@
 .dq[data-contexte="accueil"]:not(.dq-mobile) .dq-tete { position: absolute; top: 0; left: 0; right: 0; z-index: 2; }
 .dq[data-contexte="accueil"]:not(.dq-mobile) .dq-scene { position: relative; padding: 0 16px; min-height: 100vh; min-height: 100dvh; align-content: center; }
 .dq[data-contexte="accueil"]:not(.dq-mobile) .one-disque-hote { position: relative; }
-.dq[data-contexte="accueil"]:not(.dq-mobile) .one-disque-cartouche { position: absolute; left: 0; right: 0; top: 100%; }
+.dq[data-contexte="accueil"] .one-disque-cartouche { display: none; }   /* rien sous le Disque : le nom de la commande visée est déjà sur la couronne */
 .dq[data-contexte="accueil"]:not(.dq-mobile) .dq-zone { position: absolute; left: 50%; bottom: clamp(8px, 2.5vh, 24px); transform: translateX(-50%); height: auto; }
 
 /* — en grand : une page éditoriale (Pourquoi, une période, les projets, Ajouter) — */

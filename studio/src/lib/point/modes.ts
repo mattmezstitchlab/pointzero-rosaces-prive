@@ -34,6 +34,8 @@ export interface ModePoint {
   valeur?: string;
   /** le menu reste ouvert après ce choix (une bascule qu'on veut voir changer : Symboles, Grille) */
   resteOuvert?: boolean;
+  /** dans le Disque (scène) : après ce choix, la couronne revient au premier cercle (le choix a changé ce que montre le centre) */
+  revientAuPoint?: boolean;
   ouvrir: () => void;
 }
 

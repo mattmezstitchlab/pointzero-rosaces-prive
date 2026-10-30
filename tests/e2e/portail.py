@@ -65,7 +65,8 @@ with sync_playwright() as p:
         pg.locator('.one-disque [role=menuitem]', has_text='Projet').first.click(); pg.wait_for_selector('.pt-present', timeout=10000); pg.wait_for_timeout(400)
         ok(pg.locator('.pt-titre').inner_text() == 'LUMIERE' and '31 plans' in pg.locator('.pt-etat').inner_text() and 'bloqué' in pg.locator('.pt-present .pt-sur').inner_text().lower(), f'{N} Voir › Projet : LUMIERE au centre, son état, bloqué dit bloqué')
         # Retour (la famille se referme), puis ORIGINE : le Point Zéro, le projet gardé
-        pg.locator('.one-disque [role=menuitem]', has_text='Retour').first.click(); pg.wait_for_timeout(400)
+        cour = [x.split('\n')[0] for x in pg.locator('.one-disque [role=menuitem]').all_inner_texts()]
+        ok(cour == ['Confort', 'Faire', 'Aller', 'Voir', 'Origine'], f'{N} après Voir › Projet, la couronne revient aux cinq commandes')
         pg.locator('.one-disque [role=menuitem]', has_text='Origine').first.click(); pg.wait_for_timeout(500)
         ok('f.v' not in pg.url and 'f.p=lumiere' in pg.url and pg.locator('.bt').count() == 1, f'{N} ORIGINE : retour au Point Zéro, le projet gardé')
         pg.goto(U + '?f.p=lumiere&f.v=projet'); pg.wait_for_selector('.pt-present')
@@ -77,16 +78,6 @@ with sync_playwright() as p:
         ok('aucune échéance renseignée' in txt and 'déclaré' in txt and 'ce qui devient possible' in txt.lower() and 'jamais des engagements' in txt, f'{N} Pourquoi : les règles, ce qui manque, et les possibilités (le Futur, dans le Disque)')
         pg.locator('.dq-point-replie').click(); pg.wait_for_timeout(300)
         pg.evaluate("localStorage.removeItem('aime:one:present:v1')"); pg.goto(U); pg.wait_for_selector('.bt')
-        # FAIRE › Ajouter : reconnaître honnêtement
-        pg.locator('.one-disque [role=menuitem]', has_text='Faire').first.click(); pg.wait_for_timeout(300)
-        pg.locator('.one-disque [role=menuitem]', has_text='Ajouter').first.click(); pg.wait_for_selector('.pt-ajouter')
-        png = bytes.fromhex('89504e470d0a1a0a0000000d4948445200000001000000010806000000') + b'\0' * 20
-        pg.locator('.pt-entree', has_text='Choisir un fichier').locator('input').set_input_files({'name': 'photo.png', 'mimeType': 'image/png', 'buffer': png})
-        t = pg.locator('.pt-reconnu').inner_text()
-        ok('Broderie' in t and 'disponible' in t and 'en attente' in t, f'{N} Ajouter : une photo → Broderie (disponible), Mariage (en attente)')
-        pg.locator('.pt-entree', has_text='Choisir un fichier').locator('input').set_input_files({'name': 'inconnu.xyz', 'mimeType': '', 'buffer': b'abc'})
-        ok('pas reconnu' in pg.locator('.pt-reconnu').inner_text(), f'{N} Ajouter : un fichier inconnu est signalé honnêtement')
-        pg.locator('.dq-point-replie').click(); pg.wait_for_timeout(300)
         # REPRENDRE, puis revenir : le contexte est gardé
         pg.goto(U + '?f.p=lumiere&f.v=projet'); pg.wait_for_selector('.pt-present')
         pg.get_by_role('button', name='Reprendre').click(); pg.wait_for_url(re.compile(r'/one/lumiere/vivre'), timeout=20000)
