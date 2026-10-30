@@ -3,6 +3,8 @@
  * Chaque accès porte son statut, en mots (jamais la couleur seule).
  */
 import { ACCES, AIDE_STATUTS, GROUPES, NOMS_STATUTS, type Statut } from "./acces";
+import { useEffect, useState } from "react";
+import { CREATIONS_ATLAS, verifierCreation, type EtatCreation, type ReferenceAtlas } from "../lib/atlas/reference";
 import "../design/aime.css";
 import "./convergence.css";
 
@@ -38,8 +40,24 @@ export default function Explorer() {
           : <div className="cv-carte cv-inerte">{corps}</div>}</li>;
       })}</ul>
     </section>)}
+    <section className="cv-groupe" aria-labelledby="cv-creations">
+      <h2 id="cv-creations">Créations publiées dans ATLAS</h2>
+      <p className="cv-phrase">Une composition d’ATLAS devient publique seulement par un geste volontaire. .0NE ne garde que sa référence et l’ouvre dans ATLAS, en lecture seule : rien n’est copié ici.</p>
+      <ul className="cv-grille">{CREATIONS_ATLAS.map(r => <li key={r.id} data-creation={r.id}><CarteCreation r={r} /></li>)}</ul>
+    </section>
     <footer className="cv-pied">
       <p>Version candidate privée : rien ici ne remplace encore le site public. Les réglages restent sur votre appareil. Aucun fichier audio original n’est en ligne.</p>
     </footer>
   </main>;
+}
+
+/** Une création ATLAS : sa référence est vérifiée, puis sa fiche publique dit si elle est publiée. */
+function CarteCreation({ r }: { r: ReferenceAtlas }) {
+  const [e, setE] = useState<EtatCreation | null>(null);
+  useEffect(() => { let vivant = true; void verifierCreation(r).then(x => { if (vivant) setE(x); }); return () => { vivant = false; }; }, [r]);
+  const corps = (statut: string, nom: string, phrase: string, preuve?: string) => <><span className="cv-statut" data-statut={e?.etat === "publiee" ? "externe" : "non-raccorde"}>{statut}</span>
+    <b className="cv-nom">{nom}</b><span className="cv-phrase">{phrase}</span>{preuve && <span className="cv-preuve">{preuve}</span>}</>;
+  if (!e) return <div className="cv-carte cv-inerte" aria-busy="true">{corps("Vérification…", r.titre ?? r.id, "Lecture de la fiche publique dans ATLAS.")}</div>;
+  if (e.etat === "publiee") return <a className="cv-carte" href={e.url} target="_blank" rel="noopener noreferrer" data-etat="publiee">{corps("Publiée · ATLAS", e.titre, "Une composition née d’une demande, publiée volontairement. Elle s’ouvre dans ATLAS, en lecture seule.", "S’ouvre dans un nouvel onglet ↗")}</a>;
+  return <div className="cv-carte cv-inerte" data-etat={e.etat}>{corps("Non disponible", r.titre ?? r.id, e.raison)}</div>;
 }

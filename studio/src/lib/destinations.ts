@@ -9,7 +9,8 @@
  */
 const S = import.meta.env.BASE_URL;   // /studio/
 
-export const ATLAS_URL = "https://atlas-de-pique-de-coeur.vercel.app/";
+/** L'adresse d'ATLAS. Une version de test peut la remplacer à la construction (VITE_ATLAS_URL), jamais à l'exécution. */
+export const ATLAS_URL: string = import.meta.env.VITE_ATLAS_URL || "https://atlas-de-pique-de-coeur.vercel.app/";
 
 export const DESTINATIONS = {
   film: S + "one/lumiere",
