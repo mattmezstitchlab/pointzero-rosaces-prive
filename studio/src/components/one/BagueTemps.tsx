@@ -87,7 +87,9 @@ export default function BagueTemps({ periode, elements, taille, aujourdhui, choi
       <p className="bt-nom">{nomCible}</p>
       {vise === null && <>
         <p className="bt-compte">{ici.length ? `${ici.length} élément${ici.length > 1 ? "s" : ""}` : "aucun élément"}{approx.length ? ` · ${approx.length} sans date assez précise` : ""}</p>
-        {ici.slice(0, 2).map(x => <p key={x.id} className="bt-el">{x.titre}</p>)}
+        {periode.echelle === "moment" && ici[0]
+          ? <p className="bt-el bt-source">{ici[0].precision === "minute" ? "date exacte" : "date approximative"} · {ici[0].source}</p>
+          : ici.slice(0, 2).map(x => <p key={x.id} className="bt-el">{x.titre}</p>)}
         <div className="bt-actions">
           {plusLarge[periode.echelle] && <button type="button" className="bt-btn" onClick={() => echelle("large")} aria-label={`Échelle plus large : ${NOM_ECHELLE[plusLarge[periode.echelle]!]}`}>−</button>}
           {(ici.length > 0 || approx.length > 0) && <button type="button" className="bt-btn bt-voir" onClick={() => ouvrir(periode)}>Voir</button>}

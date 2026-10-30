@@ -1,9 +1,10 @@
 /**
- * LE PORTAIL : l'accueil du Disque devient le PRÉSENT. PASSÉ à gauche (ce qui existe), FUTUR à droite (ce qui devient possible).
- * Trois perspectives sur les mêmes projets, jamais trois applications. Le Disque ne bouge pas : les côtés vivent dans les marges.
+ * LE PORTAIL : l'accueil du Disque. Le Disque est seul, centré ; rien autour (Matt, 30/10/2026 : « On voit l'ensemble. On choisit.
+ * On approfondit. On revient. »). La couronne navigue, l'intérieur affiche.
  *
- * - Au centre : le projet à reprendre maintenant (lib/present/recommander : règles déterministes, raisons affichées, rien deviné),
- *   ou, en vue Chronologie, la bague du temps (DES CHIFFRES, DES POINTS, UN CERCLE).
+ * - Au centre, par défaut (le Point Zéro) : le calendrier radial (la bague du temps : DES CHIFFRES, DES POINTS, UN CERCLE),
+ *   sur les éléments datés du projet choisi ; année → mois → jour → heure → moment, et retour.
+ * - Voir › Projet : le projet au centre (lib/present/recommander : règles déterministes, raisons affichées, rien deviné).
  * - La couronne : FAIRE · ALLER · VOIR · ORIGINE (Confort est ajouté par le Point, toujours en premier). Les listes sont des familles :
  *   elles remplacent l'anneau quand on les ouvre, la couronne n'est jamais chargée.
  * - L'adresse garde tout : le projet (f.p), la vue (f.v), l'échelle (f.e) et la période (f.t). Revenir garde le contexte.
@@ -59,13 +60,13 @@ const etatDe = (p: Projet) => p.id === "lumiere" ? LUMIERE.etat : p.avancement !
 /* ——— le centre : le PRÉSENT ——— */
 function Present({ por, outils, etat }: { por: Portail; outils: OutilsContexte; etat: EtatContexte }) {
   const { choisi: p, proposition: prop, propositions } = por;
-  if (!por.charge) return <div className="pt-present"><p className="pt-sur">Présent</p><p>…</p></div>;
-  if (!p) return <div className="pt-present"><p className="pt-sur">Présent</p><p className="pt-rien">{RIEN}</p></div>;
+  if (!por.charge) return <div className="pt-present"><p className="pt-sur">Projet</p><p>…</p></div>;
+  if (!p) return <div className="pt-present"><p className="pt-sur">Projet</p><p className="pt-rien">{RIEN}</p></div>;
   const raisons = (prop?.raisons ?? []).filter(r => r.nature !== "manque").slice(0, 2);
   const autre = () => { const i = propositions.findIndex(x => x.projet.id === p.id), n = propositions[(i + 1) % Math.max(1, propositions.length)]; if (n) outils.aller({ f: { ...(etat.f ?? {}), p: n.projet.id } }); };
   const epingle = por.choix.epingle === p.id;
   return <section className="pt-present" data-projet={p.id} aria-labelledby="pt-titre">
-    <p className="pt-sur">Présent{prop && prop.rang === 1 && !etat.f?.p ? " · proposé" : ""}{prop?.bloque ? " · bloqué" : ""}</p>
+    <p className="pt-sur">{prop && prop.rang === 1 && !etat.f?.p ? "Proposé" : "Projet"}{prop?.bloque ? " · bloqué" : ""}</p>
     <h2 id="pt-titre" className="pt-titre">{p.titre}</h2>
     {p.demonstration && <em className="dq-demo">démonstration</em>}
     <p className="pt-etat">{etatDe(p)}</p>
@@ -90,6 +91,8 @@ function Pourquoi({ por }: { por: Portail }) {
     <ul className="pt-raisons">{(prop?.raisons ?? [{ texte: "Ce projet n’est pas proposé aujourd’hui (terminé, pas commencé ou mis de côté) : vous l’avez choisi.", nature: "donnee" as const }]).map(r =>
       <li key={r.texte} data-nature={r.nature}><span className="pt-marque" aria-hidden="true">{MARQUE[r.nature]}</span><span>{r.texte}<small>{DIT[r.nature]}{r.source ? ` · ${r.source}` : ""}</small></span></li>)}</ul>
     {p.prochaine && <p><b>Prochaine action</b> : {p.prochaine.texte} <small>({p.prochaine.source})</small></p>}
+    {por.futur.length > 0 && <><h3>Ce qui devient possible</h3><ul className="pt-liste">{por.futur.map(e => <li key={e.id}><b>{e.titre}</b><small>possibilité · {e.source}</small></li>)}</ul>
+      <p className="pt-grand-aide">Des possibilités, jamais des engagements.</p></>}
   </article>;
 }
 
@@ -132,33 +135,12 @@ function Ajouter({ outils }: { outils: OutilsContexte }) {
   </article>;
 }
 
-/* ——— les côtés : PASSÉ (en plein) · FUTUR (en pointillés) ——— */
-export function CotesPortail({ etat, outils }: { etat: EtatContexte; outils: Pick<OutilsContexte, "aller"> }) {
-  const por = usePortail(etat);
-  if (!por.choisi) return null;
-  const voir = (e: Element) => { if (!e.date) return; const d = e.date.slice(0, 10); outils.aller({ f: { ...(etat.f ?? {}), p: por.choisi!.id, v: "temps", e: e.precision === "minute" ? "jour" : "mois", t: e.precision === "minute" || e.precision === "jour" ? d : d.slice(0, 7) } }); };
-  return <>
-    <aside className="pt-cote pt-passe" aria-label={`Le passé de ${por.choisi.titre}`}>
-      <p className="pt-sur">Passé · Retrouver</p>
-      <ol>{[...por.passe].sort((a, b) => (b.date ?? "") < (a.date ?? "") ? -1 : 1).map(e => <li key={e.id} data-precision={e.precision}>
-        {e.date ? <button type="button" onClick={() => voir(e)}><b>{e.titre}</b><small>{dateFr(e.date)} · {e.source}</small></button>
-          : <span><b>{e.titre}</b><small>sans date · {e.source}</small></span>}</li>)}</ol>
-    </aside>
-    <aside className="pt-cote pt-futur" aria-label={`Ce qui devient possible pour ${por.choisi.titre}`}>
-      <p className="pt-sur">Futur · Construire</p>
-      <ol>{por.futur.map(e => <li key={e.id}><span><b>{e.titre}</b><small>possibilité · {e.source}</small></span></li>)}</ol>
-      {!por.futur.length && <p className="pt-grand-aide">Aucune proposition pour ce projet.</p>}
-      <p className="pt-note">Des possibilités, jamais des engagements.</p>
-    </aside>
-  </>;
-}
-
 /* ——— le contexte d'accueil du Disque ——— */
 export const PORTAIL = (ouvrirUnivers: () => void): ContexteUnivers => ({
   id: "accueil", permissions: { partager: false, modifier: false, supprimer: false },
   Composant({ etat, outils, publier }) {
     const por = usePortail(etat), p = por.choisi, f = etat.f ?? {};
-    const temps = f.v === "temps";
+    const projetVu = f.v === "projet", temps = !projetVu;   /* le calendrier radial est le Point Zéro */
     const aujourdhui = useMemo(() => new Date(), []);
     /* la période : celle de l'adresse, sinon le jour du dernier élément daté, sinon aujourd'hui */
     const periode: Periode = lirePeriode(f.e, f.t) ?? (() => { const d = [...por.passe].filter(e => e.date && e.precision !== "aucune").sort((a, b) => (a.date! < b.date! ? 1 : -1))[0];
@@ -187,15 +169,16 @@ export const PORTAIL = (ouvrirUnivers: () => void): ContexteUnivers => ({
           { id: "a-bureau", nom: "Bureau", groupe: "metier", aide: "vos ouvrages au centre du Disque", ouvrir: () => outils.changerUnivers("bureau") },
           { id: "a-projets", nom: "Projets", groupe: "metier", aide: "tous vos projets, en grand", ouvrir: () => outils.agrandir(<Projets por={por} choisir={choisirProjet} />, "Vos projets") },
           { id: "a-dossiers", nom: "Dossiers", groupe: "metier", aide: "le dossier de travail (Disque Terminal)", ouvrir: () => outils.changerUnivers("terminal") },
-          { id: "a-archives", nom: "Archives", groupe: "metier", aide: "le passé daté du projet", ouvrir: () => allerA({ p: p?.id ?? "", v: "temps", e: "annee", t: periode.cle.slice(0, 4) }) },
+          { id: "a-archives", nom: "Archives", groupe: "metier", aide: "le passé daté du projet", ouvrir: () => allerA({ p: p?.id ?? "", v: "", e: "annee", t: periode.cle.slice(0, 4) }) },
           { id: "a-univers", nom: "Univers", groupe: "metier", aide: "la grille de tous les univers", ouvrir: ouvrirUnivers },
         ] };
       const datés = por.passe.filter(e => e.precision !== "aucune").length;
       const voir: ModePoint = { id: "voir", nom: "Voir", groupe: "metier", icone: <Eye aria-hidden="true" />, aide: "les représentations : disque, chronologie, partition, rosace, grille, cube, onde", ouvrir: famille,
-        indicateur: datés && !temps ? { etat: "info", mot: "information", libelle: `${datés} élément${datés > 1 ? "s" : ""} daté${datés > 1 ? "s" : ""} à parcourir dans la Chronologie`, herite: false } : undefined,
+        indicateur: datés && projetVu ? { etat: "info", mot: "information", libelle: `${datés} élément${datés > 1 ? "s" : ""} daté${datés > 1 ? "s" : ""} à parcourir dans la Chronologie`, herite: false } : undefined,
         enfants: () => [
-          { id: "v-disque", nom: "Disque", groupe: "metier", aide: "le Présent au centre", actif: !temps, ouvrir: () => allerA({ v: "", e: "", t: "" }) },
-          { id: "v-chronologie", nom: "Chronologie", groupe: "metier", aide: "la bague du temps : années, mois, jours, heures", actif: temps, ouvrir: () => allerA({ p: p?.id ?? "", v: "temps", e: periode.echelle, t: periode.cle }) },
+          { id: "v-disque", nom: "Disque", groupe: "metier", aide: "le calendrier radial, au Point Zéro", actif: temps, ouvrir: () => allerA({ v: "", e: "", t: "" }) },
+          ...(p ? [{ id: "v-projet", nom: "Projet", groupe: "metier" as const, aide: `« ${nom} » au centre : son état, sa prochaine action, pourquoi`, actif: projetVu, ouvrir: () => allerA({ v: "projet" }) }] : []),
+          { id: "v-chronologie", nom: "Chronologie", groupe: "metier", aide: "les années, puis les mois, les jours, les heures", ouvrir: () => allerA({ p: p?.id ?? "", v: "", e: "annee", t: periode.cle.slice(0, 4) }) },
           { id: "v-partition", nom: "Partition", groupe: "metier", aide: p?.id === "lumiere" ? "les pistes et les repères du film (le film n’est pas modifié)" : "pour LUMIERE seulement, aujourd’hui",
             ouvrir: () => p?.id === "lumiere" ? outils.deployer(LUMIERE.adresse) : outils.dire("La Partition existe aujourd’hui pour LUMIERE seulement (le moteur de montage).") },
           { id: "v-rosace", nom: "Rosace", groupe: "metier", aide: "les rosaces du moteur 5D (Galerie)", ouvrir: () => outils.changerUnivers("galerie") },
@@ -203,15 +186,15 @@ export const PORTAIL = (ouvrirUnivers: () => void): ContexteUnivers => ({
           { id: "v-cube", nom: "Cube", groupe: "metier", aide: "dans ATLAS, hors du Studio", ouvrir: () => outils.dire("Le Cube vit dans ATLAS (maquette, hors du Studio).") },
           { id: "v-onde", nom: "Onde", groupe: "metier", aide: "en préparation", ouvrir: () => outils.dire("L’Onde est en préparation : aucune relation vérifiée n’est encore raccordée.") },
         ] };
-      const origine: ModePoint = { id: "origine", nom: "Origine", groupe: "metier", icone: <span className="one-orbe dq-mini-orbe" aria-hidden="true" />, aide: "revenir au Présent, au Point Zéro (le projet choisi est gardé)", ouvrir: () => allerA({ v: "", e: "", t: "" }) };
+      const origine: ModePoint = { id: "origine", nom: "Origine", groupe: "metier", icone: <span className="one-orbe dq-mini-orbe" aria-hidden="true" />, aide: "revenir au Point Zéro : le calendrier, au jour du projet (le projet choisi est gardé)", ouvrir: () => allerA({ v: "", e: "", t: "" }) };
       publier([faire, aller, voir, origine], p
-        ? `${temps ? "Chronologie · " : "Présent · "}${nom}${por.proposition?.bloque ? " · bloqué" : ""} · ${por.propositions.length} projet${por.propositions.length > 1 ? "s" : ""} à reprendre`
+        ? `${temps ? "Calendrier · " : "Projet · "}${nom}${por.proposition?.bloque ? " · bloqué" : ""} · ${por.propositions.length} projet${por.propositions.length > 1 ? "s" : ""} à reprendre`
         : RIEN);
     }, [por.charge, p?.id, por.propositions.length, por.proposition?.bloque, temps, periode.echelle, periode.cle, por.choix.epingle]); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (temps && p) return <div className="pt-temps" ref={el => { if (el) { const t = Math.round(el.getBoundingClientRect().width); if (t && Math.abs(t - taille_) > 2) setTaille(t); } }}>
       <BagueTemps periode={periode} elements={por.passe} taille={taille_} aujourdhui={aujourdhui}
-        choisir={x => allerA({ p: p.id, v: "temps", e: x.echelle, t: x.cle })}
+        choisir={x => allerA({ p: p.id, v: "", e: x.echelle, t: x.cle })}
         ouvrir={x => outils.agrandir(<ElementsPeriode por={por} periode={x} />, nomPeriode(x, por.passe))} />
     </div>;
     return <Present por={por} outils={outils} etat={etat} />;

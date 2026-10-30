@@ -21,7 +21,7 @@ import type { ModePoint } from "../lib/point/modes";
 import { GALERIE } from "./disque/galerie";
 import { BUREAU } from "./disque/bureau";
 import { BRODERIE, deploiement, presentation } from "./disque/autres";
-import { CotesPortail, PORTAIL } from "./disque/portail";
+import { PORTAIL } from "./disque/portail";
 import "../design/aime.css";
 import "./one.css";
 import "./disque.css";
@@ -119,9 +119,9 @@ export default function DisqueUnivers() {
         {question ? <form className="dq-question" onSubmit={e => { e.preventDefault(); setQuestion(null); }}>
             <label><span className="sr-only">{question.q}</span><input autoFocus placeholder={question.q} defaultValue={question.v} onChange={e => question.f(e.target.value)} /></label>
             <button type="submit" className="one-bouton">OK</button><button type="button" className="one-bouton" onClick={() => { question.f(""); setQuestion(null); }}>Effacer</button></form>
+          : contexte.id === "accueil" && !message ? <p className="sr-only">{ligne}</p>   /* au Portail, rien sous le Disque : la ligne reste pour les lecteurs d’écran */
           : <p className="dq-ligne">{message || ligne}</p>}
       </div>
-      {contexte.id === "accueil" && <CotesPortail etat={etat} outils={outils} />}
     </main>
 
     {grille && <div className="dq-voile" role="dialog" aria-modal="true" aria-labelledby="dq-grille-titre" onKeyDown={e => { if (e.key === "Escape") setGrille(false); }}>
