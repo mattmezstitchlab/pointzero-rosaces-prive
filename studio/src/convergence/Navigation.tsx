@@ -1,5 +1,5 @@
 /**
- * La navigation de retour permanente : un petit Point nacré, toujours au même endroit (en bas à gauche).
+ * La navigation de retour permanente : un petit Point nacré, toujours au même endroit (en bas à droite ; à gauche si le Point de la personne est à droite).
  * Il ouvre : .0NE, Explorer, le film, les réglages de confort, et « Revenir ». Clavier : Échap referme.
  * Et la garde : si une expérience échoue (erreur, module introuvable), elle propose de revenir à .0NE — jamais d'écran vide.
  */
@@ -7,14 +7,16 @@ import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import "./convergence.css";
 
 const S = import.meta.env.BASE_URL;
-const LIENS = [
-  { nom: ".0NE — tous les univers", chemin: S + "one/univers" },
-  { nom: "Explorer les prototypes", chemin: S + "explorer" },
-  { nom: "Le film LUMIERE", chemin: S + "one/lumiere" },
-  { nom: "Réglages de confort", chemin: S + "one/premiere-rencontre" },
+const liens = (base: string) => [
+  { nom: ".0NE — tous les univers", chemin: base + "one/univers" },
+  { nom: "Explorer les prototypes", chemin: base + "explorer" },
+  { nom: "Le film LUMIERE", chemin: base + "one/lumiere" },
+  { nom: "Réglages de confort", chemin: base + "one/premiere-rencontre" },
 ];
 
-export function NavigationConvergence() {
+/** `base` : l'adresse du studio (.0NE) ; le site AIME, servi à la racine, passe "/studio/". */
+export function NavigationConvergence({ base = S }: { base?: string } = {}) {
+  const LIENS = liens(base);
   const [ouvert, setOuvert] = useState(false);
   const bouton = useRef<HTMLButtonElement>(null), panneau = useRef<HTMLDivElement>(null);
   useEffect(() => {
