@@ -34,7 +34,7 @@ export const ACCES: Acces[] = [
 
   { id: "broderie", groupe: "ateliers", nom: "Atelier Broderie (POINT ZÉRO)", phrase: "Créer, suivre et broder ses ouvrages. Le Bureau de vos projets est dedans.", chemin: S + "atelier", statut: "public", preuve: "en ligne ; ici avec les nouveautés des branches privées" },
   { id: "carte", groupe: "ateliers", nom: "La Carte vivante", phrase: "Une carte, plusieurs formes, une seule adresse.", chemin: S + "essai-carte", statut: "teste", preuve: "e2e carte/disque 23/23" },
-  { id: "galerie", groupe: "ateliers", nom: "Galerie des Vivants", phrase: "Exposer une copie de ses créations.", chemin: S + "galerie", statut: "public" },
+  { id: "galerie", groupe: "ateliers", nom: "Galerie des Vivants", phrase: "Exposer une copie de ses créations. Elle demande un serveur et une base : sur cet aperçu, elle peut s’afficher vide.", chemin: S + "galerie", statut: "teste", preuve: "e2e galerie (avec serveur de test)" },
   { id: "bureau-edito", groupe: "ateliers", nom: "Bureau éditorial (administration)", phrase: "Réservé à l’adresse d’administration ; il demande un serveur et une base : sur cet aperçu, il s’annonce indisponible.", chemin: S + "bureau", statut: "prototype" },
 
   { id: "traversee", groupe: "essais", nom: "La traversée", phrase: "Le Point traverse la page (une scène).", chemin: S + "essai-traversee", statut: "prototype" },
