@@ -6,7 +6,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { dureeMontage, filmDuRepere, placer, verifier, type Montage } from "../../lib/cinema/montage";
-import { ANIMATIQUE, CHAPITRE_FLEUR, CLIP_FLEUR } from "./montages";
+import { ANIMATIQUE, CHAPITRE_FLEUR, CLIP_FLEUR, FILM_FLEUR, PREVIZ_IMPACT } from "./montages";
 import { journal, Lecteur } from "./lecteur";
 import { mouvementReduit, webglDisponible } from "./Film";
 import "../../design/aime.css";
@@ -17,7 +17,9 @@ const AUDIO_COMPLET = { url: BASE + "lumiere-prive/fleur-du-ciel.m4a", morceau: 
 const VERSIONS: { id: string; nom: string; montage: Montage }[] = [
   { id: "clip", nom: "La Fleur du Ciel · le clip · 4 min 13", montage: CLIP_FLEUR },
   { id: "chapitre", nom: "Première version · 4 min 13", montage: CHAPITRE_FLEUR },
-  { id: "animatique", nom: "Animatique · 44 s", montage: ANIMATIQUE },
+  { id: "animatique", nom: "Animatique · 44 s (archive : la goutte dans l'eau)", montage: ANIMATIQUE },
+  { id: "film", nom: "Le film · séquencier de 31 plans (prévisualisation)", montage: FILM_FLEUR },
+  { id: "previz", nom: "Prévisualisation · 03:14 → 03:26 (l'impact)", montage: PREVIZ_IMPACT },
 ];
 const cleReprise = (id: string) => "lumiere:reprise:" + id;
 const lire = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -27,7 +29,7 @@ const mmss = (s: number) => `${Math.floor(s / 60)}:${Math.floor(s % 60).toString
 export default function Vivre() {
   const params = new URLSearchParams(window.location.search);
   const controle = params.has("controle");
-  const [versionId, setVersionId] = useState(["animatique", "chapitre"].includes(params.get("version") ?? "") ? params.get("version")! : "clip");
+  const [versionId, setVersionId] = useState(VERSIONS.some(v => v.id === params.get("version")) ? params.get("version")! : "clip");
   const version = VERSIONS.find(v => v.id === versionId)!;
   const duree = dureeMontage(version.montage);
   const places = useMemo(() => placer(version.montage).filter(p => p.piste === "video"), [version]);

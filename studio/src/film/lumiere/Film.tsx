@@ -14,11 +14,11 @@
  */
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { EXTRAIT, IMAGES_PAR_SECONDE } from "./partition";
-import { CLIP_FLEUR } from "./montages";
+import { CLIP_FLEUR, VERSIONS } from "./montages";
 import { journal, Lecteur } from "./lecteur";
 import { Rendu } from "./rendu";
 import { sceneVoyage } from "./voyage";
-import { dureeMontage, plansA, verifier } from "../../lib/cinema/montage";
+import { dureeMontage, plansA, verifier, type Montage } from "../../lib/cinema/montage";
 import { lireOne } from "../../lib/one/preferences";
 import "../../design/aime.css";
 import "./film.css";
@@ -50,7 +50,9 @@ const nouveauContexte = () => { const C = window.AudioContext ?? (window as unkn
 export default function Film() {
   const params = new URLSearchParams(window.location.search);
   const controle = params.has("controle"), capture = params.has("capture");
-  const depart = Math.min(DUREE - 0.5, Math.max(0, +(params.get("t") ?? 0) || 0));
+  /* contrôle et rendu image par image : un autre montage peut être choisi (?montage=lumiere-previz-impact) ; l'ouverture du site reste le clip */
+  const MONTAGE = (controle || capture) ? (VERSIONS.find(v => v.id === params.get("montage")) ?? CLIP_FLEUR) : CLIP_FLEUR;
+  const depart = Math.min(dureeMontage(MONTAGE) - 0.5, Math.max(0, +(params.get("t") ?? 0) || 0));
   const [etat, setEtat] = useState<Etat>(() => capture ? "film" : (mouvementReduit() || !webglDisponible()) ? "fixe" : "film");
   const [phase, setPhase] = useState<Depart>(capture || controle || depart > 0 ? "silence" : "attente");
   const [son, setSon] = useState<"coupe" | "chargement" | "actif" | "absent">("coupe");
@@ -67,7 +69,7 @@ export default function Film() {
   useEffect(() => {
     if (etat !== "film" || !toile.current || !calque.current) return;
     const l = new Lecteur({
-      montage: CLIP_FLEUR, toile: toile.current, calque: calque.current, video: video.current, audio: AUDIO_COMPLET, mobile,
+      montage: MONTAGE, toile: toile.current, calque: calque.current, video: video.current, audio: AUDIO_COMPLET, mobile,
       surImage: x => { if (Math.abs(x - affiche.current) >= 0.25 || x >= DUREE) { affiche.current = x; setT(x); } },
       surFin: () => { if (!controle) versRencontre(true); },
       surEchec: () => { if (!capture) setEtat("fixe"); },
@@ -76,7 +78,7 @@ export default function Film() {
     if (l.statique) { setEtat("fixe"); return; }
     const dim = () => { const b = cadre.current!.getBoundingClientRect(); l.taille(b.width, b.height); if (!l.lecture) l.aller(l.t); };
     dim(); window.addEventListener("resize", dim);
-    (window as unknown as { __lumiere: unknown }).__lumiere = { rendre: (x: number) => { l.aller(x); return sceneVoyage(x); }, scene: sceneVoyage, DUREE, journal, lecteur: l, verifier: () => verifier(CLIP_FLEUR), phase: () => phaseRef.current };
+    (window as unknown as { __lumiere: unknown }).__lumiere = { rendre: (x: number) => { l.aller(x); return sceneVoyage(x); }, scene: sceneVoyage, DUREE, journal, lecteur: l, verifier: () => verifier(MONTAGE), montage: MONTAGE, phase: () => phaseRef.current };
     const minuteurs: number[] = [];
     let raf = 0;
     if (capture) { l.aller(depart); }
@@ -164,7 +166,7 @@ export default function Film() {
   </>;
   if (etat === "fixe") return <Fixe onEntrer={() => versRencontre(false)} />;
 
-  const plan = plansA(CLIP_FLEUR, t)[0]?.plan;
+  const plan = plansA(MONTAGE, t)[0]?.plan;
   return <main className="lf lf-film" data-aime="nuit" aria-label="LUMIERE, la naissance du Point : le clip de « La Fleur du Ciel », 4 minutes 13, facultatif">
     <div className="lf-cadre" ref={cadre}>
       <canvas ref={toile} className="lf-toile" aria-hidden="true" />
@@ -179,7 +181,7 @@ export default function Film() {
         <span aria-hidden="true" className="lf-icone">{son === "actif" ? "◖◗" : "◖"}</span>{son === "actif" ? "Couper le son" : son === "chargement" ? "Le son arrive…" : "Activer le son"}</button>}
       <button type="button" className="lf-coin lf-coin-droite" onClick={() => versRencontre(false)}>Passer<span aria-hidden="true" className="lf-fleche">→</span></button>
       <p className="sr-only" aria-live="polite">{phase === "play" ? "Le film peut commencer avec sa musique : touchez la perle au centre de l’écran, ou appuyez sur Entrée." : plan ? `${plan.titre}. ${DESCRIPTIONS[plan.id] ?? ""}` : ""}</p>
-      {controle && <Controle t={t} aller={x => { lecteur.current?.aller(x); setT(x); }} />}
+      {controle && <Controle m={MONTAGE} t={t} aller={x => { lecteur.current?.aller(x); setT(x); }} />}
     </>}
   </main>;
 }
@@ -202,13 +204,13 @@ function Fixe({ onEntrer }: { onEntrer: () => void }) {
 }
 
 /** Les contrôles de montage (?controle) : la position, le plan, et la vérification des repères verrouillés du clip. */
-function Controle({ t, aller }: { t: number; aller: (t: number) => void }) {
-  const v = verifier(CLIP_FLEUR), p = plansA(CLIP_FLEUR, t)[0]?.plan;
+function Controle({ m, t, aller }: { m: Montage; t: number; aller: (t: number) => void }) {
+  const v = verifier(m), p = plansA(m, t)[0]?.plan, DUREE = dureeMontage(m), debut = m.musique[0]?.debut ?? 0;
   return <section className="lf-controle" aria-label="Contrôles de montage">
-    <p className="lf-mesure">t = {t.toFixed(3)} s · image {Math.round(t * IMAGES_PAR_SECONDE)} · morceau {mmss(t)} · {p?.titre}
+    <p className="lf-mesure">t = {t.toFixed(3)} s · image {Math.round(t * IMAGES_PAR_SECONDE)} · morceau {mmss(t + debut)} · {p?.titre}
       {" · "}repères verrouillés : {v.synchro.map(s => `${s.repere.split(":")[1]} ${s.ecartMs === 0 ? "0 ms" : s.ecartMs + " ms"}`).join(", ")}</p>
     <input type="range" min={0} max={DUREE} step={1 / IMAGES_PAR_SECONDE} value={t} onChange={e => aller(+e.target.value)} aria-label="Position dans le film" />
-    <div className="lf-reperes">{CLIP_FLEUR.plans.map((x, i) => { const d = CLIP_FLEUR.plans.slice(0, i).reduce((a, y) => a + y.duree, 0);
+    <div className="lf-reperes">{m.plans.map((x, i) => { const d = m.plans.slice(0, i).reduce((a, y) => a + y.duree, 0);
       return <button key={x.id} type="button" title={x.titre} onClick={() => aller(d)} style={{ left: `${(d / DUREE) * 100}%` }}>{x.titre.split(" ").slice(-1)[0]}</button>; })}</div>
   </section>;
 }

@@ -28,6 +28,7 @@ with sync_playwright() as p:
         b = getattr(p, n).launch(args=args(n)); N = f'[{n}]'
         gl = b.new_page().evaluate("!!document.createElement('canvas').getContext('webgl2')")
         ctx = b.new_context(viewport={'width': 1366, 'height': 820}); pg = ctx.new_page(); err = []
+        if n != 'chromium': ctx.add_init_script(BLOQUER)   # une première visite : Safari bloque le son sans geste (il l'autorise ensuite sur un site déjà touché)
         pg.on('pageerror', lambda e: err.append(str(e)))
         pg.goto(B + '/'); pg.wait_for_timeout(2500)
         if not gl:

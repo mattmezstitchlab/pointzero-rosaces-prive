@@ -8,6 +8,8 @@
  * Repère canonique : l'impact de « La Fleur du Ciel » est à 03:18.255 du WAV original. Toutes les versions s'y verrouillent.
  */
 import type { Montage, Morceau, Plan, Provenance } from "../../lib/cinema/montage";
+import { versMontage, type Film } from "../../lib/cinema/film";
+import filmFleur from "./donnees/fleur-du-ciel.film.json";
 
 const MUSIQUE_MATT: Provenance = { auteur: "Matt (Matthieu Lecointre)", droits: "a-verifier",
   note: "Œuvre originale déclarée par Matt. Avant toute diffusion publique : vérifier composition, enregistrement et collaborateurs éventuels." };
@@ -130,4 +132,10 @@ export const CLIP_FLEUR: Montage = {
   ],
 };
 
-export const VERSIONS = [CLIP_FLEUR, ANIMATIQUE, CHAPITRE_FLEUR, COURT_METRAGE] as const;
+/** Le film du séquencier (31 plans), lu depuis ses DONNÉES : la base du Disque CINÉMA. Chaque plan joue sa version active. */
+export const FILM_FLEUR_DONNEES = filmFleur as unknown as Film;
+export const FILM_FLEUR = versMontage(FILM_FLEUR_DONNEES, FLEUR_DU_CIEL, { id: "lumiere-film", titre: "La Fleur du Ciel — le film (séquencier, prévisualisation)" });
+/** La séquence qui fonde le film : 03:14.25 → 03:26.25 (approche, suspension, contact, première onde). */
+export const PREVIZ_IMPACT = versMontage(FILM_FLEUR_DONNEES, FLEUR_DU_CIEL, { debut: 194.25, fin: 206.25, id: "lumiere-previz-impact", titre: "Prévisualisation 03:14 → 03:26" });
+
+export const VERSIONS = [CLIP_FLEUR, ANIMATIQUE, CHAPITRE_FLEUR, COURT_METRAGE, FILM_FLEUR, PREVIZ_IMPACT] as const;

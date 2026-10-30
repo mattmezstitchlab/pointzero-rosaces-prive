@@ -19,6 +19,7 @@ const DisqueUnivers = lazy(() => import("./one/DisqueUnivers"));
 const Terminal = lazy(() => import("./one/Terminal"));
 const FilmLumiere = lazy(() => import("./film/lumiere/Film"));
 const VivreLumiere = lazy(() => import("./film/lumiere/Vivre"));
+const PlanchesLumiere = lazy(() => import("./film/lumiere/Planches"));
 const Explorer = lazy(() => import("./convergence/Explorer"));
 import { GardeExperience, NavigationConvergence } from "./convergence/Navigation";
 
@@ -46,6 +47,8 @@ const oneMosaique = /\/one\/mosaique\/?$/.test(window.location.pathname);
 /* LUMIERE : la première séquence expérimentale (branche privée lumiere-film) */
 const filmLumiere = /\/one\/lumiere\/?$/.test(window.location.pathname);
 const vivreLumiere = /\/one\/lumiere\/vivre\/?$/.test(window.location.pathname);
+/* LUMIERE : les planches de référence de la préproduction (privé) */
+const planchesLumiere = /\/one\/lumiere\/planches\/?$/.test(window.location.pathname);
 /* la convergence : une page pour tout ouvrir */
 const explorer = /\/explorer\/?$/.test(window.location.pathname);
 const essaiTraversee = /\/essai-traversee\/?$/.test(window.location.pathname);
@@ -61,6 +64,7 @@ createRoot(document.getElementById("root")!).render(
       : galerie ? <Suspense fallback={null}><Galerie /></Suspense>
       : tambour ? <AccessibilityShell><Suspense fallback={null}><Tambour /></Suspense></AccessibilityShell>
       : vivreLumiere ? <AccessibilityShell><Suspense fallback={null}><VivreLumiere /></Suspense></AccessibilityShell>
+      : planchesLumiere ? <Suspense fallback={null}><PlanchesLumiere /></Suspense>
       : filmLumiere ? <AccessibilityShell><Suspense fallback={null}><FilmLumiere /></Suspense></AccessibilityShell>
       : onePremiere ? <AccessibilityShell><Suspense fallback={null}><PremiereRencontre /></Suspense></AccessibilityShell>
       : oneTerminalOrbe ? <AccessibilityShell><Suspense fallback={null}><Terminal relation /></Suspense></AccessibilityShell>
@@ -70,5 +74,5 @@ createRoot(document.getElementById("root")!).render(
       : essaiTraversee ? <AccessibilityShell><Suspense fallback={null}><EssaiTraversee /></Suspense></AccessibilityShell>
       : essaiImage ? <AccessibilityShell><Suspense fallback={null}><EssaiImage /></Suspense></AccessibilityShell>
       : <AccessibilityShell><StorageRecoveryNotice/><App /></AccessibilityShell>}
-  </GardeExperience>{!filmLumiere && !vivreLumiere && !oneUnivers && <NavigationConvergence />}</StrictMode>
+  </GardeExperience>{!filmLumiere && !vivreLumiere && !planchesLumiere && !oneUnivers && <NavigationConvergence />}</StrictMode>
 );

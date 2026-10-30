@@ -9,10 +9,11 @@
  *    graphique, et un journal (`window.__lumiere.journal`) pour comprendre ce qui s'est passé sur l'appareil.
  */
 import { dureeMontage, musiqueA, placer, plansA, type Montage, type PlanPlace } from "../../lib/cinema/montage";
+import { sceneAtterrissage, sceneDisquePrepare } from "./atterrissage";
 import { Rendu, type FonctionScene } from "./rendu";
 import { sceneVoyage } from "./voyage";
 /** les récits procéduraux connus (le nom vient de la source du plan) */
-const SCENES: Record<string, FonctionScene> = { voyage: sceneVoyage };
+const SCENES: Record<string, FonctionScene> = { voyage: sceneVoyage, atterrissage: sceneAtterrissage, "disque-prepare": sceneDisquePrepare };
 import type { Scene } from "./partition";
 
 export interface FichierAudio { url: string; morceau: string; /** le passage du morceau que couvre le fichier (tempsMorceau) */ debut: number; fin: number }
@@ -53,7 +54,8 @@ export class Lecteur {
   private creerRendu() {
     try {
       this.rendu?.detruire();
-      this.rendu = new Rendu(this.o.toile, this.o.calque, { qualite: this.qualite, echelle: this.echelle, surPerte: () => this.surPerte() });
+      this.rendu = new Rendu(this.o.toile, this.o.calque, { qualite: this.qualite, echelle: this.echelle, surPerte: () => this.surPerte(),
+        atterrissage: this.o.montage.plans.some(p => p.source.genre === "procedural" && (p.source.scene === "atterrissage" || p.source.scene === "disque-prepare")) });
       if (this.dims.l) this.rendu.taille(this.dims.l, this.dims.h, this.dpr());
     } catch (e) { this.rendu = null; this.statique = true; noter(this.t, "rendu impossible : " + String(e)); this.o.surEchec?.("rendu"); }
   }
