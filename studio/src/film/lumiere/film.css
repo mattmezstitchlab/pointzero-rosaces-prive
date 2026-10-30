@@ -96,3 +96,19 @@
 .lf-scenes span { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .76rem; color: #a7a3bc; min-width: 40px; }
 .lf-scenes small { color: #8f8aa6; }
 .lf-controle-vivre { top: 64px; }
+
+/* la Perle-Play : au centre, l'identité de l'Orbe ; un triangle à peine dessiné ; un souffle lent ; elle se fond une fois touchée */
+.lf-perle-play { position: absolute; left: 50%; top: 50%; z-index: 6; width: 76px; height: 76px; margin: -38px 0 0 -38px; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer;
+  animation: lf-perle-arrive 1.6s ease-out both; }
+.lf-perle-coeur { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 32% 28%, #fff 0%, #e9f1ff 18%, #d9e8ff 30%, #c9b8ff 52%, #ffd6ec 74%, #b9f0e4 100%);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.35), 0 0 26px 6px rgba(201,184,255,.45), 0 0 90px 24px rgba(201,184,255,.18); animation: lf-perle-souffle 3.6s ease-in-out infinite; }
+.lf-perle-triangle { position: absolute; left: 50%; top: 50%; width: 0; height: 0; margin: -9px 0 0 -5px; border-style: solid; border-width: 9px 0 9px 15px; border-color: transparent transparent transparent rgba(70, 58, 120, .55); }
+.lf-perle-play:focus-visible { outline: 3px solid #f2eeff; outline-offset: 6px; }
+.lf-perle-play:hover .lf-perle-coeur { box-shadow: 0 0 0 1px rgba(255,255,255,.6), 0 0 34px 10px rgba(201,184,255,.6), 0 0 110px 30px rgba(201,184,255,.22); }
+.lf-perle-naissance { pointer-events: none; animation: lf-perle-fond 1.4s cubic-bezier(.5,0,.2,1) forwards; }
+.lf-perle-naissance .lf-perle-triangle { opacity: 0; transition: opacity .3s; }
+@keyframes lf-perle-arrive { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+@keyframes lf-perle-souffle { 50% { transform: scale(1.06); filter: brightness(1.06); } }
+@keyframes lf-perle-fond { to { opacity: 0; transform: scale(.08); } }
+.lf-coin-discret { opacity: .45; }
+@media (prefers-reduced-motion: reduce) { .lf-perle-play, .lf-perle-coeur { animation: none !important; } }

@@ -72,6 +72,14 @@ export interface Scene {
   /** le gel : 1 pendant le creux (le temps s'arrête) */
   gel: number;
   son: number;
+  /** le voyage du clip complet (absent dans l'animatique) */
+  voyage?: Voyage;
+}
+export interface Voyage {
+  galaxie: number; avance: number; ciel: number; crepuscule: number; nuit: number; mer: number;
+  arc: number; traverse: number; terre: number; altitude: number; plongeeSol: number; avanceSol: number;
+  /** le Disque posé dans l'herbe : visibilité, rayon (fraction de la hauteur), la goutte qui tombe (0..1), l'activation de la Perle (0..1) */
+  disqueSol: number; rDisque: number; goutteDisque: number; activation: number;
 }
 
 export function scene(t: number): Scene {

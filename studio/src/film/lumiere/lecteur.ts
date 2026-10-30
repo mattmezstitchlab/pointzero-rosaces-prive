@@ -9,7 +9,10 @@
  *    graphique, et un journal (`window.__lumiere.journal`) pour comprendre ce qui s'est passé sur l'appareil.
  */
 import { dureeMontage, musiqueA, placer, plansA, type Montage, type PlanPlace } from "../../lib/cinema/montage";
-import { Rendu } from "./rendu";
+import { Rendu, type FonctionScene } from "./rendu";
+import { sceneVoyage } from "./voyage";
+/** les récits procéduraux connus (le nom vient de la source du plan) */
+const SCENES: Record<string, FonctionScene> = { voyage: sceneVoyage };
 import type { Scene } from "./partition";
 
 export interface FichierAudio { url: string; morceau: string; /** le passage du morceau que couvre le fichier (tempsMorceau) */ debut: number; fin: number }
@@ -121,11 +124,19 @@ export class Lecteur {
       if (v && !v.hidden) { v.pause(); v.hidden = true; } this.o.toile.style.visibility = "";
       if (a && a.tNarratif !== undefined && this.rendu && !this.statique) {
         /* mouvement réduit : l'image du milieu du plan, une seule fois par plan */
-        if (!this.o.imageParPlan) s = this.rendu.rendre(a.tNarratif, this.t);
-        else if (this.dernierPlan !== a.plan.id) { this.dernierPlan = a.plan.id; const src = a.plan.source; if (src.genre === "procedural") { const mid = src.narratif[Math.floor(src.narratif.length / 2)]; s = this.rendu.rendre((src.narratif[0][1] + src.narratif[src.narratif.length - 1][1]) / 2 || mid[1], this.t); } }
+        const f = a.plan.source.genre === "procedural" ? SCENES[a.plan.source.scene] : undefined;
+        if (!this.o.imageParPlan) s = this.rendu.rendre(a.tNarratif, this.t, f);
+        else if (this.dernierPlan !== a.plan.id) { this.dernierPlan = a.plan.id; const src = a.plan.source; if (src.genre === "procedural") { const mid = src.narratif[Math.floor(src.narratif.length / 2)]; s = this.rendu.rendre((src.narratif[0][1] + src.narratif[src.narratif.length - 1][1]) / 2 || mid[1], this.t, f); } }
       }
     }
     this.o.surImage?.(this.t, s, a?.plan ?? null);
+  }
+
+  /** l'attente : l'image du récit reste à `t` (rien n'avance), seul le scintillement vit, au temps de la page */
+  respirer() {
+    const a = plansA(this.o.montage, this.t, this.places).find(x => x.plan.piste === "video");
+    if (!a || a.tNarratif === undefined || !this.rendu || this.statique || a.plan.source.genre !== "procedural") return;
+    this.rendu.rendre(a.tNarratif, performance.now() / 1000, SCENES[a.plan.source.scene]);
   }
 
   /* ——— le son : toujours sur un geste ; calé sur la position actuelle ——— */
@@ -144,6 +155,17 @@ export class Lecteur {
     })();
     return this.tampon;
   }
+  /** Le premier geste (ou la lecture automatique autorisée) : le film et sa musique partent ensemble, depuis `depuis` (0 = le début).
+      Rien n'a avancé pendant l'attente : aucune relance brutale. */
+  async lancerAvecSon(ctx: AudioContext, depuis = 0): Promise<boolean> {
+    this.arreterSon(false); cancelAnimationFrame(this.raf);
+    this.horloge = null; this.t = depuis; this.fini = false; this.lecture = true; this.son = true;
+    const ok = await this.demarrerSon(ctx);
+    if (!ok) { this.son = false; this.jouer(depuis); return false; }
+    noter(this.t, "lancement avec la musique"); this.dernierRaf = 0; this.raf = requestAnimationFrame(this.tour); return true;
+  }
+  /** le son, avec un contexte audio déjà autorisé (lecture automatique acceptée par le navigateur) */
+  activerSonAvec(ctx: AudioContext): Promise<boolean> { this.son = true; return this.demarrerSon(ctx); }
   /** à appeler DANS le geste de la personne (clic, toucher) */
   activerSon(): Promise<boolean> {
     this.son = true;
@@ -164,7 +186,8 @@ export class Lecteur {
     if (ctx.state !== "running") await ctx.resume().catch(() => {});
     if (!this.lecture) { this.horlogeSon(ctx, [], this.t); return true; }
     /* la position APRÈS le décodage : l'image a continué pendant ce temps */
-    const t0 = this.maintenant() + 0.06, quand = ctx.currentTime + 0.06;
+    /* depuis l'attente (aucune horloge) : la musique et l'image partent ENSEMBLE de la position exacte ; sinon, la position actuelle */
+    const t0 = this.horloge ? this.maintenant() + 0.06 : this.t, quand = ctx.currentTime + 0.06;
     const sources: AudioBufferSourceNode[] = [];
     for (const c of this.o.montage.musique) {
       const finFilm = c.position + (c.fin - c.debut); if (c.morceau !== f.morceau || finFilm <= t0) continue;

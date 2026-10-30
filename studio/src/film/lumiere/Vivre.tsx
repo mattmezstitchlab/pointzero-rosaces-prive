@@ -6,7 +6,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { dureeMontage, filmDuRepere, placer, verifier, type Montage } from "../../lib/cinema/montage";
-import { ANIMATIQUE, CHAPITRE_FLEUR } from "./montages";
+import { ANIMATIQUE, CHAPITRE_FLEUR, CLIP_FLEUR } from "./montages";
 import { journal, Lecteur } from "./lecteur";
 import { mouvementReduit, webglDisponible } from "./Film";
 import "../../design/aime.css";
@@ -15,7 +15,8 @@ import "./film.css";
 const BASE = import.meta.env.BASE_URL;
 const AUDIO_COMPLET = { url: BASE + "lumiere-prive/fleur-du-ciel.m4a", morceau: "fleur-du-ciel", debut: 0, fin: 253 };
 const VERSIONS: { id: string; nom: string; montage: Montage }[] = [
-  { id: "chapitre", nom: "La Fleur du Ciel · 4 min 13", montage: CHAPITRE_FLEUR },
+  { id: "clip", nom: "La Fleur du Ciel · le clip · 4 min 13", montage: CLIP_FLEUR },
+  { id: "chapitre", nom: "Première version · 4 min 13", montage: CHAPITRE_FLEUR },
   { id: "animatique", nom: "Animatique · 44 s", montage: ANIMATIQUE },
 ];
 const cleReprise = (id: string) => "lumiere:reprise:" + id;
@@ -26,7 +27,7 @@ const mmss = (s: number) => `${Math.floor(s / 60)}:${Math.floor(s % 60).toString
 export default function Vivre() {
   const params = new URLSearchParams(window.location.search);
   const controle = params.has("controle");
-  const [versionId, setVersionId] = useState(params.get("version") === "animatique" ? "animatique" : "chapitre");
+  const [versionId, setVersionId] = useState(["animatique", "chapitre"].includes(params.get("version") ?? "") ? params.get("version")! : "clip");
   const version = VERSIONS.find(v => v.id === versionId)!;
   const duree = dureeMontage(version.montage);
   const places = useMemo(() => placer(version.montage).filter(p => p.piste === "video"), [version]);

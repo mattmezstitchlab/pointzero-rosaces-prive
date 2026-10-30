@@ -27,6 +27,7 @@ export const FLEUR_DU_CIEL: Morceau = {
     chute: { temps: 196.775, nature: "les aigus sans grave", verrouille: true, source: "mesure" },
     impact: { temps: 198.255, nature: "L'IMPACT : le grave +53 dB en 20 ms, sur le temps", verrouille: true, source: "compose", note: "Composé par Matt pour cet effet ; repère canonique, immuable." },
     detente: { temps: 226.25, nature: "la musique se détend (2 160 → 830 Hz)", verrouille: true, source: "mesure" },
+    perle: { temps: 242.75, nature: "après le quasi-silence (03:56–03:58), le grave revient (+12 dB), sur le temps", verrouille: true, source: "mesure" },
     fin: { temps: 253.0, nature: "fin du morceau", verrouille: false, source: "mesure" },
   },
 };
@@ -104,4 +105,29 @@ export const COURT_METRAGE: Montage = (() => {
   };
 })();
 
-export const VERSIONS = [ANIMATIQUE, CHAPITRE_FLEUR, COURT_METRAGE] as const;
+/* 2 bis. LE CLIP : « La Fleur du Ciel » en entier, le voyage (galaxie → ciel → nuit → goutte → arc-en-ciel → Terre → herbe → le Disque).
+   C'est l'introduction du site. Le temps du récit EST le temps du morceau ; chaque plan commence sur un repère mesuré. */
+const voy = (id: string, titre: string, debut: number, fin: number, extra: Partial<Plan> = {}): Plan =>
+  ({ id, titre, chapitre: "clip", piste: "video", source: { genre: "procedural", scene: "voyage", narratif: [[0, debut], [fin - debut, fin]] }, duree: +(fin - debut).toFixed(3), statut: "provisoire", provenance: RENDU, ...extra });
+export const CLIP_FLEUR: Montage = {
+  id: "lumiere-clip", titre: "La Fleur du Ciel — le clip", version: "chapitre",
+  description: "4 min 13 · le morceau entier · de la galaxie au Disque posé dans l'herbe · l'impact à 03:18.255.",
+  morceaux: { [FLEUR_DU_CIEL.id]: FLEUR_DU_CIEL },
+  chapitres: [{ id: "clip", titre: "La Fleur du Ciel", morceau: FLEUR_DU_CIEL.id }],
+  musique: [{ id: "m1", morceau: FLEUR_DU_CIEL.id, debut: 0, fin: 253.0, position: 0, fondus: { sortie: 1.5 } }],
+  plans: [
+    voy("v-noir", "L’obscurité", 0, 8.25),
+    voy("v-galaxie", "La galaxie", 8.25, 72.25, { synchro: [{ repere: "fleur-du-ciel:lumiere", tPlan: 0 }] }),
+    voy("v-ciel", "Au-dessus des nuages", 72.25, 112.25, { synchro: [{ repere: "fleur-du-ciel:section2", tPlan: 0 }] }),
+    voy("v-crepuscule", "La nuit tombe", 112.25, 160.25, { synchro: [{ repere: "fleur-du-ciel:section3", tPlan: 0 }] }),
+    voy("v-nuages", "Dans les nuages de la nuit", 160.25, 186.25, { synchro: [{ repere: "fleur-du-ciel:section4", tPlan: 0 }] }),
+    voy("v-eau", "L’eau de la nuit", 186.25, 194.25, { synchro: [{ repere: "fleur-du-ciel:sombre", tPlan: 0 }] }),
+    voy("v-goutte", "La goutte", 194.25, 198.255, { synchro: [{ repere: "fleur-du-ciel:goutte", tPlan: 0 }, { repere: "fleur-du-ciel:creux", tPlan: 2.025 }, { repere: "fleur-du-ciel:chute", tPlan: 2.525 }] }),
+    voy("v-arc", "L’arc-en-ciel", 198.255, 206.25, { synchro: [{ repere: "fleur-du-ciel:impact", tPlan: 0 }] }),
+    voy("v-terre", "La Terre vue du ciel", 206.25, 226.25),
+    voy("v-herbe", "Le Disque dans l’herbe", 226.25, 242.75, { synchro: [{ repere: "fleur-du-ciel:detente", tPlan: 0 }] }),
+    voy("v-perle", "La Perle s’allume", 242.75, 253, { synchro: [{ repere: "fleur-du-ciel:perle", tPlan: 0 }] }),
+  ],
+};
+
+export const VERSIONS = [CLIP_FLEUR, ANIMATIQUE, CHAPITRE_FLEUR, COURT_METRAGE] as const;
