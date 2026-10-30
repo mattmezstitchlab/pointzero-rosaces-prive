@@ -167,6 +167,7 @@ export default function Film() {
         <button type="button" className="lf-bouton" onClick={() => void commencer(false)}>Regarder sans le son</button>
         <button type="button" className="lf-bouton" onClick={() => setEtat("texte")}>Lire la version texte</button>
         <button type="button" className="lf-lien" onClick={() => versRencontre(false)}>Passer et commencer la Première rencontre</button>
+        <a className="lf-lien" href={import.meta.env.BASE_URL + "explorer"}>Explorer tous les prototypes</a>
       </div>
       <label className="lf-fichier">Extrait sonore privé absent ? Choisissez-le sur cet appareil (l’extrait ou le WAV original) :
         <input type="file" accept="audio/wav,.wav" onChange={e => { const f = e.target.files?.[0]; if (f) void chargerExtrait(f).then(ok => setAnnonce(ok ? "Extrait chargé : il reste sur cet appareil." : "Ce fichier n’a pas pu être lu.")); }} /></label>

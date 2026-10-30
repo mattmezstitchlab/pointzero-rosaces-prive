@@ -59,7 +59,12 @@
   "redirects": [
     {
       "source": "/",
-      "destination": "/studio/",
+      "destination": "/studio/one/lumiere",
+      "permanent": false
+    },
+    {
+      "source": "/explorer",
+      "destination": "/studio/explorer",
       "permanent": false
     },
     {
