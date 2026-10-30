@@ -14,7 +14,9 @@
  */
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { EXTRAIT, IMAGES_PAR_SECONDE } from "./partition";
-import { CLIP_FLEUR, VERSIONS } from "./montages";
+import { FILM_FLEUR, VERSIONS } from "./montages";
+/** L'ouverture du site : le film du séquencier (31 plans). L'ancien clip reste lisible avec ?montage=lumiere-clip. */
+const OUVERTURE = FILM_FLEUR;
 import { journal, Lecteur } from "./lecteur";
 import { Rendu } from "./rendu";
 import { sceneVoyage } from "./voyage";
@@ -27,7 +29,7 @@ const PremiereRencontre = lazy(() => import("../../one/PremiereRencontre"));
 const BASE = import.meta.env.BASE_URL;
 export const AUDIO_EXTRAIT = { url: BASE + "lumiere-prive/fleur-du-ciel-extrait.m4a", morceau: "fleur-du-ciel", debut: EXTRAIT.debut, fin: EXTRAIT.fin };
 export const AUDIO_COMPLET = { url: BASE + "lumiere-prive/fleur-du-ciel.m4a", morceau: "fleur-du-ciel", debut: 0, fin: 253 };
-const DUREE = dureeMontage(CLIP_FLEUR);
+const DUREE = dureeMontage(OUVERTURE);
 const ATTENTE_SANS_GESTE = 12000;
 type Etat = "film" | "fixe" | "rencontre";
 type Depart = "attente" | "play" | "chargement" | "lecture" | "silence";
@@ -50,8 +52,8 @@ const nouveauContexte = () => { const C = window.AudioContext ?? (window as unkn
 export default function Film() {
   const params = new URLSearchParams(window.location.search);
   const controle = params.has("controle"), capture = params.has("capture");
-  /* contrôle et rendu image par image : un autre montage peut être choisi (?montage=lumiere-previz-impact) ; l'ouverture du site reste le clip */
-  const MONTAGE = (controle || capture) ? (VERSIONS.find(v => v.id === params.get("montage")) ?? CLIP_FLEUR) : CLIP_FLEUR;
+  /* contrôle et rendu image par image : un autre montage peut être choisi (?montage=lumiere-previz-impact) ; l'ouverture du site est le film des 31 plans */
+  const MONTAGE = VERSIONS.find(v => v.id === params.get("montage")) ?? OUVERTURE;
   const depart = Math.min(dureeMontage(MONTAGE) - 0.5, Math.max(0, +(params.get("t") ?? 0) || 0));
   const [etat, setEtat] = useState<Etat>(() => capture ? "film" : (mouvementReduit() || !webglDisponible()) ? "fixe" : "film");
   const [phase, setPhase] = useState<Depart>(capture || controle || depart > 0 ? "silence" : "attente");
