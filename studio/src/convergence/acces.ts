@@ -24,7 +24,8 @@ export interface Acces { id: string; nom: string; phrase: string; chemin?: strin
 
 const S = import.meta.env.BASE_URL;   // /studio/
 export const ACCES: Acces[] = [
-  { id: "film", groupe: "parcours", nom: "Film LUMIERE — La naissance du Point", phrase: "44 s, facultatif, son volontaire. Puis la Première rencontre.", chemin: S + "one/lumiere", statut: "teste", preuve: "e2e 28/28 · 18 tests unitaires" },
+  { id: "film", groupe: "parcours", nom: "Découvrir AIME — l’ouverture LUMIERE", phrase: "44 s, sans texte : une étoile, une perle, une onde, puis .0NE. Facultative.", chemin: S + "one/lumiere", statut: "teste", preuve: "e2e Chromium · WebKit · Firefox" },
+  { id: "vivre", groupe: "parcours", nom: "Vivre LUMIERE — La Fleur du Ciel", phrase: "Le chapitre complet (4 min 13) : lecture, pause, scènes, reprise. L’impact reste à 03:18.255.", chemin: S + "one/lumiere/vivre", statut: "prototype", preuve: "moteur de montage : 14 tests unitaires" },
   { id: "rencontre", groupe: "parcours", nom: "Première rencontre", phrase: "Régler l’interface pour soi : confort visuel, son, interaction, besoins.", chemin: S + "one/premiere-rencontre", statut: "teste", preuve: "e2e .0NE 24/24" },
   { id: "univers", groupe: "parcours", nom: ".0NE — tous les univers", phrase: "La mosaïque des univers, autour du Disque universel.", chemin: S + "one/univers", statut: "teste", preuve: "e2e .0NE 24/24" },
 
@@ -40,7 +41,7 @@ export const ACCES: Acces[] = [
   { id: "traversee", groupe: "essais", nom: "La traversée", phrase: "Le Point traverse la page (une scène).", chemin: S + "essai-traversee", statut: "prototype" },
   { id: "aime", groupe: "essais", nom: "Le socle AIME, Jour et Nuit", phrase: "Couleurs, typographie et composants du design system.", chemin: S + "essai-aime", statut: "prototype" },
   { id: "image", groupe: "essais", nom: "Le bloc Image", phrase: "Une image pilotée par le même Point.", chemin: S + "essai-image", statut: "prototype" },
-  { id: "ripple-film", groupe: "essais", nom: "RIPPLE — la géométrie (démonstration)", phrase: "Dans le film, l’onde devient le cadran Ripple : même contrat géométrique que le futur Disque Ripple. Le moteur causal complet n’est pas intégré.", chemin: S + "one/lumiere?controle&t=18", statut: "prototype" },
+  { id: "ripple-film", groupe: "essais", nom: "RIPPLE — la géométrie (démonstration)", phrase: "Dans le film, l’onde devient le cadran Ripple : même contrat géométrique que le futur Disque Ripple. Le moteur causal complet n’est pas intégré.", chemin: S + "one/lumiere/vivre?controle", statut: "prototype" },
 
   { id: "ripplecircle", groupe: "ailleurs", nom: "RIPPLECIRCLE — cadran vivant (démonstration)", phrase: "Le prototype d’origine, encore lié à la démonstration mariage.", chemin: "https://ripplecircle.vercel.app/", statut: "externe" },
   { id: "openaime", groupe: "ailleurs", nom: "OpenAIME", phrase: "Projet séparé, non intégré à cette version.", chemin: "https://openaime.vercel.app/", statut: "externe" },

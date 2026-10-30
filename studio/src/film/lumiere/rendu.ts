@@ -209,18 +209,30 @@ void main(){
   o = vec4(pow(max(col, 0.), vec3(1./1.08)), 1.);
 }`;
 
-export interface OptionsRendu { qualite?: number; echelle?: number }
+export interface OptionsRendu { qualite?: number; echelle?: number; /** prévenu quand le contexte graphique est perdu (GPU surchargé, veille…) */ surPerte?: () => void }
 
 export class Rendu {
   gl: WebGL2RenderingContext;
-  prog: WebGLProgram;
+  prog!: WebGLProgram;
   u: Record<string, WebGLUniformLocation | null> = {};
   ctx: CanvasRenderingContext2D;
   derniere: Scene | null = null;
-  constructor(public toile: HTMLCanvasElement, public calque: HTMLCanvasElement, private opts: OptionsRendu = {}) {
-    const gl = toile.getContext("webgl2", { antialias: false, alpha: false, preserveDrawingBuffer: true });
+  perdu = false;
+  /** une destruction voulue (fin du film) n'est pas une panne */
+  detruit = false;
+  constructor(public toile: HTMLCanvasElement, public calque: HTMLCanvasElement, public opts: OptionsRendu = {}) {
+    const gl = toile.getContext("webgl2", { antialias: false, alpha: false, preserveDrawingBuffer: true, powerPreference: "high-performance" });
     if (!gl) throw new Error("WebGL2 indisponible");
     this.gl = gl;
+    /* le contexte peut être perdu (GPU surchargé, mise en veille) : on le dit, on attend sa restauration, on reprend */
+    toile.addEventListener("webglcontextlost", e => { e.preventDefault(); this.perdu = true; if (!this.detruit) this.opts.surPerte?.(); });
+    toile.addEventListener("webglcontextrestored", () => { try { this.initialiser(); this.perdu = false; } catch { /* le lecteur recrée un rendu */ } });
+    this.initialiser();
+    this.ctx = calque.getContext("2d")!;
+  }
+
+  private initialiser() {
+    const gl = this.gl;
     const sh = (type: number, src: string) => { const s = gl.createShader(type)!; gl.shaderSource(s, src); gl.compileShader(s);
       if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) ?? "shader"); return s; };
     const p = gl.createProgram()!; gl.attachShader(p, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, FRAG)); gl.linkProgram(p);
@@ -229,7 +241,6 @@ export class Rendu {
     const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
     const a = gl.getAttribLocation(p, "a"); gl.enableVertexAttribArray(a); gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
     for (const n of ["uRes", "uT", "uQ", "uEtoiles", "uNuages", "uDefil", "uBrume", "uPerle", "uPerleVis", "uGoutte", "uEtire", "uD", "uEau", "uPhi", "uShift", "uDepuis", "uGrille", "uCarres", "uBlanc", "uLueur", "uRepli", "uFronts", "uEsp"]) this.u[n] = gl.getUniformLocation(p, n);
-    this.ctx = calque.getContext("2d")!;
   }
 
   /** dimensionner les deux toiles (la toile WebGL peut être rendue plus petite : `echelle`) */
@@ -247,13 +258,16 @@ export class Rendu {
     return parRayon.map((f, i) => ({ ...f, rayon: poses[i], intensite: s.ripple > 0 ? Math.max(f.intensite, .35 * s.ripple) : f.intensite }));
   }
 
-  rendre(t: number) {
+  /** Rendre une image. `t` : le temps du RÉCIT (ce que décrit la partition) ; `reel` : le temps du film, qui anime les
+      matières (nuages qui dérivent, étoiles qui scintillent) même quand le récit avance lentement (chapitre complet). */
+  rendre(t: number, reel: number = t) {
     const s = scene(t); this.derniere = s;
+    if (this.perdu || this.gl.isContextLost()) return s;
     const gl = this.gl, W = this.toile.width, H = this.toile.height, u = this.u;
     gl.viewport(0, 0, W, H);
     const asp = W / H;
     const shift = SHIFT0 * (1 - s.plongee), phi = PHI0 + (Math.PI / 2 - PHI0) * s.plongee;
-    gl.uniform2f(u.uRes, W, H); gl.uniform1f(u.uT, s.gel ? REPERES.suspension.t : t); gl.uniform1f(u.uQ, this.opts.qualite ?? 6);
+    gl.uniform2f(u.uRes, W, H); gl.uniform1f(u.uT, s.gel ? reel - (t - REPERES.suspension.t) : reel);   /* pendant le creux, les matières se figent */ gl.uniform1f(u.uQ, this.opts.qualite ?? 6);
     gl.uniform1f(u.uEtoiles, s.etoiles); gl.uniform1f(u.uNuages, s.nuages); gl.uniform1f(u.uDefil, s.defilement); gl.uniform1f(u.uBrume, s.brume);
     const chute = t >= REPERES.chute.t && t < REPERES.contact.t ? (t - REPERES.chute.t) / (REPERES.contact.t - REPERES.chute.t) : 0;
     gl.uniform4f(u.uPerle, (s.perle.x - 0.5) * asp, 0.5 - s.perle.y, s.perle.r, s.perle.eclat);
@@ -311,5 +325,5 @@ export class Rendu {
     }
   }
 
-  detruire() { this.gl.getExtension("WEBGL_lose_context")?.loseContext(); }
+  detruire() { this.detruit = true; this.gl.getExtension("WEBGL_lose_context")?.loseContext(); }
 }

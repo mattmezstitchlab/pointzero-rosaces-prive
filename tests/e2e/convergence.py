@@ -16,14 +16,14 @@ with sync_playwright() as p:
     if PARTAGE: pg.goto(f'{B}/?{PARTAGE}'); pg.wait_for_load_state('networkidle')
 
     # 1. une seule adresse : la racine ouvre le film
-    pg.goto(B + '/'); pg.wait_for_selector('.lf-accueil h1', timeout=30000)
+    pg.goto(B + '/'); pg.wait_for_selector('.lf-film', timeout=30000)
     ok(pg.url.rstrip('/').endswith('/studio/one/lumiere'), f'1. la racine ouvre le film LUMIERE ({pg.url})')
-    ok(pg.get_by_role('button', name='Passer et commencer la Première rencontre').is_visible(), '1. le film est facultatif : « Passer » visible dès l’accueil')
+    ok(pg.get_by_role('button', name=re.compile('Passer')).is_visible(), '1. le film est facultatif : « Passer » visible dès la première image')
     if CAP: pg.screenshot(path=f'{CAP}/cv-1-film.png')
 
     # 2. le parcours : film → Première rencontre → .0NE → univers
-    pg.get_by_role('button', name='Regarder sans le son').click(); pg.wait_for_timeout(2500)
-    pg.get_by_role('button', name='Passer').click(); pg.wait_for_selector('.one-marque', timeout=20000)
+    pg.wait_for_timeout(2000)
+    pg.get_by_role('button', name=re.compile('Passer')).click(); pg.wait_for_selector('.one-marque', timeout=20000)
     ok('Bienvenue' in pg.locator('h1').first.text_content(), '2. Passer → la vraie Première rencontre')
     if CAP: pg.screenshot(path=f'{CAP}/cv-2-rencontre.png')
     pg.get_by_role('link', name='Explorer sans configuration').click(); pg.wait_for_load_state('networkidle'); pg.wait_for_timeout(800)
@@ -49,7 +49,8 @@ with sync_playwright() as p:
         garde = pg.locator('.cv-erreur').count()
         corps = pg.evaluate('document.body.innerText.trim().length')
         ok(not garde and corps > 40 and not err, f'4. « {nom} » s’ouvre ({href}){" — " + err[0][:80] if err else ""}{" — garde" if garde else ""}')
-        ok(pg.locator('.cv-nav-bouton').count() == 1, f'4. « {nom} » garde la navigation de retour')
+        film = '/one/lumiere' in href   # le film n'a que ses deux commandes (Passer y est le retour)
+        ok(pg.locator('.cv-nav-bouton').count() == (0 if film else 1) and (not film or pg.get_by_role('button', name=re.compile('Passer|Quitter|Entrer')).count() + pg.get_by_role('link', name=re.compile('Quitter')).count() >= 1), f'4. « {nom} » garde un retour ({"Passer/Quitter" if film else "navigation"})')
         if CAP: pg.screenshot(path=f'{CAP}/cv-acces-{re.sub("[^a-z0-9]+", "-", nom.lower())[:30]}.png')
 
     # 5. une adresse inconnue ou cassée ne laisse jamais un écran vide

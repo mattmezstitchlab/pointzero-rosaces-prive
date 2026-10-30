@@ -78,7 +78,7 @@ export function scene(t: number): Scene {
   const descente = lisse(R.traversee.t, R.goutte.t + 0.6, t);
   /* la chute : de l'entrée des aigus au contact, accélérée (la gravité) */
   const chute = cl((t - R.chute.t) / (R.contact.t - R.chute.t)), yChute = chute * chute;
-  const yPerle = t < R.goutte.t ? 0.18 + 0.32 * descente : 0.5 + 0.0 * descente;
+  const yPerle = t < R.goutte.t ? 0.47 + 0.03 * descente : 0.5;   /* l'étoile naît AU CENTRE ; la descente se lit dans les nuages qui défilent */
   const ySusp = 0.5, yEau = 0.62;   // la goutte au-dessus de l'eau (l'horizon à 0.42 ; le point de contact à 0.62)
   const y = t < R.goutte.t ? yPerle : t < R.chute.t ? ySusp : t < R.contact.t ? ySusp + (yEau - ySusp) * yChute : yEau;
   /* une respiration très lente de la perle (illustrative) ; suspendue pendant le gel */
