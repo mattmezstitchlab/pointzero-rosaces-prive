@@ -48,7 +48,7 @@ export function VueLecture({ f, aller, outils, taille }: { f: F; aller: (x: F) =
     <p className="lc-aide">Les fichiers restent sur cet appareil. Un rechargement de la page les oublie.</p>
     <div className="lc-gestes">
       <button type="button" onClick={() => choisirFichiers(false, () => aller({}))}>Des fichiers</button>
-      <button type="button" onClick={() => choisirFichiers(true, () => aller({}))}>Un dossier</button>
+      <button type="button" className="lc-seul-grand" onClick={() => choisirFichiers(true, () => aller({}))}>Un dossier</button>
       <button type="button" onClick={() => demonstration(() => aller({}), outils.dire)}>Démonstration</button>
     </div>
   </AnneauChoix>;

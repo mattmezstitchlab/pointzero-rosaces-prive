@@ -38,6 +38,9 @@ html[data-aime-studio="nuit"] .pzt-voile { background: radial-gradient(circle at
 .pzt .lp-tambour .lp-mot .lp-plus { display: none; }
 .pzt .lp-tambour .lp-interieur { display: none; }   /* jamais d'anneau par-dessus la toile */
 /* en cartouche : le rond seul ; le mot est dit, et montré sous le disque */
+/* court (téléphone) : une ligne de mots sous un rond plus petit */
+.pzt-etiq-court .lp-tambour .lp-mot { -webkit-line-clamp: 1; letter-spacing: -.02em; font-size: calc(10px * var(--pz-user-font-scale, 1)); line-height: calc(13px * var(--pz-user-font-scale, 1)); white-space: nowrap; text-overflow: ellipsis; display: block; }
+.pzt-etiq-court .lp-tambour .lp-rond svg { width: 18px; height: 18px; }
 .pzt-etiq-cartouche .lp-tambour .lp-mot { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 /* en cartouche (icônes seules) : le point se pose sur le rond, en haut à droite, toujours visible */
 .pzt-etiq-cartouche .lp-tambour .lp-indic { left: auto; right: 7px; top: 7px; bottom: auto; margin: 0; }

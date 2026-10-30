@@ -54,7 +54,7 @@ with sync_playwright() as p:
             pg.goto(B + '/studio/one/univers?u=broderie'); pg.wait_for_selector('.dq-vide, .dq-broderie', timeout=20000); pg.wait_for_timeout(600)
             ok('La toile est vierge' in pg.locator('.dq-scene').inner_text() and pg.get_by_role('button', name='Découvrir').count() >= 1, f'{N} 1–2. .ONE › Broderie : Découvrir et Commencer, dans le Disque')
             # 3. la landing
-            pg.locator('.dq-vide-gestes button', has_text='Découvrir').click(); pg.wait_for_url(re.compile(r'/studio/?$'), timeout=20000); pg.wait_for_timeout(1500)
+            pg.locator('.dq-vide-gestes button', has_text='Découvrir').click(); pg.wait_for_url(re.compile(r'/studio/(\?edition)?$'), timeout=20000); pg.wait_for_timeout(1500)
             cta = pg.get_by_role('button', name='Créer mon patron').or_(pg.get_by_role('link', name='Créer mon patron')).first
             ok(cta.count() == 1 and 'Point Zéro' in pg.title() + pg.locator('h1').first.inner_text(), f'{N} 3. la landing Broderie ({pg.url.replace(B, "")}) et « Créer mon patron »')
             if CAP and not tel: pg.screenshot(path=f'{CAP}/broderie-{n}-1-landing.png')

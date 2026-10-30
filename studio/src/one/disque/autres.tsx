@@ -30,7 +30,7 @@ export const BRODERIE: ContexteUnivers = {
     }, [p]);
     useEffect(() => {
       publier([
-        { id: "br-decouvrir", nom: "Découvrir", groupe: "metier", icone: <BookOpen aria-hidden="true" />, aide: "la landing Broderie : l’histoire, le studio, puis « Créer mon patron »", ouvrir: () => outils.deployer("") },
+        { id: "br-decouvrir", nom: "Découvrir", groupe: "metier", icone: <BookOpen aria-hidden="true" />, aide: "la landing Point Zéro : l’histoire de la broderie, puis « Créer mon patron »", ouvrir: () => outils.deployer("?edition") },
         { id: "br-atelier", nom: p ? "Continuer" : "Commencer", groupe: "metier", icone: <Scissors aria-hidden="true" />, aide: "l’atelier en plein écran ; le Disque garde ce contexte pour le retour", ouvrir: () => outils.deployer("atelier") },
         { id: "br-ouvrages", nom: "Mes ouvrages", groupe: "metier", icone: <FolderOpen aria-hidden="true" />, aide: "le Bureau : tous vos ouvrages", ouvrir: () => outils.changerUnivers("bureau") },
         { id: "br-rosaces", nom: "Rosaces", groupe: "metier", icone: <Sparkles aria-hidden="true" />, aide: "la Galerie des rosaces du moteur 5D", ouvrir: () => outils.changerUnivers("galerie") },
@@ -38,7 +38,7 @@ export const BRODERIE: ContexteUnivers = {
       ], p ? `La toile en cours : « ${p.name} » · ${p.w} × ${p.h} points · ${fils.length} fils` : "Aucune toile ouverte dans l’atelier sur cet appareil.");
     }, [p?.name]); // eslint-disable-line react-hooks/exhaustive-deps
     if (!p) return <div className="dq-vide"><p className="dq-vide-titre">La toile est vierge</p><p>Une photographie devient un patron : importez-la dans l’atelier.</p>
-      <div className="dq-vide-gestes"><button type="button" className="one-bouton" onClick={() => outils.deployer("atelier")}>Commencer</button><button type="button" className="one-bouton" onClick={() => outils.deployer("")}>Découvrir</button></div></div>;
+      <div className="dq-vide-gestes"><button type="button" className="one-bouton" onClick={() => outils.deployer("atelier")}>Commencer</button><button type="button" className="one-bouton" onClick={() => outils.deployer("?edition")}>Découvrir</button></div></div>;
     return <figure className="dq-broderie">
       {img && <img className="dq-ouvrage-img" src={img} alt={`La toile en cours : ${p.name}`} />}
       <figcaption className="dq-fils" aria-label="Les fils">{fils.slice(0, 12).map(f => <i key={f} title={`DMC ${FLOSS[f]?.code} — ${FLOSS[f]?.name}`} style={{ background: FLOSS[f]?.hex }} />)}{fils.length > 12 && <span>+{fils.length - 12}</span>}</figcaption>

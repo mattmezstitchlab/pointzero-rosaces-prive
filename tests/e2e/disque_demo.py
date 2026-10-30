@@ -27,14 +27,15 @@ with sync_playwright() as p:
             pg.on('pageerror', lambda e: err.append(str(e)))
             mob = appareil == 'telephone'
             def cmd(nom):
-                """une commande, par son nom : dans la couronne (ordinateur) ou dans la liste (téléphone)"""
-                if mob: pg.locator('.dq-liste button', has_text=re.compile('^' + re.escape(nom))).first.click()
-                else: pg.locator('.one-disque [role=menuitem]', has_text=nom).first.click()
+                """une commande, par son nom : dans la couronne du Disque, sur ordinateur comme sur téléphone (le nom complet est dans l'étiquette accessible)"""
+                el = pg.locator(f'.one-disque [role=menuitem][aria-label^="{nom}"]').first
+                if not el.count(): el = pg.locator('.one-disque [role=menuitem]', has_text=nom).first
+                el.tap() if mob else el.click()
                 pg.wait_for_timeout(450)
             # 1–2. .0NE, sur fond blanc
             pg.goto(B + '/studio/one/univers'); pg.wait_for_selector('.dq', timeout=20000); pg.wait_for_timeout(800)
             ok(lum(pg, '.dq') > 0.95, f'{N} 1–2. .0NE s’ouvre sur le blanc AIME')
-            ok((pg.locator('.dq-liste').count() == 1) if mob else (pg.locator('.one-disque .pzt-anneau').count() == 1), f'{N} 2. {"les commandes en liste (téléphone)" if mob else "le Disque, noir mat, au centre de la page"}')
+            ok(pg.locator('.one-disque .pzt-anneau').count() == 1 and pg.locator('.dq-liste').count() == 0, f'{N} 2. le Disque, noir mat, au centre de la page (téléphone compris : jamais une liste)')
             # 3–4. les univers → Galerie (aucune fenêtre de présentation entre les deux)
             pg.locator('.dq-bouton-grille').click(); pg.wait_for_selector('.dq-grille')
             ok(pg.locator('.dq-case').count() >= 10, f'{N} 3. la grille de tous les univers')
@@ -54,10 +55,10 @@ with sync_playwright() as p:
             ok('f.palette=1' in pg.url, f'{N} 6. filtrer par la couronne : palette « Douce »')
             ok(re.search(r'1 filtre', pg.locator('.dq-zone').inner_text()), f'{N} 6. la zone réservée le dit ({pg.locator(".dq-zone").inner_text()[:60]})')
             # 7. choisir une rosace (Parcourir)
-            if not mob: pg.keyboard.press('Escape'); pg.wait_for_timeout(300)
+            pg.keyboard.press('Escape'); pg.wait_for_timeout(300)
             pg.goto(pg.url.split('?')[0] + '?u=galerie'); pg.wait_for_timeout(800)
             cmd('Parcourir'); cmd('Givre')
-            if not mob: pg.keyboard.press('Escape'); pg.wait_for_timeout(300)   # remonter de la sous-couronne (Retour), comme dans l'atelier
+            pg.keyboard.press('Escape'); pg.wait_for_timeout(300)   # remonter de la sous-couronne (Retour), comme dans l'atelier
             ok('o=givre' in pg.url and pg.locator('[data-objet=givre]').count() == 1, f'{N} 7. choisir la rosace « Givre »')
             # 8–9. agrandir, puis revenir (le Disque se replie en Point, puis revient)
             cmd('Agrandir'); pg.wait_for_selector('.dq-grand .dq-rosace')

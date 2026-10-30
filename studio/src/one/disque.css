@@ -17,7 +17,7 @@
 .dq-question label { flex: 1; display: flex; } .dq-question input { flex: 1; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--aime-bordure-champ, #c9c9cc); background: var(--aime-surface, #fff); color: inherit; font: inherit; }
 
 /* le centre : le contenu réel, plein cercle */
-.dq-centre { width: 100%; height: 100%; display: grid; place-items: center; }
+.dq-centre { width: 100%; height: 100%; display: grid; place-items: center; grid-template: minmax(0, 1fr) / minmax(0, 1fr); overflow: hidden; }   /* le centre donne la taille, son contenu s'y adapte (jamais l'inverse) */
 .one-centre > .dq-centre { max-width: none; }
 .dq-galerie, .dq-bureau, .dq-broderie { margin: 0; width: 100%; height: 100%; display: grid; place-items: center; position: relative; }
 .dq-centre .dq-rosace { width: 100% !important; height: 100% !important; display: block; }
@@ -76,3 +76,8 @@
 .dq-grille-pied { margin: 18px 0 0; font-size: .86rem; } .dq-grille-pied a { color: inherit; }
 
 .dq-vide-gestes { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px; } .dq-vide-gestes .one-bouton { min-height: 44px; }
+/* petit Disque (téléphone) : le centre garde l'essentiel */
+.dq-mobile .dq-vide { padding: 0 10%; font-size: .78rem; } .dq-mobile .dq-vide > p:not(.dq-vide-titre) { display: none; }
+.dq-mobile .dq-vide-gestes { flex-direction: column; gap: 4px; margin-top: 4px; } .dq-mobile .dq-vide-gestes .one-bouton { min-height: 40px; padding: 0 14px; }
+.dq-mobile .dq-scene { align-content: center; padding-top: 0; }
+.dq-mobile .dq-vide-titre { font-size: .8rem; line-height: 1.15; }

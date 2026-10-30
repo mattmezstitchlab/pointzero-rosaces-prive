@@ -37,7 +37,7 @@ export default function AnneauChoix({ choix, actif, choisir, taille, niveau, ret
     else return;
     e.preventDefault(); e.stopPropagation();
   };
-  return <div className="ac" style={{ width: taille, height: taille }} onKeyDown={e => { if ((e.key === "Escape" || e.key === "Backspace") && retour && !(e.target as HTMLElement).closest("input,textarea")) { e.preventDefault(); e.stopPropagation(); retour.faire(); } }}>
+  return <div className={"ac" + (taille < 260 ? " ac-petit" : "")} style={{ width: taille, height: taille }} onKeyDown={e => { if ((e.key === "Escape" || e.key === "Backspace") && retour && !(e.target as HTMLElement).closest("input,textarea")) { e.preventDefault(); e.stopPropagation(); retour.faire(); } }}>
     <svg className="ac-fond" width={taille} height={taille} aria-hidden="true">
       <circle className="bt-cercle" cx={c} cy={c} r={R + 16} /><circle className="bt-sillon" cx={c} cy={c} r={rp} />
     </svg>

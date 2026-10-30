@@ -38,7 +38,7 @@ export default function DisqueOne({ contexte, modes, centre, etiquette, max = 56
     return () => { window.removeEventListener("pz:accessibility", f); window.removeEventListener(EVENEMENT_ONE, f); };
   }, []);
   let g: Disque | null = null;
-  if (cote > 0) { void reglages; g = geometrieDisque(cote, cote, 0, { texte: lireVar("--pz-user-font-scale"), cible: lireVar("--one-cible"), bas: 0, cote: 0, toileMin: 96 }); }
+  if (cote > 0) { void reglages; g = geometrieDisque(cote, cote, 0, { texte: lireVar("--pz-user-font-scale"), cible: lireVar("--one-cible"), bas: 0, cote: 0, toileMin: 96, court: true }); }
   const c = g ? g.Ro + 2 : 0;
   return <div className="one-disque-hote" style={{ maxWidth: max }}><div ref={hote} className="one-disque" role="group" aria-label={etiquette} style={{ height: cote || undefined }} onPointerOver={viser} onFocus={viser} onPointerLeave={() => setVise("")}>
     {g && <div className={"pzt pzt-pose pzt-ouvert pzt-etiq-" + g.etiquettes} data-etiquettes={g.etiquettes}

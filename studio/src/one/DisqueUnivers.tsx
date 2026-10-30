@@ -10,7 +10,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { DESTINATIONS } from "../lib/destinations";
-import { ArrowLeft, Info, LayoutGrid, X } from "lucide-react";
+import { Info, LayoutGrid, X } from "lucide-react";
 import DisqueOne from "../components/one/DisqueOne";
 import { IconeOne } from "../components/one/icones";
 import { NOMS_STATUTS, universPublics } from "../lib/one/contrat";
@@ -39,17 +39,6 @@ function useMobile() {
   return m;
 }
 
-/** les mêmes commandes, en liste (téléphone) : mêmes noms, mêmes sous-couronnes (par niveaux), Retour immédiat */
-function CouronneListe({ modes, etiquette }: { modes: ModePoint[]; etiquette: string }) {
-  const [pile, setPile] = useState<{ nom: string; modes: ModePoint[] }[]>([]);
-  useEffect(() => setPile([]), [modes]);
-  const courant = pile.length ? pile[pile.length - 1].modes : modes;
-  return <nav className="dq-liste" aria-label={etiquette}>
-    {pile.length > 0 && <button type="button" className="dq-liste-retour" onClick={() => setPile(pile.slice(0, -1))}><ArrowLeft aria-hidden="true" />{pile[pile.length - 1].nom}</button>}
-    <ul>{courant.map(m => <li key={m.id}><button type="button" aria-pressed={m.actif ? true : undefined} onClick={() => m.enfants ? setPile([...pile, { nom: m.nom, modes: m.enfants() }]) : m.ouvrir?.()}>
-      {m.icone && <span className="dq-liste-ico" aria-hidden="true">{m.icone}</span>}<span>{m.nom}</span>{m.enfants && <span aria-hidden="true" className="dq-liste-plus">›</span>}</button></li>)}</ul>
-  </nav>;
-}
 
 export default function DisqueUnivers() {
   const [, setV] = useState(0);
@@ -111,15 +100,15 @@ export default function DisqueUnivers() {
     </header>
     <main className="dq-scene">
       <h1 ref={titre} tabIndex={-1} className="sr-only">{u ? `${u.nom}, dans le Disque .0NE` : "Le Disque .0NE"}</h1>
-      {mobile
-        ? <><div className="dq-centre-mobile" data-contexte={contexte.id}>{centre}</div><CouronneListe modes={modes} etiquette={`Les commandes de ${u?.nom ?? ".0NE"}`} /></>
-        : <DisqueOne key={"dq-" + contexte.id} contexte={"dq-" + contexte.id} etiquette={`Le Disque : ${u?.nom ?? ".0NE"}`} modes={modes} max={Math.min(640, Math.round(window.innerHeight * 0.72))} centre={<div className="dq-centre" data-contexte={contexte.id}>{centre}</div>} />}
+      {/* le même Disque partout, téléphone compris : seules ses dimensions s'adaptent (jamais une liste à la place du cadran) */}
+      <DisqueOne key={"dq-" + contexte.id} contexte={"dq-" + contexte.id} etiquette={`Le Disque : ${u?.nom ?? ".0NE"}`} modes={modes}
+        max={mobile ? Math.min(640, window.innerWidth - 8, Math.round(window.innerHeight * 0.8)) : Math.min(640, Math.round(window.innerHeight * 0.72))} centre={<div className="dq-centre" data-contexte={contexte.id}>{centre}</div>} />
       {/* la zone réservée : hauteur fixe ; rien ne pousse le Disque */}
       <div className="dq-zone" aria-live="polite">
         {question ? <form className="dq-question" onSubmit={e => { e.preventDefault(); setQuestion(null); }}>
             <label><span className="sr-only">{question.q}</span><input autoFocus placeholder={question.q} defaultValue={question.v} onChange={e => question.f(e.target.value)} /></label>
             <button type="submit" className="one-bouton">OK</button><button type="button" className="one-bouton" onClick={() => { question.f(""); setQuestion(null); }}>Effacer</button></form>
-          : contexte.id === "accueil" && !message ? <p className="sr-only">{ligne}</p>   /* au Portail, rien sous le Disque : la ligne reste pour les lecteurs d’écran */
+          : !message ? <p className="sr-only">{ligne}</p>   /* rien sous le Disque : la ligne d’état reste pour les lecteurs d’écran */
           : <p className="dq-ligne">{message || ligne}</p>}
       </div>
     </main>

@@ -396,7 +396,9 @@ export default function StudioDocks(p: Props) {
   };
   /* la racine .0 : les mêmes commandes réelles (le registre « broderie »), rangées pour naviguer sans le dock du haut */
   const racine0 = (): ModePoint[] => {
-    const b = commandesDuBloc<ContexteBroderie>("broderie", { ...contexteBroderie, dockClassique: undefined }), pris = (id: string) => b.find(m => m.id === id);
+    /* « Sur ma toile » (le Tambour vivant, superposer ce patron) : la même adresse que le tambour, pour qu'elle reste dans Broder en .0 */
+    const surMaToile = () => { window.location.href = import.meta.env.BASE_URL + "tambour?mode=superposer" + (p.pattern?.id ? "&ouvrage=" + encodeURIComponent(p.pattern.id) : ""); };
+    const b = commandesDuBloc<ContexteBroderie>("broderie", { ...contexteBroderie, dockClassique: undefined, surMaToile }), pris = (id: string) => b.find(m => m.id === id);
     const points = pris("points"), exporter = pris("exporter");
     return [
       { id: "bureau", nom: "Bureau", icone: <Folder aria-hidden="true" />, aide: "vos ouvrages au centre du disque : les retrouver, en ouvrir un, en créer un", groupe: "socle", ouvrir: () => setVueDisque("bureau") },

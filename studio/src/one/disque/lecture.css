@@ -28,3 +28,12 @@
 .lc-grand-corps { margin-top: 14px; font-size: .95rem; }
 .lc-grand-corps .lc-image { max-height: 60vh; } .lc-grand-corps .lc-cadre { border: 1px solid var(--aime-bordure, rgba(0,0,0,.1)); }
 .lc-grand-corps .lc-source { font-size: .8rem; }
+/* petit Disque (téléphone) : l'essentiel au centre, la lecture complète en grand (Agrandir) */
+.ac-petit .ac-centre { width: 66%; max-height: 70%; }
+.ac-petit .lc-aide, .ac-petit .lc-mesures, .ac-petit .lc-limite, .ac-petit .lc-corps, .ac-petit .lc-seul-grand { display: none; }
+.ac-petit .lc-nom { font-size: .85rem; }
+.ac-petit .lc-gestes { flex-direction: column; align-items: stretch; gap: 3px; }
+.ac-petit .ac-choix { font-size: .66rem; letter-spacing: .03em; max-width: 76px; }
+.ac-petit .ac-centre { max-height: 76%; gap: 2px; }
+.ac-petit .lc-fil { font-size: .55rem; }
+.ac-petit .lc-nom { font-size: .8rem; }

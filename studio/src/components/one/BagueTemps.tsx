@@ -38,6 +38,9 @@ export default function BagueTemps({ periode, elements, taille, aujourdhui, choi
   }, [sel, pas, periode.echelle]);
 
   const c = taille / 2, R = taille * 0.4, rp = taille * 0.31, fs = Math.max(11, Math.min(16, taille / (n > 24 ? 30 : 24)));
+  /* petit cadran (téléphone) : on n'écrit pas tous les chiffres s'ils se toucheraient ; restent écrits la période choisie, celles qui portent
+     des éléments et un repère régulier ; les autres deviennent des traits, toujours touchables */
+  const saut = Math.max(1, Math.ceil((n * fs * 1.7) / (2 * Math.PI * R))), ecrit = (i: number) => saut === 1 || i % saut === 0;
   const pos = (i: number, r: number) => { const a = ((i * pas - rot) - 90) * Math.PI / 180; return [c + r * Math.cos(a), c + r * Math.sin(a)] as const; };
   const visee = vise ?? sel, cible: Periode = { echelle: periode.echelle, cle: items[visee]?.cle ?? periode.cle };
   const angle = (e: React.PointerEvent) => { const b = svg.current!.getBoundingClientRect(); return Math.atan2(e.clientX - b.left - b.width / 2, -(e.clientY - b.top - b.height / 2)) * 180 / Math.PI; };
@@ -62,14 +65,18 @@ export default function BagueTemps({ periode, elements, taille, aujourdhui, choi
   const ici = elements.filter(x => dans(x, periode)), approx = approximatifs(elements, periode);
   const nomCible = nomPeriode(cible, elements);
 
-  return <div className={"bt" + (geste || reduit() ? " bt-direct" : "")} style={{ width: taille, height: taille }} data-echelle={periode.echelle}>
+  return <div className={"bt" + (geste || reduit() ? " bt-direct" : "") + (taille < 260 ? " bt-petit" : "")} style={{ width: taille, height: taille }} data-echelle={periode.echelle}>
     <svg ref={svg} className="bt-svg" width={taille} height={taille} viewBox={`0 0 ${taille} ${taille}`}
       role="slider" tabIndex={0} aria-label={`La bague du temps, échelle ${NOM_ECHELLE[periode.echelle]}. Flèches pour tourner, Entrée pour une échelle plus fine, Échap pour plus large.`}
       aria-valuemin={1} aria-valuemax={n} aria-valuenow={visee + 1} aria-valuetext={`${nomCible}${items[visee]?.compte ? `, ${items[visee].compte} élément${items[visee].compte > 1 ? "s" : ""}` : ", aucun élément"}`}
       onKeyDown={clavier}
       onPointerDown={e => { const t = (e.target as HTMLElement).closest?.(".bt-cible"); e.currentTarget.setPointerCapture?.(e.pointerId); depart.current = { a: angle(e), rot, x: e.clientX, y: e.clientY, i: t ? Number(t.getAttribute("data-i")) : null }; setGeste(true); }}
       onPointerMove={e => { const g = depart.current; if (!g || Math.hypot(e.clientX - g.x, e.clientY - g.y) < 6) return; g.i = null; const d = angle(e) - g.a, r = g.rot - d; setRot(r); setVise(proche(r)); }}
-      onPointerUp={() => { const g = depart.current; if (!g) return; depart.current = null; setGeste(false); const i = g.i ?? vise ?? sel; setVise(null); if (i !== sel) aller(i); else setRot(sel * pas); }}
+      onPointerUp={e => { const g = depart.current; if (!g) return; depart.current = null; setGeste(false);
+        /* un toucher (sans glisser) sur l'anneau choisit le chiffre le plus proche par l'angle : précis même quand les chiffres sont serrés (téléphone) */
+        const b = svg.current!.getBoundingClientRect(), d = Math.hypot(e.clientX - b.left - b.width / 2, e.clientY - b.top - b.height / 2);
+        const touche = g.i !== null ? (d > b.width * 0.3 ? proche(angle(e) + rot) : g.i) : null;
+        const i = touche ?? vise ?? sel; setVise(null); if (i !== sel) aller(i); else setRot(sel * pas); }}
       onPointerCancel={() => { depart.current = null; setGeste(false); setVise(null); setRot(sel * pas); }}>
       <circle className="bt-cercle" cx={c} cy={c} r={R + fs * 1.1} />
       <circle className="bt-sillon" cx={c} cy={c} r={rp} />
@@ -78,13 +85,18 @@ export default function BagueTemps({ periode, elements, taille, aujourdhui, choi
         return <g key={it.cle}>
           {/* la cible du doigt : un disque invisible autour du chiffre, aussi large que l'arc le permet */}
           <circle className="bt-cible" cx={x} cy={y} r={Math.max(14, Math.min(22, Math.PI * R / n))} data-cle={it.cle} data-i={i} aria-hidden="true" />
-          <text className={"bt-chiffre" + (on ? " bt-on" : "")} x={x} y={y} fontSize={on ? fs * 1.25 : fs} textAnchor="middle" dominantBaseline="central" aria-hidden="true">{it.chiffre}</text>
+          {on || it.compte > 0 || ecrit(i)
+            ? <text className={"bt-chiffre" + (on ? " bt-on" : "")} x={x} y={y} fontSize={on ? fs * 1.25 : fs} textAnchor="middle" dominantBaseline="central" aria-hidden="true">{it.chiffre}</text>
+            : <circle className="bt-trait" cx={x} cy={y} r={1.6} aria-hidden="true" />}
           {it.compte > 0 && <circle className={"bt-point" + (on ? " bt-on" : "")} cx={px} cy={py} r={Math.min(6, 2.5 + it.compte)} data-etat="info" aria-hidden="true" />}
         </g>; })}
     </svg>
     <div className="bt-centre" aria-live="polite">
       <p className="bt-echelle">{NOM_ECHELLE[periode.echelle]}</p>
-      <p className="bt-nom">{nomCible}</p>
+      {/* petit cadran : le nom de la période est lui-même le bouton « Voir » (trois boutons ne tiennent pas côte à côte) */}
+      {taille < 260 && vise === null && (ici.length > 0 || approx.length > 0)
+        ? <button type="button" className="bt-nom bt-nom-voir" onClick={() => ouvrir(periode)} aria-label={`Voir ${nomCible}`}>{nomCible}</button>
+        : <p className="bt-nom">{nomCible}</p>}
       {vise === null && <>
         <p className="bt-compte">{ici.length ? `${ici.length} élément${ici.length > 1 ? "s" : ""}` : "aucun élément"}{approx.length ? ` · ${approx.length} sans date assez précise` : ""}</p>
         {periode.echelle === "moment" && ici[0]
@@ -92,7 +104,7 @@ export default function BagueTemps({ periode, elements, taille, aujourdhui, choi
           : ici.slice(0, 2).map(x => <p key={x.id} className="bt-el">{x.titre}</p>)}
         <div className="bt-actions">
           {plusLarge[periode.echelle] && <button type="button" className="bt-btn" onClick={() => echelle("large")} aria-label={`Échelle plus large : ${NOM_ECHELLE[plusLarge[periode.echelle]!]}`}>−</button>}
-          {(ici.length > 0 || approx.length > 0) && <button type="button" className="bt-btn bt-voir" onClick={() => ouvrir(periode)}>Voir</button>}
+          {taille >= 260 && (ici.length > 0 || approx.length > 0) && <button type="button" className="bt-btn bt-voir" onClick={() => ouvrir(periode)}>Voir</button>}
           {plusFine[periode.echelle] && <button type="button" className="bt-btn" onClick={() => echelle("fine")} aria-label={`Échelle plus fine : ${NOM_ECHELLE[plusFine[periode.echelle]!]}`}>+</button>}
         </div>
       </>}

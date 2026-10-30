@@ -100,12 +100,16 @@ with sync_playwright() as p:
         kw = p.devices['iPhone 14'] if n == 'webkit' else {'viewport': {'width': 390, 'height': 844}, 'is_mobile': True, 'has_touch': True, 'device_scale_factor': 2}
         ctx = b.new_context(**kw); pg = ctx.new_page(); err = []; pg.on('pageerror', lambda e: err.append(str(e)))
         pg.goto(U); pg.wait_for_selector('.bt', timeout=20000); pg.wait_for_timeout(600)
-        liste = [x.strip() for x in pg.locator('.dq-liste > ul > li').all_inner_texts()]
-        ok([x.split('\n')[0].replace('›', '').strip() for x in liste] == ['Faire', 'Aller', 'Voir', 'Origine'], f'{N} les mêmes commandes, en liste : {liste}')
+        noms = [(pg.locator('.one-disque [role=menuitem]').nth(i).get_attribute('aria-label') or '').split(' :')[0].split(',')[0] for i in range(pg.locator('.one-disque [role=menuitem]').count())]
+        ok(noms == ['Confort', 'Faire', 'Aller', 'Voir', 'Origine'] and pg.locator('.dq-liste').count() == 0, f'{N} le même Disque radial, la même couronne : {noms}')
+        mots = pg.locator('.one-disque .lp-mot').all_inner_texts()
+        ok(len([m for m in mots if m.strip()]) == 5 and pg.locator('.pzt').get_attribute('data-etiquettes') != 'cartouche', f'{N} des mots sous chaque commande, pas seulement des pictos ({mots})')
+        d = pg.locator('.one-disque .pzt-anneau').bounding_box(); cx, cy = d['x'] + d['width'] / 2, d['y'] + d['height'] / 2
+        ok(abs(cx - 195) < 3 and d['width'] >= 340, f'{N} le Disque est centré et occupe la largeur ({d["width"]:.0f} px, centre {cx:.0f})')
         ok(pg.evaluate('document.documentElement.scrollWidth') <= 390, f'{N} aucun débordement horizontal')
-        cibles = pg.evaluate("[...document.querySelectorAll('.bt-btn, .dq-liste button')].map(e => e.getBoundingClientRect().height)")
+        cibles = pg.evaluate("[...document.querySelectorAll('.bt-btn, .bt-nom-voir, .one-disque [role=menuitem]')].map(e => Math.min(e.getBoundingClientRect().height, e.getBoundingClientRect().width))")
         ok(min(cibles) >= 40, f'{N} cibles tactiles ≥ 40 px ({min(cibles):.0f})')
-        pg.locator('.bt-cible[data-cle="2026-10-29"]').tap(); pg.wait_for_timeout(500)
+        q = pg.locator('.bt-cible[data-cle="2026-10-29"]').bounding_box(); pg.touchscreen.tap(q['x'] + q['width'] / 2, q['y'] + q['height'] / 2); pg.wait_for_timeout(500)   # au doigt, à l'endroit du 29
         ok('f.t=2026-10-29' in pg.url, f'{N} au doigt : toucher un chiffre le choisit')
         if CAP: pg.screenshot(path=f'{CAP}/portail-{n}-3-telephone.png', full_page=True)
         ok(not err, f'{N} aucune erreur {err[:2]}')

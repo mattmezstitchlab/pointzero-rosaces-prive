@@ -33,13 +33,13 @@ def choisir(pg, mot): pg.locator('.ac-choix', has_text=mot).first.click(); pg.wa
 with sync_playwright() as p:
     for n in NAVS:
         b = getattr(p, n).launch()
-        for appareil in ('ordinateur', 'téléphone'):
+        for appareil in ('ordinateur',):   # le téléphone a son propre parcours, plus bas (centre compact, lecture en grand)
             N = f'[{n} · {appareil}]'
             kw = {'viewport': {'width': 1440, 'height': 900}, 'accept_downloads': True} if appareil == 'ordinateur' else ({**p.devices['iPhone 14']} if n == 'webkit' else {'viewport': {'width': 390, 'height': 844}, 'is_mobile': True, 'has_touch': True, 'device_scale_factor': 2})
             ctx = b.new_context(**kw); pg = ctx.new_page(); err = []; pg.on('pageerror', lambda e: err.append(str(e)))
             pg.goto(U + '?f.v=lecture'); pg.wait_for_selector('.lc-nom', timeout=20000)
             ok('Rien n’est importé' in pg.locator('.lc-nom').inner_text(), f'{N} sans import, le Disque le dit (rien d’inventé)')
-            ouvrir = (lambda mot: (pg.locator('.dq-liste button', has_text=mot).first.click(), pg.wait_for_timeout(400))) if appareil == 'téléphone' else (lambda mot: (pg.locator('.one-disque [role=menuitem]', has_text=mot).first.click(), pg.wait_for_timeout(400)))
+            ouvrir = (lambda mot: (pg.locator(f'.one-disque [role=menuitem][aria-label^="{mot}"]').first.tap(), pg.wait_for_timeout(400))) if appareil == 'téléphone' else (lambda mot: (pg.locator('.one-disque [role=menuitem]', has_text=mot).first.click(), pg.wait_for_timeout(400)))
             pg.goto(U); pg.wait_for_selector('.bt', timeout=20000); pg.wait_for_timeout(600)
             ouvrir('Faire'); ouvrir('Ajouter'); ouvrir('Démonstration'); pg.wait_for_selector('.ac-choix', timeout=15000); pg.wait_for_timeout(400)
             if appareil == 'ordinateur':
@@ -96,8 +96,8 @@ with sync_playwright() as p:
                     pg.locator('.one-disque [role=menuitem]', has_text='Retour').first.click(); pg.wait_for_timeout(400)
             else:
                 for _ in range(3):
-                    if pg.locator('.dq-liste button', has_text='Origine').count(): break
-                    pg.locator('.dq-liste button', has_text='Retour').first.click(); pg.wait_for_timeout(400)
+                    if pg.locator('.one-disque [role=menuitem][aria-label^="Origine"]').count(): break
+                    pg.locator('.one-disque [role=menuitem][aria-label^="Retour"]').first.tap(); pg.wait_for_timeout(400)
             ouvrir('Origine'); pg.wait_for_selector('.bt', timeout=10000)
             ok('f.v' not in pg.url, f'{N} Origine : le Point Zéro')
             ouvrir('Voir'); ouvrir('Lecture'); pg.wait_for_selector('.ac-choix', timeout=10000)
@@ -120,5 +120,32 @@ with sync_playwright() as p:
                 choisir(pg, 'AUTRE'); ok('pas lu par le Studio' in pg.locator('.dq-centre').inner_text(), f'{N} un format non pris en charge : la limite est dite')
             ok(not err, f'{N} aucune erreur {err[:2]}')
             ctx.close()
+        # ——— téléphone : le même Disque radial ; au centre l'essentiel, la lecture complète en grand ———
+        N = f'[{n} · téléphone]'
+        kw = {**p.devices['iPhone 14']} if n == 'webkit' else {'viewport': {'width': 390, 'height': 844}, 'is_mobile': True, 'has_touch': True, 'device_scale_factor': 2}
+        ctx = b.new_context(**kw); pg = ctx.new_page(); err = []; pg.on('pageerror', lambda e: err.append(str(e)))
+        cmd = lambda mot: (pg.locator(f'.one-disque [role=menuitem][aria-label^="{mot}"]').first.tap(), pg.wait_for_timeout(450))
+        pg.goto(U); pg.wait_for_selector('.bt', timeout=20000); pg.wait_for_timeout(600)
+        ok(pg.locator('.dq-liste').count() == 0 and pg.locator('.one-disque .pzt-anneau').count() == 1, f'{N} le Disque radial, jamais une liste')
+        cmd('Faire'); cmd('Ajouter'); cmd('Démonstration'); pg.wait_for_selector('.ac-choix', timeout=15000); pg.wait_for_timeout(400)
+        ok(anneau(pg) == ['PDF', 'MD', 'HTML', 'IMAGE'], f'{N} au doigt : l’anneau intérieur montre les types {anneau(pg)}')
+        invariant(pg, N, 'types')
+        for typ, attendu, sel in [('PDF', 'Page 1 de', '.lc-grand img'), ('MD', 'Deux zones', '.lc-grand .lc-titres'), ('HTML', None, '.lc-grand iframe[sandbox=""]')]:
+            pg.locator('.ac-choix', has_text=typ).first.tap(); pg.wait_for_selector('.lc-gestes button >> text=Agrandir', timeout=20000); pg.wait_for_timeout(300)
+            ok(pg.locator('.lc-fil').inner_text().upper().startswith('LECTURE · ' + typ), f'{N} {typ} : le centre dit où l’on est ({pg.locator(".lc-fil").inner_text()})')
+            invariant(pg, N, typ)
+            if CAP: pg.screenshot(path=f'{CAP}/lecture-{n}-tel-{typ.lower()}.png')
+            if typ == 'MD': pg.locator('.ac-choix', has_text='Structure').first.tap(); pg.wait_for_timeout(300)
+            pg.locator('.lc-gestes button', has_text='Agrandir').tap(); pg.wait_for_selector(sel, timeout=15000)
+            ok(attendu is None or (attendu in (pg.locator(sel).first.get_attribute('alt') or '') or attendu in pg.locator('.lc-grand').inner_text()), f'{N} {typ} › Agrandir : la lecture complète, sans la compresser')
+            pg.locator('.dq-point-replie').tap(); pg.wait_for_timeout(400)
+            pg.locator('.lc-gestes button', has_text='Retour').tap(); pg.wait_for_timeout(400)
+            ok(anneau(pg) == ['PDF', 'MD', 'HTML', 'IMAGE'], f'{N} Retour : les types')
+        cibles = pg.evaluate("[...document.querySelectorAll('.ac-choix, .lc-gestes button, .one-disque [role=menuitem]')].map(e => Math.min(e.getBoundingClientRect().height, e.getBoundingClientRect().width))")
+        ok(min(cibles) >= 40, f'{N} cibles ≥ 40 px ({min(cibles):.0f})')
+        ok(pg.evaluate('document.documentElement.scrollWidth') <= 390, f'{N} aucun débordement horizontal')
+        cmd('Origine'); pg.wait_for_selector('.bt', timeout=10000); ok('f.v' not in pg.url, f'{N} Origine : le Point Zéro')
+        ok(not err, f'{N} aucune erreur {err[:2]}')
+        ctx.close()
         b.close()
 print(f'— {R[0]}/{R[0] + R[1]}')
