@@ -9,6 +9,8 @@
  * le Point reste accessible). On ne force jamais un contenu dense à tenir dans un cercle.
  */
 
+import { resoudreAtlas, type ReferenceAtlas } from "./atlas";
+
 export type StatutUnivers = "disponible" | "experimental" | "preparation";
 export const NOMS_STATUTS: Record<StatutUnivers, string> = { disponible: "Disponible", experimental: "Expérimental", preparation: "En préparation" };
 
@@ -38,8 +40,9 @@ export interface MediaUnivers {
 /** une famille de commandes de la couronne (les commandes réelles vivent dans le registre du bloc, côté moteur) */
 export interface FamilleUnivers { id: string; nom: string; icone: Icone }
 
-/** comment on entre dans l'univers : une adresse réelle de l'application, ou rien (en préparation) */
-export type Ouverture = { type: "route"; chemin: string } | { type: "aucune" };
+/** comment on entre dans l'univers : une adresse réelle de l'application, une référence publiée d'ATLAS (application séparée,
+ *  destination fixe : lib/one/atlas), ou rien (en préparation) */
+export type Ouverture = { type: "route"; chemin: string } | { type: "atlas"; reference: ReferenceAtlas } | { type: "aucune" };
 
 export interface Univers {
   /** identifiant stable (jamais renommé : il sert aux favoris de la personne) */
@@ -71,7 +74,8 @@ export function verifierUnivers(u: Univers): string[] {
   const e: string[] = [];
   if (!/^[a-z][a-z0-9-]{1,31}$/.test(u.id)) e.push("identifiant invalide");
   if (!u.nom.trim() || !u.phrase.trim()) e.push("nom et phrase obligatoires");
-  if (u.statut === "disponible" && u.ouverture.type !== "route") e.push("« disponible » exige un moteur raccordé (une ouverture réelle)");
+  if (u.statut === "disponible" && u.ouverture.type === "aucune") e.push("« disponible » exige un moteur raccordé (une ouverture réelle)");
+  if (u.ouverture.type === "atlas" && !resoudreAtlas(u.ouverture.reference).ok) e.push("la référence ATLAS n’est pas publiée");
   if (u.statut === "preparation" && u.ouverture.type !== "aucune") e.push("« en préparation » ne s'ouvre pas encore");
   if (u.demonstration && u.statut !== "experimental") e.push("un univers de démonstration est toujours « expérimental »");
   if (u.visuel && (!u.visuel.credit.trim() || !u.visuel.alt.trim())) e.push("un visuel sans crédit ni description");

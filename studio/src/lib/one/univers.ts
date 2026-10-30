@@ -5,6 +5,7 @@
  * Un univers ajouté ici (ou enregistré à l'exécution) reçoit sa case sans autre code.
  */
 import { verifierUnivers, type Univers } from "./contrat";
+import { REFERENCE_CUBE_GRILLE } from "./atlas";
 
 const B = (chemin: string) => ({ type: "route" as const, chemin });
 const AUCUNE = { type: "aucune" as const };
@@ -33,6 +34,10 @@ export const UNIVERS: Univers[] = [
     familles: [{ id: "naviguer", nom: "Naviguer", icone: "visite" }, { id: "fichiers", nom: "Fichiers", icone: "document" }, { id: "git", nom: "Git", icone: "git" }, { id: "chercher", nom: "Chercher", icone: "chercher" },
       { id: "audio", nom: "Audio", icone: "son" }, { id: "historique", nom: "Historique", icone: "historique" }, { id: "executer", nom: "Exécuter", icone: "executer" }, { id: "reglages", nom: "Réglages", icone: "reglages" }],
     ouverture: B("one/terminal"), modules: ["indicateurs"] },
+  { id: "atlas", nom: "ATLAS", phrase: "Le Cube : ouvrez une création publique d’ATLAS.", ordre: 6, statut: "disponible", publication: "publie", teinte: "#3f3f46",
+    description: "ATLAS est une application indépendante (le Cube, la grille, la chronologie). Le Disque ne la recopie pas : il ouvre ses créations publiques chez elle, dans un nouvel onglet, sans rien lui transmettre de vous.", icone: "categories", centre: "contexte",
+    familles: [{ id: "creations", nom: "Créations publiques", icone: "categories" }],
+    ouverture: { type: "atlas", reference: REFERENCE_CUBE_GRILLE }, modules: [] },
   { id: "mariage", nom: "Mariage", phrase: "Organisez le grand jour, du plan à la musique.", ordre: 10, statut: "preparation", publication: "publie", teinte: "#a56c20",
     description: "Programme, couple, moments : le Disque de l’union. Le site AIME Wedding existe déjà, hors de .0NE ; son moteur n’est pas encore raccordé ici.", icone: "anneaux", centre: "programme",
     familles: [{ id: "temps", nom: "Temps", icone: "horloge" }, { id: "invites", nom: "Invités", icone: "personnes" }, { id: "prestataires", nom: "Prestataires", icone: "reseau" }, { id: "musique", nom: "Musique", icone: "note" }, { id: "documents", nom: "Documents", icone: "document" }],
