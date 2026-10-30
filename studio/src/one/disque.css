@@ -28,8 +28,8 @@
 .dq-bureau figcaption { display: grid; gap: 2px; text-align: center; font-size: .84rem; } .dq-bureau figcaption span { color: var(--aime-texte-2, #55555a); }
 .dq-demo { font-style: normal; font-size: .72rem; color: #8a6a2a; }
 .dq-fils { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; } .dq-fils i { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.12); } .dq-fils span { font-size: .75rem; color: #55555a; }
-.dq-vide, .dq-accueil, .dq-presentation { display: grid; gap: 6px; justify-items: center; text-align: center; padding: 0 18%; font-size: .9rem; color: var(--aime-texte-2, #55555a); }
-.dq-vide p, .dq-accueil p, .dq-presentation p { margin: 0; }
+.dq-vide, .dq-centre .dq-accueil, .dq-presentation { display: grid; gap: 6px; justify-items: center; text-align: center; padding: 0 18%; font-size: .9rem; color: var(--aime-texte-2, #55555a); }
+.dq-vide p, .dq-centre .dq-accueil p, .dq-presentation p { margin: 0; }
 .dq-vide-titre { font-weight: 650; font-size: 1.1rem; color: var(--aime-texte, #111) !important; }
 .dq-orbe { width: 44px; height: 44px; margin-bottom: 6px; }
 .dq-mini-orbe { width: 18px; height: 18px; }

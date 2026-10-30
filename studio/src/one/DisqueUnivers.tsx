@@ -10,10 +10,10 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { DESTINATIONS } from "../lib/destinations";
-import { ArrowLeft, Info, LayoutGrid, SlidersHorizontal, Film, X } from "lucide-react";
+import { ArrowLeft, Info, LayoutGrid, X } from "lucide-react";
 import DisqueOne from "../components/one/DisqueOne";
 import { IconeOne } from "../components/one/icones";
-import { NOMS_STATUTS, universPublics, type Univers } from "../lib/one/contrat";
+import { NOMS_STATUTS, universPublics } from "../lib/one/contrat";
 import { suivreUnivers, tousLesUnivers } from "../lib/one/univers";
 import { appliquerOne, lireOne, themeOne } from "../lib/one/preferences";
 import { ecrireEtat, lireEtat, memoriserRetour, type ContexteUnivers, type EtatContexte, type OutilsContexte } from "../lib/one/contextes";
@@ -21,6 +21,7 @@ import type { ModePoint } from "../lib/point/modes";
 import { GALERIE } from "./disque/galerie";
 import { BUREAU } from "./disque/bureau";
 import { BRODERIE, deploiement, presentation } from "./disque/autres";
+import { CotesPortail, PORTAIL } from "./disque/portail";
 import "../design/aime.css";
 import "./one.css";
 import "./disque.css";
@@ -31,22 +32,6 @@ const RACCORDES: Record<string, ContexteUnivers> = {
   terminal: deploiement("terminal", "one/terminal", "Le Disque Terminal : vos fichiers, Git et l’audio, sur un vrai dossier"),
   "carte-vivante": deploiement("carte-vivante", "essai-carte", "La Carte vivante : une carte, plusieurs formes, une seule adresse"),
 };
-
-/** l'accueil : le Point, vos univers favoris dans la couronne */
-const ACCUEIL = (favoris: Univers[], tous: Univers[]): ContexteUnivers => ({
-  id: "accueil", permissions: { partager: false, modifier: false, supprimer: false },
-  Composant({ outils, publier }) {
-    const p = lireOne(), prenom = p.identite.prenom.trim();
-    useEffect(() => {
-      publier([
-        ...favoris.map((u): ModePoint => ({ id: "u-" + u.id, nom: u.nom, icone: <IconeOne nom={u.icone} />, groupe: "metier", aide: `${u.phrase} — ${NOMS_STATUTS[u.statut]}`, ouvrir: () => outils.changerUnivers(u.id) })),
-        { id: "lumiere", nom: "LUMIERE", icone: <Film aria-hidden="true" />, groupe: "socle", aide: "Vivre LUMIERE : le film, en version complète", ouvrir: () => outils.deployer("one/lumiere/vivre") },
-        { id: "reglages", nom: "Mes réglages", icone: <SlidersHorizontal aria-hidden="true" />, groupe: "socle", aide: "le confort : affichage, sons, interaction", ouvrir: () => outils.deployer("one/premiere-rencontre") },
-      ], `${tous.length} univers · ${favoris.length} dans votre couronne. Choisissez un univers : le Disque devient son outil.`);
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-    return <div className="dq-accueil"><span className="one-orbe dq-orbe" aria-hidden="true" /><p className="dq-vide-titre">{prenom ? `Bonjour ${prenom}` : ".0NE"}</p><p>Un Point. Tous les univers.</p></div>;
-  },
-});
 
 function useMobile() {
   const [m, setM] = useState(() => window.matchMedia?.("(max-width: 640px)").matches ?? false);
@@ -73,8 +58,6 @@ export default function DisqueUnivers() {
   useEffect(() => { appliquerOne(p); }, [p]);
   const theme = themeOne(p), mobile = useMobile();
   const tous = universPublics(tousLesUnivers());
-  const favoris = p.favoris.map(id => tous.find(u => u.id === id)).filter((u): u is Univers => !!u);
-  const enCouronne = favoris.length ? favoris : tous.filter(u => RACCORDES[u.id]).slice(0, 5);
 
   const [etat, setEtat] = useState<EtatContexte>(lireEtat);
   const [commandes, setCommandes] = useState<ModePoint[]>([]);
@@ -93,7 +76,7 @@ export default function DisqueUnivers() {
   }, []);
   const u = tous.find(x => x.id === etat.u) ?? null;
   /* un contexte = un composant stable (sinon le centre serait remonté à chaque rendu) */
-  const contexte: ContexteUnivers = useMemo(() => etat.u === "accueil" || !u ? ACCUEIL(enCouronne, tous) : RACCORDES[u.id] ?? presentation(u), [etat.u, u?.id, tous.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const contexte: ContexteUnivers = useMemo(() => etat.u === "accueil" || !u ? PORTAIL(() => setGrille(true)) : RACCORDES[u.id] ?? presentation(u), [etat.u, u?.id, tous.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const etatRef = useRef(etat); etatRef.current = etat;
   useEffect(() => { document.title = u ? `${u.nom} — .0NE` : ".0NE"; requestAnimationFrame(() => titre.current?.focus({ preventScroll: true })); }, [etat.u]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -109,7 +92,8 @@ export default function DisqueUnivers() {
   const publier = useCallback((m: ModePoint[], l?: string) => { setCommandes(m); setLigne(l ?? ""); }, []);
 
   /* la couronne : le contexte, puis les communs (Univers, À propos, Retour) */
-  const communs: ModePoint[] = [
+  /* au Portail, la couronne est FAIRE · ALLER · VOIR · ORIGINE (les univers sont dans ALLER) */
+  const communs: ModePoint[] = contexte.id === "accueil" ? [] : [
     { id: "c-univers", nom: "Univers", groupe: "socle", icone: <LayoutGrid aria-hidden="true" />, aide: "la grille de tous les univers (ATLAS)", actif: grille, ouvrir: () => setGrille(true) },
     ...(u ? [{ id: "c-apropos", nom: "À propos", groupe: "socle" as const, icone: <Info aria-hidden="true" />, aide: `la présentation de ${u.nom}`, ouvrir: () => setApropos(true) },
       { id: "c-retour", nom: ".0NE", groupe: "socle" as const, icone: <span className="one-orbe dq-mini-orbe" aria-hidden="true" />, aide: "revenir à l’accueil du Disque", ouvrir: () => naviguer({ u: "accueil" }) }] : []),
@@ -137,6 +121,7 @@ export default function DisqueUnivers() {
             <button type="submit" className="one-bouton">OK</button><button type="button" className="one-bouton" onClick={() => { question.f(""); setQuestion(null); }}>Effacer</button></form>
           : <p className="dq-ligne">{message || ligne}</p>}
       </div>
+      {contexte.id === "accueil" && <CotesPortail etat={etat} outils={outils} />}
     </main>
 
     {grille && <div className="dq-voile" role="dialog" aria-modal="true" aria-labelledby="dq-grille-titre" onKeyDown={e => { if (e.key === "Escape") setGrille(false); }}>
