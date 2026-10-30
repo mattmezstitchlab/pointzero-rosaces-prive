@@ -63,6 +63,16 @@
       "permanent": false
     },
     {
+      "source": "/accueil",
+      "destination": "/studio/accueil",
+      "permanent": false
+    },
+    {
+      "source": "/atlas",
+      "destination": "https://atlas-de-pique-de-coeur.vercel.app/",
+      "permanent": false
+    },
+    {
       "source": "/explorer",
       "destination": "/studio/explorer",
       "permanent": false

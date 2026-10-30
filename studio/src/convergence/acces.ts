@@ -22,11 +22,13 @@ export const AIDE_STATUTS: Record<Statut, string> = {
 
 export interface Acces { id: string; nom: string; phrase: string; chemin?: string; statut: Statut; preuve?: string; groupe: "parcours" | "disques" | "ateliers" | "essais" | "ailleurs" }
 
+import { ATLAS_URL } from "../lib/destinations";
 const S = import.meta.env.BASE_URL;   // /studio/
 export const ACCES: Acces[] = [
-  { id: "film", groupe: "parcours", nom: "Découvrir AIME — l’ouverture LUMIERE", phrase: "44 s, sans texte : une étoile, une perle, une onde, puis .0NE. Facultative.", chemin: S + "one/lumiere", statut: "teste", preuve: "e2e Chromium · WebKit · Firefox" },
+  { id: "film", groupe: "parcours", nom: "Découvrir AIME — l’ouverture LUMIERE", phrase: "Le clip de « La Fleur du Ciel », sans texte, puis la Première rencontre. « Passer » est toujours là.", chemin: S + "one/lumiere", statut: "teste", preuve: "e2e Chromium · WebKit · Firefox" },
   { id: "vivre", groupe: "parcours", nom: "Vivre LUMIERE — La Fleur du Ciel", phrase: "Le chapitre complet (4 min 13) : lecture, pause, scènes, reprise. L’impact reste à 03:18.255.", chemin: S + "one/lumiere/vivre", statut: "prototype", preuve: "moteur de montage : 14 tests unitaires" },
   { id: "rencontre", groupe: "parcours", nom: "Première rencontre", phrase: "Régler l’interface pour soi : confort visuel, son, interaction, besoins.", chemin: S + "one/premiere-rencontre", statut: "teste", preuve: "e2e .0NE 24/24" },
+  { id: "accueil", groupe: "parcours", nom: "Accueil AIME — le Disque ou le Cube", phrase: "Après la Première rencontre : choisir .0NE (le Disque) ou ATLAS (le Cube, site séparé).", chemin: S + "accueil", statut: "teste", preuve: "e2e parcours_aime 44/44 (Chromium, WebKit, téléphone)" },
   { id: "univers", groupe: "parcours", nom: ".0NE — le Disque universel", phrase: "Un seul Disque : un univers est un contexte. Galerie, Bureau, Broderie au centre.", chemin: S + "one/univers", statut: "prototype", preuve: "parcours de démonstration testé (ordinateur, téléphone)" },
   { id: "galerie-disque", groupe: "disques", nom: "Galerie — les rosaces au centre", phrase: "Parcourir, filtrer (deuxième couronne), agrandir, broder.", chemin: S + "one/univers?u=galerie", statut: "prototype" },
   { id: "bureau-disque", groupe: "disques", nom: "Bureau — vos ouvrages au centre", phrase: "Vos vrais ouvrages ; Ouvrir les déploie dans Broderie, le retour garde le contexte.", chemin: S + "one/univers?u=bureau", statut: "prototype" },
@@ -49,7 +51,7 @@ export const ACCES: Acces[] = [
   { id: "ripplecircle", groupe: "ailleurs", nom: "RIPPLECIRCLE — cadran vivant (démonstration)", phrase: "Le prototype d’origine, encore lié à la démonstration mariage.", chemin: "https://ripplecircle.vercel.app/", statut: "externe" },
   { id: "openaime", groupe: "ailleurs", nom: "OpenAIME", phrase: "Projet séparé, non intégré à cette version.", chemin: "https://openaime.vercel.app/", statut: "externe" },
   { id: "reseau", groupe: "ailleurs", nom: "Réseau (démonstration)", phrase: "Les pages Réseau du site AIME ; le moteur relationnel complet n’est pas intégré à .0NE.", chemin: "/reseau", statut: "public" },
-  { id: "atlas", groupe: "ailleurs", nom: "ATLAS — la grille des fragments", phrase: "La grille universelle : chaque fragment garde sa provenance. Le projet local d’ATLAS n’est pas encore relié à .0NE ; dans le film, la grille l’annonce.", statut: "non-raccorde" },
+  { id: "atlas", groupe: "ailleurs", nom: "ATLAS — Atlas de pique de cœur", phrase: "La grille universelle : la chronologie, les projets, l’éditeur, les modules. Application indépendante, rien n’est copié dans .0NE.", chemin: ATLAS_URL, statut: "externe" },
   { id: "site", groupe: "ailleurs", nom: "Le site AIME actuel", phrase: "Les pages publiques aujourd’hui en ligne (BurO, Musique, AIME Wedding…).", chemin: "/buro", statut: "public" },
 ];
 

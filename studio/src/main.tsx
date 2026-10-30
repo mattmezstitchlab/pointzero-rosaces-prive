@@ -21,6 +21,7 @@ const FilmLumiere = lazy(() => import("./film/lumiere/Film"));
 const VivreLumiere = lazy(() => import("./film/lumiere/Vivre"));
 const PlanchesLumiere = lazy(() => import("./film/lumiere/Planches"));
 const Explorer = lazy(() => import("./convergence/Explorer"));
+const Accueil = lazy(() => import("./accueil/Accueil"));
 import { GardeExperience, NavigationConvergence } from "./convergence/Navigation";
 
 /* essai privé : le bloc Image, piloté par le même Point (aucune autre application) */
@@ -51,13 +52,16 @@ const vivreLumiere = /\/one\/lumiere\/vivre\/?$/.test(window.location.pathname);
 const planchesLumiere = /\/one\/lumiere\/planches\/?$/.test(window.location.pathname);
 /* la convergence : une page pour tout ouvrir */
 const explorer = /\/explorer\/?$/.test(window.location.pathname);
+/* l'accueil de choix AIME : le Disque (.0NE) ou le Cube (ATLAS) */
+const accueil = /\/accueil\/?$/.test(window.location.pathname);
 const essaiTraversee = /\/essai-traversee\/?$/.test(window.location.pathname);
 
 appliquerApercuAime();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode><GardeExperience>
-    {explorer ? <Suspense fallback={null}><Explorer /></Suspense>
+    {accueil ? <AccessibilityShell><Suspense fallback={null}><Accueil /></Suspense></AccessibilityShell>
+      : explorer ? <Suspense fallback={null}><Explorer /></Suspense>
       : bureau ? <Suspense fallback={null}><Bureau /></Suspense>
       : essaiCarte ? <Suspense fallback={null}><EssaiCarte /></Suspense>
       : essaiAime ? <Suspense fallback={null}><EssaiAime /></Suspense>
@@ -74,5 +78,5 @@ createRoot(document.getElementById("root")!).render(
       : essaiTraversee ? <AccessibilityShell><Suspense fallback={null}><EssaiTraversee /></Suspense></AccessibilityShell>
       : essaiImage ? <AccessibilityShell><Suspense fallback={null}><EssaiImage /></Suspense></AccessibilityShell>
       : <AccessibilityShell><StorageRecoveryNotice/><App /></AccessibilityShell>}
-  </GardeExperience>{!filmLumiere && !vivreLumiere && !planchesLumiere && !oneUnivers && <NavigationConvergence />}</StrictMode>
+  </GardeExperience>{!filmLumiere && !vivreLumiere && !planchesLumiere && !oneUnivers && !accueil && <NavigationConvergence />}</StrictMode>
 );

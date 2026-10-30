@@ -26,7 +26,9 @@ with sync_playwright() as p:
     pg.get_by_role('button', name=re.compile('Passer')).click(); pg.wait_for_selector('.one-marque', timeout=20000)
     ok('Bienvenue' in pg.locator('h1').first.text_content(), '2. Passer → la vraie Première rencontre')
     if CAP: pg.screenshot(path=f'{CAP}/cv-2-rencontre.png')
-    pg.get_by_role('link', name='Explorer sans configuration').click(); pg.wait_for_load_state('networkidle'); pg.wait_for_timeout(800)
+    pg.get_by_role('link', name='Continuer sans régler').click(); pg.wait_for_selector('.ac-porte', timeout=20000)
+    ok(pg.url.endswith('/studio/accueil'), '2. → l’accueil de choix (le Disque ou le Cube)')
+    pg.get_by_role('link', name=re.compile(r'^Le cercle \.0NE')).click(); pg.wait_for_load_state('networkidle'); pg.wait_for_timeout(800)
     ok('/one/univers' in pg.url and pg.locator('.dq .one-disque, .dq .dq-liste').count() > 0, f'2. → .0NE, le Disque universel ({pg.url})')
     if CAP: pg.screenshot(path=f'{CAP}/cv-3-univers.png')
 
@@ -51,8 +53,8 @@ with sync_playwright() as p:
         garde = pg.locator('.cv-erreur').count()
         corps = pg.evaluate('document.body.innerText.trim().length')
         ok(not garde and corps > 40 and not err, f'4. « {nom} » s’ouvre ({href}){" — " + err[0][:80] if err else ""}{" — garde" if garde else ""}')
-        film = '/one/lumiere' in href or '/one/univers' in href   # le film : Passer/Quitter ; le Disque : il est la navigation
-        ok(pg.locator('.cv-nav-bouton').count() == (0 if film else 1) and (not film or pg.get_by_role('button', name=re.compile('Passer|Quitter|Entrer|Univers')).count() + pg.get_by_role('link', name=re.compile('Quitter|.0NE')).count() >= 1), f'4. « {nom} » garde un retour ({"le Disque / Passer / Quitter" if film else "navigation"})')
+        film = '/one/lumiere' in href or '/one/univers' in href or href.endswith('/accueil')   # le film : Passer/Quitter ; le Disque et l'accueil : ils sont la navigation
+        ok(pg.locator('.cv-nav-bouton').count() == (0 if film else 1) and (not film or pg.get_by_role('button', name=re.compile('Passer|Quitter|Entrer|Univers')).count() + pg.get_by_role('link', name=re.compile('Quitter|.0NE|AIME')).count() >= 1), f'4. « {nom} » garde un retour ({"le Disque / Passer / Quitter" if film else "navigation"})')
         if CAP: pg.screenshot(path=f'{CAP}/cv-acces-{re.sub("[^a-z0-9]+", "-", nom.lower())[:30]}.png')
 
     # 5. une adresse inconnue ou cassée ne laisse jamais un écran vide

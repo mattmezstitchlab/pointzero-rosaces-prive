@@ -3,7 +3,7 @@ Preuves : un réglage change réellement le Disque (aperçu, géométrie) et se 
 facultatif, interrompable et reprenable ; aucun diagnostic n'est enregistré ; la mosaïque est lue dans le registre (un univers de
 démonstration y entre sans composant de plus) ; les statuts sont dits ; un univers en préparation ne s'ouvre pas.
 Usage : cd studio && npx vite build && npx vite preview --port 4620, puis  python3 tests/e2e/one.py   (CAPTURES=<dossier>)"""
-import os, json
+import os, re, json
 from playwright.sync_api import sync_playwright
 B = os.environ.get('BASE', 'http://localhost:4620'); CAP = os.environ.get('CAPTURES')
 res, erreurs = [], []
@@ -23,7 +23,7 @@ with sync_playwright() as p:
         ctx = b.new_context(viewport={'width': 1440, 'height': 900})
         pg = ctx.new_page(); pg.set_default_timeout(8000); pg.on('pageerror', lambda e: erreurs.append(str(e)))
         pg.goto(B + '/one/premiere-rencontre'); pg.wait_for_selector('.one-disque .pzt'); pg.wait_for_timeout(400)
-        ok(pg.get_by_role('heading', name='Bienvenue dans .0NE.').count() == 1 and pg.get_by_role('link', name='Explorer sans configuration').count() == 1, 'accueil : Bienvenue dans .0NE ; Commencer ou Explorer sans configuration (aucun compte)')
+        ok(pg.get_by_role('heading', name='Bienvenue dans .0NE.').count() == 1 and pg.get_by_role('link', name='Continuer sans régler').count() == 1, 'accueil : Bienvenue dans .0NE ; Commencer ou Continuer sans régler (aucun compte)')
         ok(set(['confort', 'u-broderie', 'u-bureau', 'tous-les-univers', 'premiere-rencontre']) <= set(ids(pg)), f'le Disque réel au centre de la page : {", ".join(ids(pg))}')
         cap(pg, '0-accueil')
         bouton(pg, 'Commencer').click(); pg.wait_for_timeout(400)
@@ -75,7 +75,7 @@ with sync_playwright() as p:
         continuer(pg)
         ok(pg.get_by_role('heading', name='Camille, tout est prêt.').count() == 1 and 'cet appareil seulement' in pg.locator('.one-resume').text_content(), 'Prêt : résumé réel ; la synchronisation est dite locale')
         cap(pg, '3-pret')
-        pg.get_by_role('link', name='Entrer dans mon .0NE').click(); pg.wait_for_selector('.dq'); ok('/one/univers' in pg.url, '« Entrer dans mon .0NE » ouvre le Disque universel')
+        pg.get_by_role('link', name='Continuer vers l’accueil').click(); pg.wait_for_selector('.ac-porte'); pg.get_by_role('link', name=re.compile(r'^Le cercle \.0NE')).click(); pg.wait_for_selector('.dq'); ok('/one/univers' in pg.url, '« Continuer vers l’accueil » puis le Disque : le Disque universel')
         pg.goto(B + '/one/mosaique'); pg.wait_for_selector('.om-grille'); pg.wait_for_timeout(500)   # l'ancienne mosaïque, gardée
         ok('u-culture' in ids(pg) and 'Bonjour Camille' in pg.locator('.one-disque').first.text_content(), 'Entrer dans mon .0NE : le même Disque, les mêmes réglages, sur la mosaïque')
         # la mosaïque : lue dans le registre

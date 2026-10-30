@@ -9,6 +9,7 @@
  * - Téléphone : le contenu prend la largeur, les mêmes commandes en liste, le Point reste en haut.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { DESTINATIONS } from "../lib/destinations";
 import { ArrowLeft, Info, LayoutGrid, SlidersHorizontal, Film, X } from "lucide-react";
 import DisqueOne from "../components/one/DisqueOne";
 import { IconeOne } from "../components/one/icones";
@@ -122,6 +123,7 @@ export default function DisqueUnivers() {
       <a className="one-marque" href={BASE + "one/univers"} onClick={e => { e.preventDefault(); naviguer({ u: "accueil" }); }}><span className="one-orbe" aria-hidden="true" />.0NE</a>
       <nav className="dq-fil" aria-label="Où je suis"><span>{u ? u.nom : "Accueil"}</span>{u && <span className={"dq-statut-mini om-" + u.statut}>{NOMS_STATUTS[u.statut]}</span>}</nav>
       <button type="button" className="one-bouton dq-bouton-grille" onClick={() => setGrille(true)}><LayoutGrid aria-hidden="true" />Univers</button>
+      <a className="one-bouton dq-accueil" href={DESTINATIONS.accueil} aria-label="Accueil AIME">Accueil<span className="dq-accueil-aime"> AIME</span></a>
     </header>
     <main className="dq-scene">
       <h1 ref={titre} tabIndex={-1} className="sr-only">{u ? `${u.nom}, dans le Disque .0NE` : "Le Disque .0NE"}</h1>

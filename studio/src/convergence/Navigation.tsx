@@ -5,14 +5,17 @@
  */
 import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import { lireRetour } from "../lib/one/contextes";
+import { ATLAS_URL } from "../lib/destinations";
 import "./convergence.css";
 
 const S = import.meta.env.BASE_URL;
 const liens = (base: string) => [
+  { nom: "Accueil AIME — le Disque ou le Cube", chemin: base + "accueil" },
   { nom: ".0NE — tous les univers", chemin: base + "one/univers" },
   { nom: "Explorer les prototypes", chemin: base + "explorer" },
   { nom: "Le film LUMIERE", chemin: base + "one/lumiere" },
-  { nom: "Réglages de confort", chemin: base + "one/premiere-rencontre" },
+  { nom: "Mes préférences", chemin: base + "one/premiere-rencontre?modifier" },
+  { nom: "ATLAS (site séparé) ↗", chemin: ATLAS_URL },
 ];
 
 /** `base` : l'adresse du studio (.0NE) ; le site AIME, servi à la racine, passe "/studio/". */
@@ -54,7 +57,7 @@ export class GardeExperience extends Component<{ children: ReactNode; nom?: stri
       <h1>Cette expérience s’est interrompue.</h1>
       <p>{this.props.nom ? `« ${this.props.nom} » ` : "Cette page "}n’a pas pu s’afficher sur cet appareil. Rien n’a été perdu : vos réglages restent sur cet appareil.</p>
       <div className="cv-actions">
-        <a className="cv-bouton cv-plein" href={S + "one/univers"}>Revenir à .0NE</a>
+        <a className="cv-bouton cv-plein" href={S + "accueil"}>Revenir à l’accueil AIME</a>
         <a className="cv-bouton" href={S + "explorer"}>Explorer les prototypes</a>
         <button type="button" className="cv-bouton" onClick={() => location.reload()}>Réessayer</button>
       </div>

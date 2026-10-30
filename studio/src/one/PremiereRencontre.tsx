@@ -13,6 +13,7 @@ import { ACCENTS, type Preferences } from "../lib/accessibilityCore";
 import { appliquerOne, BESOINS, ecrireOne, lireOne, proposerPourBesoins, type Cibles, type IdBesoin, type PreferencesOne, themeOne } from "../lib/one/preferences";
 import { NOMS_STATUTS } from "../lib/one/contrat";
 import { suivreUnivers, tousLesUnivers } from "../lib/one/univers";
+import { DESTINATIONS } from "../lib/destinations";
 import "../design/aime.css";
 import "./one.css";
 
@@ -39,8 +40,13 @@ function jouer(volume: number) {
   } catch { return false; }
 }
 
+/** Préférences déjà enregistrées : on va directement à l'accueil de choix, sauf si la personne vient les modifier (?modifier). */
+const MODIFIER = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("modifier");
+
 export default function PremiereRencontre() {
-  const [p, setP] = useState<PreferencesOne>(lireOne);
+  const [p, setP] = useState<PreferencesOne>(() => { const q = lireOne(); return MODIFIER ? { ...q, rencontre: { ...q.rencontre, etape: 0 } } : q; });
+  const dejaFaite = useRef(!MODIFIER && lireOne().rencontre.terminee);
+  useEffect(() => { if (dejaFaite.current) window.location.replace(DESTINATIONS.accueil); }, []);
   const [enregistre, setEnregistre] = useState(true);
   const [annonce, setAnnonce] = useState("");
   const [signal, setSignal] = useState(0);
@@ -75,7 +81,7 @@ export default function PremiereRencontre() {
     {etape > 0 && <button type="button" className="one-bouton" onClick={() => aller(etape - 1)}><ArrowLeft aria-hidden="true" />Retour</button>}
     {etape < ETAPES.length - 1
       ? <button type="button" className="one-bouton one-bouton-plein" onClick={() => aller(etape + 1)}>{etape === 0 ? "Commencer" : "Continuer"}<ArrowRight aria-hidden="true" /></button>
-      : <a className="one-bouton one-bouton-plein" href={import.meta.env.BASE_URL + "one/univers"}>Entrer dans mon .0NE<ArrowRight aria-hidden="true" /></a>}
+      : <a className="one-bouton one-bouton-plein" href={DESTINATIONS.accueil}>Continuer vers l’accueil<ArrowRight aria-hidden="true" /></a>}
   </div>;
 
   let corps: ReactNode;
@@ -86,7 +92,7 @@ export default function PremiereRencontre() {
     <p className="one-texte">Quelques étapes, toutes facultatives. Chaque réglage s’applique tout de suite et reste sur cet appareil. Aucun compte n’est nécessaire pour essayer.</p>
     <div className="one-pied">
       <button type="button" className="one-bouton one-bouton-plein" onClick={() => aller(1)}>{p.rencontre.terminee ? "Revoir mes réglages" : "Commencer"}<ArrowRight aria-hidden="true" /></button>
-      <a className="one-bouton" href={import.meta.env.BASE_URL + "one/univers"}>Explorer sans configuration</a>
+      <a className="one-bouton" href={DESTINATIONS.accueil}>Continuer sans régler</a>
     </div>
   </>;
   else if (etape === 1) corps = <>
@@ -173,9 +179,9 @@ export default function PremiereRencontre() {
 
   return <div className="one one-rencontre" data-aime={theme} data-etape={etape}>
     <header className="one-tete">
-      <a className="one-marque" href={import.meta.env.BASE_URL + "one/univers"}><span className="one-orbe" aria-hidden="true" />.0NE</a>
+      <a className="one-marque" href={DESTINATIONS.accueil}><span className="one-orbe" aria-hidden="true" />AIME</a>
       {etape > 0 && <ol className="one-progres" aria-label={`Étape ${etape} sur ${ETAPES.length - 1}`}>{ETAPES.slice(1).map((n, k) => <li key={n} aria-current={k + 1 === etape ? "step" : undefined}><span className="sr-only">{n}</span></li>)}</ol>}
-      <a className="one-bouton one-passer" href={import.meta.env.BASE_URL + "one/univers"}>{etape > 0 ? "Plus tard" : "Passer"}</a>
+      <a className="one-bouton one-passer" href={DESTINATIONS.accueil}>{etape > 0 ? "Plus tard" : "Passer"}</a>
     </header>
     <main className="one-grille">
       <section className="one-colonne" aria-labelledby="one-etape">
