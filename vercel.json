@@ -62,23 +62,8 @@
   "installCommand": "npm ci && npm ci --prefix studio",
   "redirects": [
     {
-      "source": "/",
-      "destination": "/studio/one/lumiere",
-      "permanent": false
-    },
-    {
-      "source": "/accueil",
-      "destination": "/studio/accueil",
-      "permanent": false
-    },
-    {
       "source": "/atlas",
-      "destination": "https://atlas-de-pique-de-coeur.vercel.app/",
-      "permanent": false
-    },
-    {
-      "source": "/explorer",
-      "destination": "/studio/explorer",
+      "destination": "https://atlas.lemondeaime.com/",
       "permanent": false
     },
     {
@@ -89,11 +74,6 @@
     {
       "source": "/bureau",
       "destination": "/studio/bureau",
-      "permanent": false
-    },
-    {
-      "source": "/galerie",
-      "destination": "/studio/galerie",
       "permanent": false
     }
   ],

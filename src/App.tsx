@@ -16,6 +16,7 @@ import { APlus, Introuvable } from './pages/Simples';
 import { aller } from './lib/router';
 
 const PAGES: Record<string, [() => React.JSX.Element, string]> = {
+  '/': [Portfolio, 'LE MONDE AIME — les projets d’AIME'],
   '/projets': [Portfolio, 'LE MONDE AIME — les projets d’AIME'],
   '/aime-wedding': [AimeWedding, 'AIME Wedding — le site officiel de l’union'],
   '/admin': [Admin, 'LE MONDE AIME — Administration'],
@@ -30,16 +31,14 @@ const PAGES: Record<string, [() => React.JSX.Element, string]> = {
 };
 /* « Le Monde AIME » est la page des projets : /monde y mène (et non plus à la landing Broderie) */
 const ANCIENNES: Record<string, string> = { '/charte': '/projets', '/monde': '/projets' };
-/* l'accueil du site (en production) : le studio de broderie ; sur l'aperçu, vercel.json ouvre d'abord le film LUMIERE */
-const STUDIO = '/studio/';
+/* l'accueil du site : Le Monde AIME, la page des projets (décision de Matt, 31/10/2026) */
 export default function App() {
   const chemin = useChemin().replace(/\/+$/, '') || '/';
-  useEffect(() => { if (chemin === '/') window.location.replace(STUDIO); else if (ANCIENNES[chemin]) aller(ANCIENNES[chemin] + window.location.search + window.location.hash); }, [chemin]);
+  useEffect(() => { if (ANCIENNES[chemin]) aller(ANCIENNES[chemin] + window.location.search + window.location.hash); }, [chemin]);
   const fiche = /^\/reseau\/([a-z0-9-]{1,60})$/.exec(chemin);
   const projet = /^\/projets\/([a-z0-9-]{1,60})$/.exec(chemin);
   const [Page, titre] = PAGES[ANCIENNES[chemin] || chemin] || [Introuvable, 'LE MONDE AIME — Page introuvable'];
   useEffect(() => { if (!fiche && !projet) document.title = titre; }, [titre, fiche, projet]);
-  if (chemin === '/') return <></>;
   if (fiche) return <FicheReseau key={fiche[1]} cle={fiche[1]} />;
   if (projet) return <Projet key={projet[1]} slug={projet[1]} />;
   return <Page />;

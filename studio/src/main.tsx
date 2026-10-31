@@ -6,7 +6,7 @@ import { appliquerApercuAime } from "./design/aimeStudio";
 import App from "./App";
 import StorageRecoveryNotice from "./components/StorageRecoveryNotice";
 import AccessibilityShell from "./components/AccessibilityShell";
-import { SITE_BRODERIE } from "./lib/site";
+import { SITE_BRODERIE, PROTOTYPES } from "./lib/site";
 const EssaiImage = lazy(() => import("./essais/EssaiImage"));
 const Bureau = lazy(() => import("./bureau/Bureau"));
 const EssaiCarte = lazy(() => import("./essais/EssaiCarte"));
@@ -60,14 +60,21 @@ const essaiTraversee = /\/essai-traversee\/?$/.test(window.location.pathname);
 appliquerApercuAime();
 /* le site Point Zéro (broderie seule) : seules la landing, l'atelier et le Tambour vivant existent ; toute autre adresse ramène à l'accueil */
 const horsBroderie = !/^\/(atelier|tambour)?\/?$/.test(window.location.pathname.slice(import.meta.env.BASE_URL.length - 1));
-if (SITE_BRODERIE && horsBroderie) window.location.replace(import.meta.env.BASE_URL);
+const quitterBroderie = SITE_BRODERIE && horsBroderie;
+if (quitterBroderie) window.location.replace(import.meta.env.BASE_URL);
+/* lemondeaime.com (sans VITE_PROTOTYPES) : le film LUMIERE, la Galerie, Explorer, les essais et l'accueil du Disque et du Cube ne sont pas publics ;
+   leur adresse ramène à .0NE (le Bureau éditorial reste, réservé à l'administration côté serveur) */
+const prive = accueil || explorer || essaiCarte || essaiAime || galerie || filmLumiere || vivreLumiere || planchesLumiere || essaiTraversee || essaiImage;
+const quitterPrive = !PROTOTYPES && !SITE_BRODERIE && prive;
+if (quitterPrive) window.location.replace(import.meta.env.BASE_URL + "one/univers");
 /* le titre de l'onglet dit où l'on est (sinon, celui de la landing Broderie s'affichait partout) ; une page qui connaît mieux son titre le remplace */
 const TITRES: [boolean, string][] = [[explorer, "Explorer les prototypes — AIME"], [bureau, "Le Bureau — AIME"], [onePremiere, "Première rencontre — .0NE"],
   [oneTerminalOrbe, "Disque Terminal, l’orbe relationnelle — .0NE"], [oneTerminal, "Disque Terminal — .0NE"], [oneMosaique, "Tous les univers — .0NE"],
   [planchesLumiere, "LUMIERE — les planches"], [essaiCarte, "Essai · la carte vivante"], [essaiTraversee, "Essai · la traversée du Point"]];
 const titre = TITRES.find(([v]) => v)?.[1]; if (titre) document.title = titre;
 
-createRoot(document.getElementById("root")!).render(
+/* une adresse qui n'existe pas sur ce site : rien n'est affiché (pas même un instant), on part */
+if (!quitterBroderie && !quitterPrive) createRoot(document.getElementById("root")!).render(
   <StrictMode><GardeExperience>
     {accueil ? <AccessibilityShell><Suspense fallback={null}><Accueil /></Suspense></AccessibilityShell>
       : explorer ? <Suspense fallback={null}><Explorer /></Suspense>

@@ -75,12 +75,15 @@ with sync_playwright() as p:
         continuer(pg)
         ok(pg.get_by_role('heading', name='Camille, tout est prêt.').count() == 1 and 'cet appareil seulement' in pg.locator('.one-resume').text_content(), 'Prêt : résumé réel ; la synchronisation est dite locale')
         cap(pg, '3-pret')
-        pg.get_by_role('link', name='Continuer vers l’accueil').click(); pg.wait_for_selector('.ac-porte'); pg.get_by_role('link', name=re.compile(r'^Le cercle \.0NE')).click(); pg.wait_for_selector('.dq'); ok('/one/univers' in pg.url, '« Continuer vers l’accueil » puis le Disque : le Disque universel')
+        pg.get_by_role('link', name=re.compile('^Continuer vers (l’accueil|\\.0NE)')).click(); pg.wait_for_selector('.ac-porte, .dq')
+        if pg.locator('.ac-porte').count(): pg.get_by_role('link', name=re.compile(r'^Le cercle \.0NE')).click()   # aperçu privé : l'accueil du Disque et du Cube
+        pg.wait_for_selector('.dq'); ok('/one/univers' in pg.url, '« Continuer vers l’accueil » puis le Disque : le Disque universel')
         pg.goto(B + '/one/mosaique'); pg.wait_for_selector('.om-grille'); pg.wait_for_timeout(500)   # l'ancienne mosaïque, gardée
         ok('u-culture' in ids(pg) and 'Bonjour Camille' in pg.locator('.one-disque').first.text_content(), 'Entrer dans mon .0NE : le même Disque, les mêmes réglages, sur la mosaïque')
         # la mosaïque : lue dans le registre
         n = pg.locator('.om-case').count()
-        ok(n >= 14 and pg.locator('.om-case[data-statut=disponible]').count() >= 1 and pg.locator('.om-case .om-statut').count() == n, f'mosaïque : {n} cases, chacune avec son statut')
+        prives = pg.locator('.om-case[data-univers=galerie], .om-case[data-univers=carte-vivante]').count()   # la Galerie et la Carte vivante : aperçus privés seulement
+        ok(n >= (14 if prives else 12) and pg.locator('.om-case[data-statut=disponible]').count() >= 1 and pg.locator('.om-case .om-statut').count() == n, f'mosaïque : {n} cases, chacune avec son statut')
         pg.goto(B + '/one/mosaique?demo=1'); pg.wait_for_selector('.om-grille'); pg.wait_for_timeout(300)
         ok(pg.locator('.om-case').count() == n + 1 and 'Démonstration' in pg.locator('[data-univers=jardin-demo]').text_content(), 'un univers de démonstration ajouté au registre reçoit sa case, annoncé comme tel')
         pg.locator('[data-univers=mariage] .om-voir').click(); pg.wait_for_timeout(300)

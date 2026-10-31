@@ -1,21 +1,28 @@
 /**
  * La navigation de retour permanente : un petit Point nacré, toujours au même endroit (en bas à droite ; à gauche si le Point de la personne est à droite).
- * Il ouvre : .0NE, Explorer, le film, les réglages de confort, et « Revenir ». Clavier : Échap referme.
+ * Il ouvre : .0NE, les réglages de confort et « Revenir » (sur les aperçus privés, aussi Explorer et le film). Clavier : Échap referme.
  * Et la garde : si une expérience échoue (erreur, module introuvable), elle propose de revenir à .0NE — jamais d'écran vide.
  */
 import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import { lireRetour } from "../lib/one/contextes";
 import { ATLAS_URL } from "../lib/destinations";
+import { PROTOTYPES } from "../lib/site";
 import "./convergence.css";
 
 const S = import.meta.env.BASE_URL;
-const liens = (base: string) => [
+/* sur lemondeaime.com : ce qui est public (.0NE et les préférences) ; les aperçus privés ajoutent les prototypes */
+const liens = (base: string) => PROTOTYPES ? [
   { nom: "Accueil AIME — le Disque ou le Cube", chemin: base + "accueil" },
   { nom: ".0NE — tous les univers", chemin: base + "one/univers" },
   { nom: "Explorer les prototypes", chemin: base + "explorer" },
   { nom: "Le film LUMIERE", chemin: base + "one/lumiere" },
   { nom: "Mes préférences", chemin: base + "one/premiere-rencontre?modifier" },
   { nom: "ATLAS (site séparé) ↗", chemin: ATLAS_URL },
+] : [
+  { nom: "Le Monde AIME — les projets", chemin: "/" },
+  { nom: "L’atelier de broderie", chemin: base },
+  { nom: ".0NE — tous les univers", chemin: base + "one/univers" },
+  { nom: "Mes préférences", chemin: base + "one/premiere-rencontre?modifier" },
 ];
 
 /** `base` : l'adresse du studio (.0NE) ; le site AIME, servi à la racine, passe "/studio/". */
@@ -34,7 +41,7 @@ export function NavigationConvergence({ base = S }: { base?: string } = {}) {
   const ici = window.location.pathname.replace(/\/+$/, "");
   /* venu du Disque (Broder, Ouvrir…) : le retour au contexte exact, en un geste */
   const retour = /\/one(\/univers)?$/.test(ici) ? null : lireRetour();
-  return <nav className="cv-nav" aria-label="Navigation de la version candidate">
+  return <nav className="cv-nav" aria-label={PROTOTYPES ? "Navigation de la version candidate" : "Navigation"}>
     {retour && !ouvert && <a className="cv-retour" href={retour.adresse}><span className="cv-orbe" aria-hidden="true" />Revenir à .0NE · {retour.nom}</a>}
     {ouvert && <div className="cv-nav-panneau" ref={panneau} id="cv-nav-panneau">
       {LIENS.map(l => <a key={l.chemin} href={l.chemin} aria-current={ici === l.chemin.replace(/\/+$/, "") ? "page" : undefined}>{l.nom}</a>)}
@@ -57,8 +64,10 @@ export class GardeExperience extends Component<{ children: ReactNode; nom?: stri
       <h1>Cette expérience s’est interrompue.</h1>
       <p>{this.props.nom ? `« ${this.props.nom} » ` : "Cette page "}n’a pas pu s’afficher sur cet appareil. Rien n’a été perdu : vos réglages restent sur cet appareil.</p>
       <div className="cv-actions">
-        <a className="cv-bouton cv-plein" href={S + "accueil"}>Revenir à l’accueil AIME</a>
-        <a className="cv-bouton" href={S + "explorer"}>Explorer les prototypes</a>
+        {PROTOTYPES ? <><a className="cv-bouton cv-plein" href={S + "accueil"}>Revenir à l’accueil AIME</a>
+          <a className="cv-bouton" href={S + "explorer"}>Explorer les prototypes</a></>
+          : <><a className="cv-bouton cv-plein" href={S + "one/univers"}>Revenir à .0NE</a>
+          <a className="cv-bouton" href="/">Le Monde AIME</a></>}
         <button type="button" className="cv-bouton" onClick={() => location.reload()}>Réessayer</button>
       </div>
       <details><summary>Détail technique</summary><code>{this.state.erreur}</code></details>

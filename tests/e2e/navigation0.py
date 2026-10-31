@@ -40,7 +40,8 @@ with sync_playwright() as p:
         ok(not pg.locator('.pzs-ligne').is_visible() and pg.locator('.pzt').count() == 1 and pg.locator('.pzs-bottom').count() == 1, 'essai privé : .0 par défaut — pas de dock du haut, le disque est ouvert dès l’arrivée')
         pg.wait_for_selector(MENU); pg.wait_for_timeout(300)
         ids = pg.evaluate(f"() => [...document.querySelectorAll('{MENU} [role=menuitem]')].map(e => e.dataset.mode)")
-        ok(all(i in ids for i in ['confort', 'bureau', 'creer', 'broder', 'fils', 'affichage', 'importer', 'galerie', 'partager', 'guide', 'reglages']), f'.0 : la racine du disque — {", ".join(i for i in ids)}')
+        ok(all(i in ids for i in ['confort', 'bureau', 'creer', 'broder', 'fils', 'affichage', 'importer', 'partager', 'guide', 'reglages'])   # la Galerie : aperçus privés seulement
+        , f'.0 : la racine du disque — {", ".join(i for i in ids)}')
         cap(pg, '1-racine')
         # un second ouvrage réel : le projet exporté puis réimporté sous un autre nom (sans identifiant)
         with pg.expect_download() as dl: chemin(pg, 'partager', 'exp-projet')
@@ -117,7 +118,7 @@ with sync_playwright() as p:
         ctx = b.new_context(viewport={'width': 1440, 'height': 900}, reduced_motion='reduce')
         ctx.add_init_script("localStorage.setItem('pointzero:visite-docks:v1', 'vue')")
         pg = ctx.new_page(); pg.goto(PROD + '/atelier?offerte=5D-12342.g21.v0.1'); pg.wait_for_selector('.cadre[data-pret]', timeout=20000); pg.wait_for_timeout(1500)
-        ok(pg.locator('.pzs-ligne').is_visible() and pg.locator('.pzt').count() == 0, 'construction de production : la navigation classique, inchangée')
+        ok(not pg.locator('.pzs-ligne').is_visible() and pg.locator('.pzt').count() == 1, 'construction de production : la navigation .0 par défaut (décision du 31/10/2026 ; la navigation classique reste un choix dans Réglages)')
         ctx.close()
 
         # téléphone : le contenu étendu d'abord ; la couronne à la demande ; la préférence est retenue

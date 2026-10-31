@@ -13,7 +13,7 @@
  */
 import { createContext, useContext } from "react";
 import origine from "./contenus.origine.json";
-import { SITE_BRODERIE } from "../../lib/site";
+import { GALERIE } from "../../lib/site";
 import { valider, type Ecart } from "./validation.mjs";
 export { LIMITES, srcOk, urlOk, type Ecart } from "./validation.mjs";
 
@@ -34,7 +34,7 @@ export interface Media {
 export interface TexteScene { kicker: string; titre: string; sous: string; corps: string }
 
 /* le site Point Zéro (broderie seule) : la Galerie des Vivants n'y existe pas, la landing ne l'annonce pas */
-export const ORIGINE: typeof origine = SITE_BRODERIE ? JSON.parse(JSON.stringify(origine).split(", bientôt à exposer à la Galerie des Vivants.").join(".")) : origine;
+export const ORIGINE: typeof origine = !GALERIE ? JSON.parse(JSON.stringify(origine).split(", bientôt à exposer à la Galerie des Vivants.").join(".")) : origine;
 export type Contenus = typeof ORIGINE;
 
 /** Fond une version publiée sur ORIGINE : tout champ absent ou invalide garde le texte d'origine ; les écarts sont listés. */

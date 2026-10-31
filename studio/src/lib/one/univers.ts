@@ -5,6 +5,7 @@
  * Un univers ajouté ici (ou enregistré à l'exécution) reçoit sa case sans autre code.
  */
 import { verifierUnivers, type Univers } from "./contrat";
+import { PROTOTYPES } from "../site";
 
 const B = (chemin: string) => ({ type: "route" as const, chemin });
 const AUCUNE = { type: "aucune" as const };
@@ -75,6 +76,10 @@ export const UNIVERS: Univers[] = [
     familles: [{ id: "services", nom: "Services", icone: "prise" }, { id: "favoris", nom: "Favoris", icone: "favoris" }, { id: "autorisations", nom: "Autorisations", icone: "autorisations" }, { id: "raccourcis", nom: "Raccourcis", icone: "raccourcis" }],
     ouverture: AUCUNE, modules: [] },
 ];
+/* lemondeaime.com : la Galerie des Vivants et la Carte vivante (essai) ne sont pas publiques ;
+   leurs cases n'apparaissent que sur les aperçus privés (VITE_PROTOTYPES=1) */
+export const UNIVERS_PRIVES = new Set(["galerie", "carte-vivante"]);
+if (!PROTOTYPES) for (const u of UNIVERS) if (UNIVERS_PRIVES.has(u.id)) u.publication = "brouillon";
 
 /* les univers enregistrés pendant la visite (un module qui se déclare ; l'univers de démonstration) */
 const ajoutes: Univers[] = [];

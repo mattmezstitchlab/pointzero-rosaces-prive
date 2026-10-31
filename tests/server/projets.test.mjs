@@ -138,17 +138,28 @@ test('projets · API : sans la table, l’administration le dit (503) et n’éc
   finally { if (avant !== undefined) process.env.BLOB_READ_WRITE_TOKEN = avant; }
 });
 
-test('projets : l’accueil est le studio, le portfolio est sur /projets, AIME Wedding a sa propre adresse, l’administration est une page', () => {
+test('projets : l’accueil est Le Monde AIME (les projets), aussi sur /projets ; AIME Wedding a sa propre adresse, l’administration est une page', () => {
   const a = lire('src/App.tsx');
-  assert.match(a, /if \(chemin === '\/'\) window\.location\.replace\(STUDIO\)/, 'l’accueil mène au studio');
-  /* version candidate (convergence) : l'adresse racine ouvre le film LUMIERE, facultatif, qui mène à la Première rencontre ;
-     le studio reste à /studio/ et la page Explorer à /explorer */
+  /* décision de Matt (31/10/2026) : lemondeaime.com s'ouvre sur Le Monde AIME ; ni le film ni Explorer ne sont publics */
+  assert.match(a, /'\/': \[Portfolio,/, 'l’accueil est la page des projets');
+  assert.ok(!/window\.location\.replace\(STUDIO\)/.test(a), 'l’accueil ne renvoie plus au studio');
   const red = JSON.parse(lire('vercel.json')).redirects;
-  assert.deepEqual(red[0], { source: '/', destination: '/studio/one/lumiere', permanent: false }, 'le serveur ouvre le film');
-  assert.ok(red.some(r => r.source === '/explorer' && r.destination === '/studio/explorer'), 'Explorer a une adresse courte');
+  assert.ok(!red.some(r => r.source === '/'), 'le serveur ne redirige pas l’accueil');
+  assert.ok(!red.some(r => /lumiere|explorer|galerie|accueil/.test(r.destination)), 'aucune adresse courte vers ce qui n’est pas public');
   assert.match(a, /'\/projets': \[Portfolio,/, 'le portfolio reste sur /projets');
   assert.match(a, /'\/aime-wedding': \[AimeWedding,/);
   assert.match(a, /'\/admin': \[Admin,/);
   assert.match(a, /\/\^\\\/projets\\\/\(\[a-z0-9-\]\{1,60\}\)\$\//);
   assert.ok(!/'\/aime-wedding': '\/'/.test(a), 'l’ancienne redirection vers l’accueil est retirée');
+});
+
+test('projets : d’autres liens à côté de « Visiter le site » (la Chronologie d’ATLAS), libellés et adresses vérifiés', async () => {
+  const { nettoyerProjet: n } = await import('../../api/_projets.mjs');
+  const base = { titre: 'ATLAS', annee: 2026, statut: 'en-ligne', lien: 'https://atlas.lemondeaime.com' };
+  const ok = n({ ...base, liens: [{ libelle: 'La Chronologie', href: 'https://atlas.lemondeaime.com/chronologie' }] });
+  assert.deepEqual(ok.projet.liens, [{ libelle: 'La Chronologie', href: 'https://atlas.lemondeaime.com/chronologie' }]);
+  assert.deepEqual(n(base).projet.liens, [], 'sans autres liens : une liste vide');
+  assert.ok(n({ ...base, liens: [{ libelle: 'x', href: 'javascript:alert(1)' }] }).erreur, 'une adresse dangereuse est refusée');
+  assert.ok(n({ ...base, liens: [{ libelle: '', href: '/projets' }] }).erreur, 'un lien sans libellé est refusé');
+  assert.ok(n({ ...base, liens: Array(4).fill({ libelle: 'a', href: '/projets' }) }).erreur, 'trois au plus');
 });

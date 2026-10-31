@@ -13,6 +13,7 @@ import { loadStored } from "../../lib/store";
 import { NOMS_STATUTS, type Univers } from "../../lib/one/contrat";
 import type { ContexteUnivers } from "../../lib/one/contextes";
 import { IconeOne } from "../../components/one/icones";
+import { PROTOTYPES } from "../../lib/site";
 
 export const BRODERIE: ContexteUnivers = {
   id: "broderie", permissions: { partager: false, modifier: true, supprimer: false },
@@ -33,7 +34,7 @@ export const BRODERIE: ContexteUnivers = {
         { id: "br-decouvrir", nom: "Découvrir", groupe: "metier", icone: <BookOpen aria-hidden="true" />, aide: "la landing Point Zéro : l’histoire de la broderie, puis « Créer mon patron »", ouvrir: () => outils.deployer("?edition") },
         { id: "br-atelier", nom: p ? "Continuer" : "Commencer", groupe: "metier", icone: <Scissors aria-hidden="true" />, aide: "l’atelier en plein écran ; le Disque garde ce contexte pour le retour", ouvrir: () => outils.deployer("atelier") },
         { id: "br-ouvrages", nom: "Mes ouvrages", groupe: "metier", icone: <FolderOpen aria-hidden="true" />, aide: "le Bureau : tous vos ouvrages", ouvrir: () => outils.changerUnivers("bureau") },
-        { id: "br-rosaces", nom: "Rosaces", groupe: "metier", icone: <Sparkles aria-hidden="true" />, aide: "la Galerie des rosaces du moteur 5D", ouvrir: () => outils.changerUnivers("galerie") },
+        ...(PROTOTYPES ? [{ id: "br-rosaces", nom: "Rosaces", groupe: "metier" as const, icone: <Sparkles aria-hidden="true" />, aide: "la Galerie des rosaces du moteur 5D", ouvrir: () => outils.changerUnivers("galerie") }] : []),
         { id: "br-tambour", nom: "Tambour", groupe: "metier", icone: <Camera aria-hidden="true" />, aide: "le Tambour vivant : de la caméra au point", ouvrir: () => outils.deployer("tambour") },
       ], p ? `La toile en cours : « ${p.name} » · ${p.w} × ${p.h} points · ${fils.length} fils` : "Aucune toile ouverte dans l’atelier sur cet appareil.");
     }, [p?.name]); // eslint-disable-line react-hooks/exhaustive-deps

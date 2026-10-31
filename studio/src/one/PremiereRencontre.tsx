@@ -14,6 +14,7 @@ import { appliquerOne, BESOINS, ecrireOne, lireOne, proposerPourBesoins, type Ci
 import { NOMS_STATUTS } from "../lib/one/contrat";
 import { suivreUnivers, tousLesUnivers } from "../lib/one/univers";
 import { DESTINATIONS } from "../lib/destinations";
+import { PROTOTYPES } from "../lib/site";
 import "../design/aime.css";
 import "./one.css";
 
@@ -81,7 +82,7 @@ export default function PremiereRencontre() {
     {etape > 0 && <button type="button" className="one-bouton" onClick={() => aller(etape - 1)}><ArrowLeft aria-hidden="true" />Retour</button>}
     {etape < ETAPES.length - 1
       ? <button type="button" className="one-bouton one-bouton-plein" onClick={() => aller(etape + 1)}>{etape === 0 ? "Commencer" : "Continuer"}<ArrowRight aria-hidden="true" /></button>
-      : <a className="one-bouton one-bouton-plein" href={DESTINATIONS.accueil}>Continuer vers l’accueil<ArrowRight aria-hidden="true" /></a>}
+      : <a className="one-bouton one-bouton-plein" href={DESTINATIONS.accueil}>{PROTOTYPES ? "Continuer vers l’accueil" : "Continuer vers .0NE"}<ArrowRight aria-hidden="true" /></a>}
   </div>;
 
   let corps: ReactNode;

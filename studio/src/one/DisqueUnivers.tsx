@@ -10,6 +10,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { DESTINATIONS } from "../lib/destinations";
+import { PROTOTYPES } from "../lib/site";
 import { Info, LayoutGrid, X } from "lucide-react";
 import DisqueOne from "../components/one/DisqueOne";
 import { IconeOne } from "../components/one/icones";
@@ -96,7 +97,7 @@ export default function DisqueUnivers() {
       <a className="one-marque" href={BASE + "one/univers"} onClick={e => { e.preventDefault(); naviguer({ u: "accueil" }); }}><span className="one-orbe" aria-hidden="true" />.0NE</a>
       <nav className="dq-fil" aria-label="Où je suis"><span>{u ? u.nom : "Accueil"}</span>{u && <span className={"dq-statut-mini om-" + u.statut}>{NOMS_STATUTS[u.statut]}</span>}</nav>
       <button type="button" className="one-bouton dq-bouton-grille" onClick={() => setGrille(true)}><LayoutGrid aria-hidden="true" />Univers</button>
-      <a className="one-bouton dq-accueil" href={DESTINATIONS.accueil} aria-label="Accueil AIME">Accueil<span className="dq-accueil-aime"> AIME</span></a>
+      <a className="one-bouton dq-accueil" href={PROTOTYPES ? DESTINATIONS.accueil : "/"} aria-label={PROTOTYPES ? "Accueil AIME" : "Accueil : Le Monde AIME"}>Accueil<span className="dq-accueil-aime"> AIME</span></a>
     </header>
     <main className="dq-scene">
       <h1 ref={titre} tabIndex={-1} className="sr-only">{u ? `${u.nom}, dans le Disque .0NE` : "Le Disque .0NE"}</h1>
@@ -120,7 +121,7 @@ export default function DisqueUnivers() {
         <ul>{tous.map(x => <li key={x.id}><button type="button" className="dq-case" data-univers={x.id} aria-current={x.id === etat.u ? "true" : undefined} onClick={() => outils.changerUnivers(x.id)}>
           <span className="dq-case-ico" style={{ color: x.teinte }}><IconeOne nom={x.icone} /></span><b>{x.nom}</b><span className="dq-case-phrase">{x.phrase}</span>
           <span className={"dq-statut-mini om-" + x.statut}>{RACCORDES[x.id] ? "" : "présentation · "}{NOMS_STATUTS[x.statut]}</span></button></li>)}</ul>
-        <p className="dq-grille-pied"><a href={BASE + "explorer"}>Explorer tous les prototypes</a> · <a href={BASE + "one/lumiere/vivre"}>Vivre LUMIERE</a></p>
+        {PROTOTYPES && <p className="dq-grille-pied"><a href={BASE + "explorer"}>Explorer tous les prototypes</a> · <a href={BASE + "one/lumiere/vivre"}>Vivre LUMIERE</a></p>}
       </div>
     </div>}
     {apropos && u && <div className="dq-voile" role="dialog" aria-modal="true" aria-labelledby="dq-apropos-titre" onKeyDown={e => { if (e.key === "Escape") setApropos(false); }}>
