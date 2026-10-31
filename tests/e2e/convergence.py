@@ -15,9 +15,11 @@ with sync_playwright() as p:
     pg.on('pageerror', lambda e: err.append(str(e)))
     if PARTAGE: pg.goto(f'{B}/?{PARTAGE}'); pg.wait_for_load_state('networkidle')
 
-    # 1. une seule adresse : la racine ouvre le film
-    pg.goto(B + '/'); pg.wait_for_selector('.lf-film', timeout=30000)
-    ok(pg.url.rstrip('/').endswith('/studio/one/lumiere'), f'1. la racine ouvre le film LUMIERE ({pg.url})')
+    # 1. la racine est Le Monde AIME, comme en ligne (décision du 31/10/2026) ; sur l'aperçu privé, le film garde son adresse
+    pg.goto(B + '/'); pg.wait_for_timeout(2500)
+    ok(pg.locator('h1').first.inner_text().strip().lower() == 'le monde aime', f'1. la racine est Le Monde AIME, comme en ligne ({pg.url})')
+    pg.goto(B + '/studio/one/lumiere'); pg.wait_for_selector('.lf-film', timeout=30000)
+    ok(pg.url.rstrip('/').endswith('/studio/one/lumiere'), f'1. aperçu privé : le film LUMIERE à son adresse ({pg.url})')
     ok(pg.get_by_role('button', name=re.compile('Passer')).is_visible(), '1. le film est facultatif : « Passer » visible dès la première image')
     if CAP: pg.screenshot(path=f'{CAP}/cv-1-film.png')
 

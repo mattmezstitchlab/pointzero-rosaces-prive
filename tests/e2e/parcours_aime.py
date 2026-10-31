@@ -3,7 +3,7 @@ Usage : BASE=http://localhost:4631 NAVIGATEURS=chromium,webkit python3 tests/e2e
 import os, re
 from playwright.sync_api import sync_playwright
 B = os.environ['BASE'].rstrip('/'); NAVS = os.environ.get('NAVIGATEURS', 'chromium').split(',')
-ATLAS = 'https://atlas-de-pique-de-coeur.vercel.app/'
+ATLAS = 'https://atlas.lemondeaime.com/'
 res = []
 def ok(c, nom): res.append((bool(c), nom)); print(('✓ ' if c else 'ÉCHEC ') + nom)
 def args(n): return ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] if n == 'chromium' else []
@@ -14,7 +14,7 @@ with sync_playwright() as p:
         ctx = b.new_context(viewport={'width': 1366, 'height': 820}); pg = ctx.new_page(); err = []
         pg.on('pageerror', lambda e: err.append(str(e)))
         # 1. le film, puis « Passer » : la Première rencontre (préférences pas encore enregistrées)
-        pg.goto(B + '/'); pg.get_by_role('button', name=re.compile('Passer')).click(timeout=60000)
+        pg.goto(B + '/studio/one/lumiere'); pg.get_by_role('button', name=re.compile('Passer')).click(timeout=60000)
         pg.wait_for_selector('.one-marque', timeout=20000)
         ok('/one/premiere-rencontre' in pg.url, f'{N} film → « Passer » → la Première rencontre')
         # 2. la Première rencontre jusqu'au bout → l'accueil de choix
@@ -42,7 +42,7 @@ with sync_playwright() as p:
         ok(onglet.url.startswith(ATLAS), f'{N} clic sur le Cube → ATLAS ({onglet.url})'); onglet.close()
         ok(pg.url.endswith('/studio/accueil'), f'{N} l’accueil reste ouvert derrière ATLAS')
         # 6. revenir plus tard : le film, puis directement le choix (préférences déjà enregistrées)
-        pg.goto(B + '/'); pg.get_by_role('button', name=re.compile('Passer')).click(timeout=60000)
+        pg.goto(B + '/studio/one/lumiere'); pg.get_by_role('button', name=re.compile('Passer')).click(timeout=60000)
         pg.wait_for_url(re.compile(r'/studio/accueil$'), timeout=20000)
         ok(True, f'{N} préférences enregistrées : film → « Passer » → directement le choix')
         # 7. modifier ses préférences : la Première rencontre reste accessible
@@ -55,7 +55,7 @@ with sync_playwright() as p:
         # 9. les adresses courtes et le registre
         r = pg.request.get(B + '/atlas', max_redirects=0)
         ok(r.status in (301, 302, 307, 308) and r.headers.get('location', '').startswith(ATLAS), f'{N} /atlas redirige vers ATLAS ({r.status})')
-        pg.goto(B + '/accueil'); pg.wait_for_selector('.ac-porte'); ok(pg.url.endswith('/studio/accueil'), f'{N} /accueil → l’accueil de choix')
+        pg.goto(B + '/studio/accueil'); pg.wait_for_selector('.ac-porte'); ok(pg.url.endswith('/studio/accueil'), f'{N} aperçu privé : l’accueil de choix à son adresse (/accueil n’est plus une adresse courte : en ligne, l’accueil est Le Monde AIME)')
         pg.goto(B + '/studio/explorer'); pg.wait_for_timeout(1200)
         ok(pg.locator(f'a[href="{ATLAS}"]').count() >= 1 and pg.locator('a[href$="/studio/accueil"]').count() >= 1, f'{N} « Tous les accès » montre l’accueil et ATLAS')
         ok(not err, f'{N} aucune erreur de page ({err[:1]})')
