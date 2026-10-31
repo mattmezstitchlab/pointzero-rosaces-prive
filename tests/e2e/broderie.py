@@ -82,7 +82,10 @@ with sync_playwright() as p:
                 avant = pg.locator('.cadre-dims').inner_text()
                 coin = pg.locator('.cadre-coin').nth(2).bounding_box()
                 pg.mouse.move(coin['x'] + coin['width'] / 2, coin['y'] + coin['height'] / 2); pg.mouse.down()
-                pg.mouse.move(coin['x'] - 90, coin['y'] - 70, steps=10); pg.mouse.up(); pg.wait_for_timeout(2500)
+                pg.mouse.move(coin['x'] - 90, coin['y'] - 70, steps=10); pg.mouse.up()
+                for _ in range(20):   # la photo est recomptée par un worker : 1 à 2 s
+                    pg.wait_for_timeout(500)
+                    if pg.locator('.cadre-dims').inner_text() != avant: break
                 apres = pg.locator('.cadre-dims').inner_text()
                 ok(avant != apres, f'{N} 6–7. recadrer à la main par un coin : {avant} → {apres} (la photo est recomptée)')
                 # le détail et la palette : le + du Cadre (vrais réglages de la photo)

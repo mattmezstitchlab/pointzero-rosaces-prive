@@ -53,3 +53,6 @@ html[data-one-point="droite"] .cv-nav-panneau { right: auto; left: 0; }
 .cv-erreur details { font-size: .8rem; color: #6e6e73; } .cv-erreur code { word-break: break-word; }
 /* une barre d'action pleine largeur en bas (atelier sur téléphone) : la navigation se pose au-dessus */
 html:has(.pz-action-bar) .cv-nav { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 66px); }
+
+/* une fenêtre de travail ouverte (import PDF, export, réglages…) : le bouton Naviguer s’efface, il ne recouvre jamais ses boutons ; il revient à la fermeture */
+body:has([role="dialog"]:not([aria-hidden="true"])) .cv-nav, body:has([data-studio="import-pdf"]) .cv-nav { display: none; }
