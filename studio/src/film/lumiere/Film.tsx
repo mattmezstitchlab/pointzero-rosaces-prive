@@ -1,5 +1,6 @@
 /**
- * LUMIERE — l'ouverture du site : le clip entier de « La Fleur du Ciel » (4 min 13). Du cinéma, pas un menu de cinéma.
+ * LUMIERE — l'ouverture du site : le film de 31 plans sur « Amor amour 2 » (3 min 25 ; depuis le 31/10/2026, voir amor.ts).
+ * La version « La Fleur du Ciel » (4 min 13) reste lisible avec ?montage=lumiere-film. Du cinéma, pas un menu de cinéma.
  *
  * Le premier geste du visiteur est de toucher la lumière pour donner naissance à la musique :
  *  1. Le cosmos apparaît immédiatement, sans texte (c'est la première image du film, immobile dans le temps du récit).
@@ -10,13 +11,14 @@
  *  5. Sans geste (12 s) : la Perle se dissout dans le cosmos et l'introduction se joue en silence, depuis le début.
  *     « Activer le son » apparaît alors dans un coin : la musique rejoint le film À SA POSITION (reprise synchronisée définie).
  *  6. « Passer » reste accessible dans le coin opposé. Aucune modale, aucun texte explicatif, aucun choix de fichier.
- * L'impact reste à 03:18.255 du morceau (repère canonique). Mouvement réduit : une image fixe et l'entrée directe.
+ * L'impact : 02:12.445 d'« Amor amour 2 » (03:18.255 de « La Fleur du Ciel »). Mouvement réduit : une image fixe et l'entrée directe.
  */
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { EXTRAIT, IMAGES_PAR_SECONDE } from "./partition";
-import { FILM_FLEUR, VERSIONS } from "./montages";
-/** L'ouverture du site : le film du séquencier (31 plans). L'ancien clip reste lisible avec ?montage=lumiere-clip. */
-const OUVERTURE = FILM_FLEUR;
+import { FILM_AMOUR, VERSIONS } from "./montages";
+import type { Montage as M } from "../../lib/cinema/montage";
+/** L'ouverture du site : le film du séquencier (31 plans) sur « Amor amour 2 ». Les autres versions : ?montage=lumiere-film (la Fleur), lumiere-clip… */
+const OUVERTURE = FILM_AMOUR;
 import { journal, Lecteur } from "./lecteur";
 import { Rendu } from "./rendu";
 import { sceneVoyage } from "./voyage";
@@ -29,6 +31,9 @@ const PremiereRencontre = lazy(() => import("../../one/PremiereRencontre"));
 const BASE = import.meta.env.BASE_URL;
 export const AUDIO_EXTRAIT = { url: BASE + "lumiere-prive/fleur-du-ciel-extrait.m4a", morceau: "fleur-du-ciel", debut: EXTRAIT.debut, fin: EXTRAIT.fin };
 export const AUDIO_COMPLET = { url: BASE + "lumiere-prive/fleur-du-ciel.m4a", morceau: "fleur-du-ciel", debut: 0, fin: 253 };
+export const AUDIO_AMOR = { url: BASE + "lumiere-prive/amor-amour-2.m4a", morceau: "amor-amour", debut: 0, fin: 204.92 };
+/** le fichier privé du morceau que joue le montage */
+export const audioDe = (m: M) => m.musique[0]?.morceau === "amor-amour" ? AUDIO_AMOR : AUDIO_COMPLET;
 const DUREE = dureeMontage(OUVERTURE);
 const ATTENTE_SANS_GESTE = 12000;
 type Etat = "film" | "fixe" | "rencontre";
@@ -71,7 +76,7 @@ export default function Film() {
   useEffect(() => {
     if (etat !== "film" || !toile.current || !calque.current) return;
     const l = new Lecteur({
-      montage: MONTAGE, toile: toile.current, calque: calque.current, video: video.current, audio: AUDIO_COMPLET, mobile,
+      montage: MONTAGE, toile: toile.current, calque: calque.current, video: video.current, audio: audioDe(MONTAGE), mobile,
       surImage: x => { if (Math.abs(x - affiche.current) >= 0.25 || x >= DUREE) { affiche.current = x; setT(x); } },
       surFin: () => { if (!controle) versRencontre(true); },
       surEchec: () => { if (!capture) setEtat("fixe"); },

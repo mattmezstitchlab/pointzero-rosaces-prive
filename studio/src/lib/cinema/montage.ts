@@ -17,7 +17,8 @@
 export type Droits = "proprietaire" | "licence" | "libre" | "a-verifier";
 export interface Provenance { auteur: string; outil?: string; droits: Droits; note?: string }
 
-export interface Repere { temps: number; nature: string; verrouille: boolean; source: "mesure" | "compose"; note?: string }
+/** source : « mesure » (lu dans le signal), « compose » (voulu par le compositeur), « cale » (posé à un écart fixe d'un autre repère, ex. la séquence de l'impact) */
+export interface Repere { temps: number; nature: string; verrouille: boolean; source: "mesure" | "compose" | "cale"; note?: string }
 export interface Morceau { id: string; titre: string; fichier: string; duree: number; tempo?: number; reperes: Record<string, Repere>; provenance: Provenance }
 
 export interface ClipMusique {

@@ -6,15 +6,15 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { dureeMontage, filmDuRepere, placer, verifier, type Montage } from "../../lib/cinema/montage";
-import { ANIMATIQUE, CHAPITRE_FLEUR, CLIP_FLEUR, FILM_FLEUR, PREVIZ_IMPACT } from "./montages";
+import { ANIMATIQUE, CHAPITRE_FLEUR, CLIP_FLEUR, FILM_AMOUR, FILM_FLEUR, PREVIZ_IMPACT } from "./montages";
 import { journal, Lecteur } from "./lecteur";
-import { mouvementReduit, webglDisponible } from "./Film";
+import { audioDe, mouvementReduit, webglDisponible } from "./Film";
 import "../../design/aime.css";
 import "./film.css";
 
 const BASE = import.meta.env.BASE_URL;
-const AUDIO_COMPLET = { url: BASE + "lumiere-prive/fleur-du-ciel.m4a", morceau: "fleur-du-ciel", debut: 0, fin: 253 };
 const VERSIONS: { id: string; nom: string; montage: Montage }[] = [
+  { id: "amor", nom: "Amor amour 2 · le film · 3 min 25 (l’ouverture)", montage: FILM_AMOUR },
   { id: "clip", nom: "La Fleur du Ciel · le clip · 4 min 13", montage: CLIP_FLEUR },
   { id: "chapitre", nom: "Première version · 4 min 13", montage: CHAPITRE_FLEUR },
   { id: "animatique", nom: "Animatique · 44 s (archive : la goutte dans l'eau)", montage: ANIMATIQUE },
@@ -44,7 +44,7 @@ export default function Vivre() {
   useEffect(() => { document.title = "Vivre LUMIERE"; }, []);
   useEffect(() => {
     if (!toile.current || !calque.current || !webglDisponible()) return;
-    const l = new Lecteur({ montage: version.montage, toile: toile.current, calque: calque.current, video: video.current, audio: AUDIO_COMPLET, mobile, imageParPlan: reduit,
+    const l = new Lecteur({ montage: version.montage, toile: toile.current, calque: calque.current, video: video.current, audio: audioDe(version.montage), mobile, imageParPlan: reduit,
       surImage: x => { if (Math.abs(x - affiche.current) >= 0.2 || x >= duree) { affiche.current = x; setT(x); } },
       surFin: () => { setLecture(false); ecrire(cleReprise(version.montage.id), null); } });
     lecteur.current = l;

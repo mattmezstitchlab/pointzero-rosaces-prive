@@ -10,6 +10,7 @@
 import type { Montage, Morceau, Plan, Provenance } from "../../lib/cinema/montage";
 import { versMontage, type Film } from "../../lib/cinema/film";
 import filmFleur from "./donnees/fleur-du-ciel.film.json";
+import { remonterSurAmor } from "./amor";
 
 const MUSIQUE_MATT: Provenance = { auteur: "Matt (Matthieu Lecointre)", droits: "a-verifier",
   note: "Œuvre originale déclarée par Matt. Avant toute diffusion publique : vérifier composition, enregistrement et collaborateurs éventuels." };
@@ -138,4 +139,7 @@ export const FILM_FLEUR = versMontage(FILM_FLEUR_DONNEES, FLEUR_DU_CIEL, { id: "
 /** La séquence qui fonde le film : 03:14.25 → 03:26.25 (approche, suspension, contact, première onde). */
 export const PREVIZ_IMPACT = versMontage(FILM_FLEUR_DONNEES, FLEUR_DU_CIEL, { debut: 194.25, fin: 206.25, id: "lumiere-previz-impact", titre: "Prévisualisation 03:14 → 03:26" });
 
-export const VERSIONS = [CLIP_FLEUR, ANIMATIQUE, CHAPITRE_FLEUR, COURT_METRAGE, FILM_FLEUR, PREVIZ_IMPACT] as const;
+/** Le même film, remonté sur « Amor amour 2 » (plus rythmé) : l'ouverture du site depuis le 31/10/2026 (voir amor.ts). */
+export const FILM_AMOUR = remonterSurAmor(FILM_FLEUR, { id: "lumiere-film-amor", titre: "Amor amour 2 — le film (séquencier, prévisualisation)" });
+
+export const VERSIONS = [FILM_AMOUR, CLIP_FLEUR, ANIMATIQUE, CHAPITRE_FLEUR, COURT_METRAGE, FILM_FLEUR, PREVIZ_IMPACT] as const;
