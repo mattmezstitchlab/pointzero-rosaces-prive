@@ -8,6 +8,7 @@ import { ANNEAUX_PRINCIPAUX, ANNEAU_HEURES, ANNEAU_PERSONNES, fronts, polarXY, r
 import { geometrieDisque } from "../../lib/tambour/disque";
 import { ONDE_FILM, REPERES, scene, type Scene, type Voyage } from "./partition";
 import { RAYON_DISQUE_SOL, type Atterrissage } from "./atterrissage";
+import type { EtatRythme } from "./rythme";
 export type FonctionScene = (t: number) => Scene;
 
 const F = 1.6, D = 3.75, D0 = 1.9, SHIFT0 = -0.12, PHI0 = Math.atan(0.2 / F);
@@ -25,6 +26,8 @@ uniform float uEtoiles, uNuages, uDefil, uBrume;
 uniform vec4 uPerle; uniform float uPerleVis, uGoutte, uEtire;
 uniform float uD; uniform float uEau, uPhi, uShift, uDepuis, uGrille, uCarres, uBlanc, uLueur, uRepli;
 uniform vec4 uFronts[${MAX_FRONTS}]; uniform float uEsp;
+/* le rythme de la musique (rythme.ts) : la traversée des étoiles et les ondes ; tout à 0 sans rythme (version Fleur, attente) */
+uniform float uVitesse, uFuite; uniform vec2 uOndesM[6];
 /* le voyage (clip complet) : galaxie, ciel, mer de nuages, crépuscule, nuit, arc-en-ciel, Terre, herbe */
 uniform float uGalaxie, uAvance, uCiel, uCrep, uNuit, uMer, uArc, uTraverse, uTerre, uAltSol, uPlongeeSol, uAvanceSol;
 /* l'atterrissage : l'heure (0 = non utilisé · 1 nuit · 2 aube · 3 lever), le plan macro, la goutte ronde vue d'en haut, l'onde au sol */
@@ -62,6 +65,29 @@ float etoilesVoyage(vec2 p){
     if (r > .935) e += smoothstep(.1, 0., length(f))*smoothstep(0., .3, z)*smoothstep(1., .75, z)*(r - .935)*16.;
   }
   return e;
+}
+/* la traversée des étoiles : des traînées qui fuient du centre ; leur longueur et leur éclat suivent la vitesse (le temps, le grave) */
+float filantes(vec2 p){
+  float r = length(p), a = atan(p.y, p.x)/6.2831853 + .5, e = 0.;
+  for (int k = 0; k < 3; k++){
+    float N = 150. + float(k)*80., x = a*N, h = h21(vec2(floor(x), float(k)*13.1));
+    if (h < .5) continue;
+    float pos = fract(h*9.17 + uFuite*(.6 + h*1.4)*.11);
+    float rr = .03 + pos*pos*1.6, L = (.006 + .26*uVitesse)*(.25 + pos);
+    float perp = abs(fract(x) - .5)/N*6.2831853*r;
+    e += smoothstep(.0024 + .002*pos, 0., perp)*smoothstep(rr - L, rr, r)*step(r, rr)*(h - .5)*2.4*smoothstep(0., .12, pos);
+  }
+  return e;
+}
+/* les ondes de la musique : sur chaque accent, un anneau nacré part du centre */
+float ondesMusique(vec2 p){
+  float r = length(p - mix(vec2(0., uShift), uPerle.xy, uPerleVis)), v = 0.;   /* du centre de la Perle quand elle est là, sinon du Point */
+  for (int i = 0; i < 6; i++){
+    vec2 o = uOndesM[i]; if (o.y <= 0.) continue;
+    float R = .025 + o.x*.5, w = .0035 + o.x*.006;
+    v += o.y*exp(-o.x*1.25)*smoothstep(w, 0., abs(r - R));
+  }
+  return v;
 }
 vec3 cielJour(vec2 p){
   vec3 zen = mix(mix(vec3(.13, .38, .8), vec3(.26, .2, .5), uCrep), vec3(.02, .025, .07), uNuit);
@@ -369,6 +395,9 @@ void main(){
     /* de l'autre côté de l'arc : la lumière du jour, qui se lève comme un voile (uTraverse > 1 : le voile se retire sur la Terre) */
     col = mix(col, vec3(.86, .93, 1.), smoothstep(.72, 1., uTraverse)*(1. - smoothstep(1., 2., uTraverse))*step(d, 0.)*.9);
   }
+  /* le rythme : la traversée des étoiles (dans le cosmos et la nuit seulement) */
+  if (uVitesse > .001){ float ciel = clamp(uGalaxie + uNuit*(1. - uTerre)*.85, 0., 1.)*(1. - uEau)*(1. - uTerre);
+    if (ciel > .001) col += vec3(.82, .86, 1.)*filantes(p)*(.35 + .9*uVitesse)*ciel; }   /* rien à calculer hors du cosmos et de la nuit */
 #ifdef ATTERRISSAGE
   if (uMacro > .5) col = macroFond(p);
 #endif
@@ -378,6 +407,8 @@ void main(){
   vec2 centre = vec2(0., uShift);
   float rc = length(p - centre);
   col += nacre(.3)*uLueur*(exp(-rc*60.)*.9 + exp(-rc*10.)*.08)*(1. - uRepli*.0);
+  /* les ondes de la musique, au-dessus de tout (sauf le blanc final) */
+  col += nacre(.22)*ondesMusique(p)*.5;
   /* le blanc AIME : il naît du Point et s'étend */
   float front = uBlanc*1.9;
   float bl = max(smoothstep(front, front - .35, rc), pow(uBlanc, 3.));
@@ -427,7 +458,7 @@ export class Rendu {
     this.prog = p; gl.useProgram(p);
     const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
     const a = gl.getAttribLocation(p, "a"); gl.enableVertexAttribArray(a); gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
-    for (const n of ["uRes", "uT", "uQ", "uEtoiles", "uNuages", "uDefil", "uBrume", "uPerle", "uPerleVis", "uGoutte", "uEtire", "uD", "uEau", "uPhi", "uShift", "uDepuis", "uGrille", "uCarres", "uBlanc", "uLueur", "uRepli", "uFronts", "uEsp", "uGalaxie", "uAvance", "uCiel", "uCrep", "uNuit", "uMer", "uArc", "uTraverse", "uTerre", "uAltSol", "uPlongeeSol", "uAvanceSol", "uHeure", "uMacro", "uRond", "uCentreSol", "uOndeSol"]) this.u[n] = gl.getUniformLocation(p, n);
+    for (const n of ["uVitesse", "uFuite", "uOndesM", "uRes", "uT", "uQ", "uEtoiles", "uNuages", "uDefil", "uBrume", "uPerle", "uPerleVis", "uGoutte", "uEtire", "uD", "uEau", "uPhi", "uShift", "uDepuis", "uGrille", "uCarres", "uBlanc", "uLueur", "uRepli", "uFronts", "uEsp", "uGalaxie", "uAvance", "uCiel", "uCrep", "uNuit", "uMer", "uArc", "uTraverse", "uTerre", "uAltSol", "uPlongeeSol", "uAvanceSol", "uHeure", "uMacro", "uRond", "uCentreSol", "uOndeSol"]) this.u[n] = gl.getUniformLocation(p, n);
   }
 
   /** dimensionner les deux toiles (la toile WebGL peut être rendue plus petite : `echelle`) */
@@ -447,7 +478,7 @@ export class Rendu {
 
   /** Rendre une image. `t` : le temps du RÉCIT (ce que décrit la partition) ; `reel` : le temps du film, qui anime les
       matières (nuages qui dérivent, étoiles qui scintillent) même quand le récit avance lentement (chapitre complet). */
-  rendre(t: number, reel: number = t, fonction: FonctionScene = scene) {
+  rendre(t: number, reel: number = t, fonction: FonctionScene = scene, rythme: EtatRythme | null = null) {
     const s = fonction(t); this.derniere = s;
     if (this.perdu || this.gl.isContextLost()) return s;
     const gl = this.gl, W = this.toile.width, H = this.toile.height, u = this.u;
@@ -465,6 +496,9 @@ export class Rendu {
     const g = this.geometrie(s), arr = new Float32Array(MAX_FRONTS * 4);
     g.forEach((f, i) => { arr.set([f.rayon, f.intensite, f.phase, 1], i * 4); });
     gl.uniform4fv(u.uFronts, arr); gl.uniform1f(u.uEsp, ONDE_FILM.espacement);
+    /* le rythme (facultatif) : sans lui, aucun effet */
+    const om = new Float32Array(12); (rythme?.ondes ?? []).slice(0, 6).forEach(([age, force], i) => { om[i * 2] = age; om[i * 2 + 1] = force; });
+    gl.uniform1f(u.uVitesse, rythme?.vitesse ?? 0); gl.uniform1f(u.uFuite, rythme?.fuite ?? 0); gl.uniform2fv(u.uOndesM, om);
     const v = s.voyage;
     for (const [k, val] of [["uGalaxie", v?.galaxie], ["uAvance", v?.avance], ["uCiel", v?.ciel], ["uCrep", v?.crepuscule], ["uNuit", v?.nuit], ["uMer", v?.mer], ["uArc", v?.arc], ["uTraverse", v?.traverse],
       ["uTerre", v?.terre], ["uAltSol", v?.altitude ?? 1], ["uPlongeeSol", v?.plongeeSol], ["uAvanceSol", v?.avanceSol]] as const) gl.uniform1f(u[k], val ?? 0);

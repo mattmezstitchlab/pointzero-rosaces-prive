@@ -15,6 +15,7 @@ import { sceneVoyage } from "./voyage";
 /** les récits procéduraux connus (le nom vient de la source du plan) */
 const SCENES: Record<string, FonctionScene> = { voyage: sceneVoyage, atterrissage: sceneAtterrissage, "disque-prepare": sceneDisquePrepare };
 import type { Scene } from "./partition";
+import { RYTHME_AMOR } from "./rythme";
 
 export interface FichierAudio { url: string; morceau: string; /** le passage du morceau que couvre le fichier (tempsMorceau) */ debut: number; fin: number }
 export interface OptionsLecteur {
@@ -32,6 +33,7 @@ const noter = (t: number, evt: string) => { journal.push({ t: Math.round(t * 100
 export class Lecteur {
   t = 0; lecture = false; son = false; fini = false; statique = false;
   readonly duree: number;
+  readonly rythme: typeof RYTHME_AMOR | null;
   private rendu: Rendu | null = null;
   private horloge: Horloge | null = null;
   private raf = 0;
@@ -46,6 +48,8 @@ export class Lecteur {
 
   constructor(private o: OptionsLecteur) {
     this.duree = dureeMontage(o.montage); this.places = placer(o.montage);
+    /* le rythme de la musique, si le montage joue un morceau mesuré (aujourd'hui : « Amor amour 2 ») */
+    this.rythme = o.montage.musique.some(c => c.morceau === RYTHME_AMOR.morceau) ? RYTHME_AMOR : null;
     this.echelle = o.mobile ? 0.6 : 0.75; this.qualite = o.mobile ? 4 : 6;
     this.creerRendu();
     noter(0, `lecteur prêt · ${o.montage.id} · ${this.duree.toFixed(3)} s`);
@@ -127,7 +131,7 @@ export class Lecteur {
       if (a && a.tNarratif !== undefined && this.rendu && !this.statique) {
         /* mouvement réduit : l'image du milieu du plan, une seule fois par plan */
         const f = a.plan.source.genre === "procedural" ? SCENES[a.plan.source.scene] : undefined;
-        if (!this.o.imageParPlan) s = this.rendu.rendre(a.tNarratif, this.t, f);
+        if (!this.o.imageParPlan) s = this.rendu.rendre(a.tNarratif, this.t, f, this.rythme?.a(this.t) ?? null);
         else if (this.dernierPlan !== a.plan.id) { this.dernierPlan = a.plan.id; const src = a.plan.source; if (src.genre === "procedural") { const mid = src.narratif[Math.floor(src.narratif.length / 2)]; s = this.rendu.rendre((src.narratif[0][1] + src.narratif[src.narratif.length - 1][1]) / 2 || mid[1], this.t, f); } }
       }
     }
