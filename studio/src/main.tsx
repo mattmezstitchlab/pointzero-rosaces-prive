@@ -6,6 +6,7 @@ import { appliquerApercuAime } from "./design/aimeStudio";
 import App from "./App";
 import StorageRecoveryNotice from "./components/StorageRecoveryNotice";
 import AccessibilityShell from "./components/AccessibilityShell";
+import { SITE_BRODERIE } from "./lib/site";
 const EssaiImage = lazy(() => import("./essais/EssaiImage"));
 const Bureau = lazy(() => import("./bureau/Bureau"));
 const EssaiCarte = lazy(() => import("./essais/EssaiCarte"));
@@ -57,6 +58,9 @@ const accueil = /\/accueil\/?$/.test(window.location.pathname);
 const essaiTraversee = /\/essai-traversee\/?$/.test(window.location.pathname);
 
 appliquerApercuAime();
+/* le site Point Zéro (broderie seule) : seules la landing, l'atelier et le Tambour vivant existent ; toute autre adresse ramène à l'accueil */
+const horsBroderie = !/^\/(atelier|tambour)?\/?$/.test(window.location.pathname.slice(import.meta.env.BASE_URL.length - 1));
+if (SITE_BRODERIE && horsBroderie) window.location.replace(import.meta.env.BASE_URL);
 /* le titre de l'onglet dit où l'on est (sinon, celui de la landing Broderie s'affichait partout) ; une page qui connaît mieux son titre le remplace */
 const TITRES: [boolean, string][] = [[explorer, "Explorer les prototypes — AIME"], [bureau, "Le Bureau — AIME"], [onePremiere, "Première rencontre — .0NE"],
   [oneTerminalOrbe, "Disque Terminal, l’orbe relationnelle — .0NE"], [oneTerminal, "Disque Terminal — .0NE"], [oneMosaique, "Tous les univers — .0NE"],
@@ -83,5 +87,5 @@ createRoot(document.getElementById("root")!).render(
       : essaiTraversee ? <AccessibilityShell><Suspense fallback={null}><EssaiTraversee /></Suspense></AccessibilityShell>
       : essaiImage ? <AccessibilityShell><Suspense fallback={null}><EssaiImage /></Suspense></AccessibilityShell>
       : <AccessibilityShell><StorageRecoveryNotice/><App /></AccessibilityShell>}
-  </GardeExperience>{!filmLumiere && !vivreLumiere && !planchesLumiere && !oneUnivers && !accueil && <NavigationConvergence />}</StrictMode>
+  </GardeExperience>{!SITE_BRODERIE && !filmLumiere && !vivreLumiere && !planchesLumiere && !oneUnivers && !accueil && <NavigationConvergence />}</StrictMode>
 );

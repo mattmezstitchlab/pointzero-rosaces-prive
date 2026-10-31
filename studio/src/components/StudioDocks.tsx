@@ -18,6 +18,7 @@ import PointDuBloc from "./point/PointDuBloc";
 import "./blocs/broderie";
 import type { ContexteBroderie } from "./blocs/broderie";
 import { commandesDuBloc, ecrireEssaiBloc, lireEssaiBloc } from "../lib/point/registre";
+import { SITE_BRODERIE } from "../lib/site";
 import TambourAtelier, { ecrireCadreTambour, lireCadreTambour } from "./TambourAtelier";
 import { aVoir, Indicateurs, trier, type Indicateur } from "../lib/point/indicateurs";
 import { suggestion } from "./blocs/guideBroderie";
@@ -410,9 +411,9 @@ export default function StudioDocks(p: Props) {
           { id: "retablir", nom: "Rétablir", icone: <Redo2 aria-hidden="true" />, aide: p.canRedo ? "refaire la modification défaite" : "rien à refaire", groupe: "socle", resteOuvert: true, ouvrir: () => { if (p.canRedo) p.onRedo(); } },
         ] },
       ...["broder", "fils", "affichage", "importer"].map(pris).filter((m): m is ModePoint => !!m),
-      { id: "galerie", nom: "Galerie", icone: <LayoutGrid aria-hidden="true" />, aide: "la Galerie des Vivants", groupe: "creation", ouvrir: () => { window.location.href = import.meta.env.BASE_URL + "galerie"; } },
-      { id: "partager", nom: "Partager", icone: <Share2 aria-hidden="true" />, aide: "exporter le patron, le projet, exposer dans la Galerie", groupe: "creation", ouvrir: () => {},
-        enfants: () => [...(exporter?.enfants?.() ?? []), ...(p.actions.exposer ? [{ id: "partager-exposer", nom: "Exposer", icone: <Sparkles aria-hidden="true" />, aide: "une copie dans la Galerie des Vivants", groupe: "creation", ouvrir: p.actions.exposer } satisfies ModePoint] : [])] },
+      ...(SITE_BRODERIE ? [] : [{ id: "galerie", nom: "Galerie", icone: <LayoutGrid aria-hidden="true" />, aide: "la Galerie des Vivants", groupe: "creation" as const, ouvrir: () => { window.location.href = import.meta.env.BASE_URL + "galerie"; } }]),
+      { id: "partager", nom: "Partager", icone: <Share2 aria-hidden="true" />, aide: SITE_BRODERIE ? "exporter le patron en PDF, le projet" : "exporter le patron, le projet, exposer dans la Galerie", groupe: "creation", ouvrir: () => {},
+        enfants: () => [...(exporter?.enfants?.() ?? []), ...(p.actions.exposer && !SITE_BRODERIE ? [{ id: "partager-exposer", nom: "Exposer", icone: <Sparkles aria-hidden="true" />, aide: "une copie dans la Galerie des Vivants", groupe: "creation", ouvrir: p.actions.exposer } satisfies ModePoint] : [])] },
       ...["guide"].map(pris).filter((m): m is ModePoint => !!m),
       { id: "reglages", nom: "Réglages", icone: <CircleHelp aria-hidden="true" />, aide: "les réglages du studio, l’aide, la navigation classique", groupe: "socle", ouvrir: () => {},
         enfants: () => [
@@ -435,7 +436,7 @@ export default function StudioDocks(p: Props) {
       ...(importer ? [importer] : []),
       { id: "bureau-chercher", nom: "Chercher", icone: <Search aria-hidden="true" />, aide: "un fil, un outil, une fonction", groupe: "socle", ouvrir: () => setBloc("chercher") },
       { id: "bureau-plein", nom: bureauPlein ? "Revenir au disque" : "Plein écran", icone: <Maximize aria-hidden="true" />, aide: bureauPlein ? "les ouvrages reviennent au centre du disque" : "les ouvrages occupent tout l’écran", groupe: "socle", actif: bureauPlein, ouvrir: () => setBureauPlein(v => !v) },
-      { id: "galerie", nom: "Galerie", icone: <LayoutGrid aria-hidden="true" />, aide: "la Galerie des Vivants", groupe: "creation", ouvrir: () => { window.location.href = import.meta.env.BASE_URL + "galerie"; } },
+      ...(SITE_BRODERIE ? [] : [{ id: "galerie", nom: "Galerie", icone: <LayoutGrid aria-hidden="true" />, aide: "la Galerie des Vivants", groupe: "creation" as const, ouvrir: () => { window.location.href = import.meta.env.BASE_URL + "galerie"; } }]),
       { id: "reglages", nom: "Réglages", icone: <CircleHelp aria-hidden="true" />, aide: "les réglages du studio, l’aide, la navigation classique", groupe: "socle", ouvrir: () => {},
         enfants: () => [
           { id: "reglages-studio", nom: "Réglages et aide", icone: <CircleHelp aria-hidden="true" />, aide: "les réglages du studio et l’aide", groupe: "socle", ouvrir: p.actions.settings },
@@ -491,7 +492,7 @@ export default function StudioDocks(p: Props) {
                 <li><button type="button" onClick={() => { setBloc(null); p.actions.home(); }}>Accueil Point Zéro</button></li>
                 <li><button type="button" onClick={() => setBloc("inviter")}>Mes ouvrages</button></li>
                 <li><button type="button" onClick={() => setBloc("chercher")}>Chercher</button></li>
-                <li><a href={import.meta.env.BASE_URL + "galerie"}>Galerie des Vivants</a></li>
+                {!SITE_BRODERIE && <li><a href={import.meta.env.BASE_URL + "galerie"}>Galerie des Vivants</a></li>}
                 <li><a href={import.meta.env.BASE_URL + "tambour"}>Essai : le Tambour vivant</a></li>
                 <li><button type="button" aria-pressed={essaiBloc} onClick={() => { const v = !essaiBloc; ecrireEssaiBloc(v); setEssaiBloc(v); if (v) { ecrireCadreTambour(false); setCadreTambour(false); setTambourOuvert(false); } setBloc(null); }}>{essaiBloc ? "Revenir au dock du bas" : "Essai : les outils sur le bloc"}</button></li>
                 <li><button type="button" aria-pressed={nav0} onClick={() => changerNav0(!nav0)}>{nav0 ? "Quitter la navigation intégrale .0" : "Essai : Navigation intégrale .0"}</button></li>

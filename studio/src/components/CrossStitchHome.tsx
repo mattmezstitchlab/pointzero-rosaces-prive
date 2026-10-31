@@ -7,7 +7,9 @@ import "./CrossStitchHome.css";
 import { CHAPITRES_EDITION, EditionEnLigne } from "./edition/Edition";
 
 /** L'édition (la nouvelle narration sous le héros) : en essai privé derrière ?edition, la page actuelle reste la même sans ce paramètre. */
-const estEdition = () => { try { return new URLSearchParams(window.location.search).has("edition"); } catch { return false; } };
+/* le site Point Zéro (broderie seule) : l’édition en chapitres est sa landing, sans paramètre */
+import { SITE_BRODERIE } from "../lib/site";
+const estEdition = () => { if (SITE_BRODERIE) return true; try { return new URLSearchParams(window.location.search).has("edition"); } catch { return false; } };
 
 export type StitchEntry = "create" | "library" | "prepare" | "stitch";
 interface Props {
@@ -56,7 +58,7 @@ const TOUT: [string, string][] = [
   ["Broder", "Marquer case, bloc ou ligne ; parking des fils, notes, cases à défaire, journal des séances."],
   ["Se repérer", "Le cercle de progression, la timeline fil par fil, la loupe, symboles, tout voir."],
   ["Partager", "Inviter à regarder en direct, visibilité, PDF paginé, SVG, PNG, JSON."],
-  ["Garder", "Sauvegarde automatique, Mes ouvrages dans le dock, compte AIME synchronisé, hors ligne."],
+  ["Garder", SITE_BRODERIE ? "Sauvegarde automatique sur cet appareil, Mes ouvrages, le fichier du projet à télécharger, hors ligne." : "Sauvegarde automatique, Mes ouvrages dans le dock, compte AIME synchronisé, hors ligne."],
   ["Confort", "Débutante, confirmée, experte ; contraste élevé, texte plus grand, stylet, clavier, lecteur d’écran."],
   ["Le Point", "La visite guidée de bout en bout, au clavier, qui imite le geste de chaque point."],
 ];
