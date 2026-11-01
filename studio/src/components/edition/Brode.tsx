@@ -41,7 +41,9 @@ const CENTRE: Point = { x: 50, y: 50 };
 /* même seuil que la mise en page de l'édition (Histoire.css) : au-dessous, c'est le cadrage mobile */
 const estMobile = () => typeof window !== "undefined" && !!window.matchMedia?.("(max-width: 820px)").matches;
 
-export default function Brode({ src, cols: colsBase = 110, maxFils = 14, alt, legende, depart = 0.12, fin = 0.7, surFils, loupeDemandee, cadrage }: {
+export default function Brode({ src, cols: colsBase = 110, maxFils = 14, alt, legende, depart = 0.12, fin = 0.7, surFils, loupeDemandee, cadrage, fixation }: {
+  /** Option immersive : cercle mobile puis fixé au clic, libérable depuis le disque. */
+  fixation?: { rayon: number; marge: number; liberation: number; surFixer: (p: Point | null) => void };
   src: string; cols?: number; maxFils?: number;
   /** ce que montre l'image (lu par le lecteur d'écran) */
   alt: string;
@@ -60,6 +62,8 @@ export default function Brode({ src, cols: colsBase = 110, maxFils = 14, alt, le
   const [cols] = useState(() => Math.round(colsBase * Math.min(1.6, Math.max(0.7, (typeof window !== "undefined" ? window.innerWidth : 1280) / 1280))));
   const fig = useRef<HTMLElement>(null), toile = useRef<HTMLCanvasElement>(null), vue = useRef<HTMLDivElement>(null);
   const etat = useRef<{ b?: Broderie; loupe: { x: number; y: number } | null; W: number; H: number; s: number; ox: number; oy: number; dpr: number }>({ loupe: null, W: 0, H: 0, s: 1, ox: 0, oy: 0, dpr: 1 });
+  const fige = useRef(false);
+  const fixationRef = useRef(fixation); fixationRef.current = fixation;
   const [pret, setPret] = useState(false);
   const [dit, setDit] = useState("");
   const image = useRef(0);
@@ -105,21 +109,21 @@ export default function Brode({ src, cols: colsBase = 110, maxFils = 14, alt, le
     if (!e.loupe) { v.removeAttribute("data-loupe"); return; }
     v.setAttribute("data-loupe", "");
     v.style.setProperty("--mx", e.loupe.x + "px"); v.style.setProperty("--my", e.loupe.y + "px");
-    v.style.setProperty("--r", Math.max(90, Math.min(e.W, e.H) * .22) + "px");
+    v.style.setProperty("--r", (fixation?.rayon ?? Math.max(90, Math.min(e.W, e.H) * .22)) + "px");
   };
   const demander = () => { if (!image.current) image.current = requestAnimationFrame(dessiner); };
 
   useEffect(() => {
     let vivant = true;
     /* chargement paresseux : la conversion commence quand la scène approche (un écran et demi avant), pas au chargement de la page */
-    const lancer = () => chargerBroderie(src, cols, maxFils).then(b => { if (!vivant) return; etat.current.b = b; preparer(); setPret(true); surFilsRef.current?.(b); demander(); }).catch(() => { /* l'image manque : la légende reste, rien ne casse */ });
+    const lancer = () => chargerBroderie(src, cols, maxFils).then(b => { if (!vivant) return; etat.current.b = b; preparer(); setPret(true); if (fixationRef.current && !etat.current.loupe) etat.current.loupe = { x: etat.current.W / 2, y: etat.current.H / 2 }; surFilsRef.current?.(b); demander(); }).catch(() => { /* l'image manque : la légende reste, rien ne casse */ });
     let io: IntersectionObserver | null = null;
     if (typeof IntersectionObserver === "undefined" || !fig.current) void lancer();
     else { io = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) { io?.disconnect(); io = null; void lancer(); } }, { rootMargin: "150% 0px 150% 0px" }); io.observe(fig.current); }
     const scene = fig.current?.closest<HTMLElement>(".ed-scene");
     const fin_ = scene ? suivreScene(scene) : undefined; // --p sur la scène : le CSS fait le reste
     let attente = 0;
-    const r = () => { window.clearTimeout(attente); setMobile(estMobile()); attente = window.setTimeout(() => { if (etat.current.b) { preparer(); demander(); } }, 150); };
+    const r = () => { window.clearTimeout(attente); setMobile(estMobile()); attente = window.setTimeout(() => { if (etat.current.b) { preparer(); if (fige.current && fixationRef.current) { const e = etat.current, m = Math.min(fixationRef.current.marge, e.W / 2, e.H / 2); e.loupe = { x: Math.max(m, Math.min(e.W - m, e.loupe!.x)), y: Math.max(m, Math.min(e.H - m, e.loupe!.y)) }; fixationRef.current.surFixer(e.loupe); } demander(); } }, 150); };
     window.addEventListener("resize", r);
     return () => { vivant = false; io?.disconnect(); fin_?.(); window.clearTimeout(attente); window.removeEventListener("resize", r); if (image.current) cancelAnimationFrame(image.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -132,23 +136,29 @@ export default function Brode({ src, cols: colsBase = 110, maxFils = 14, alt, le
     if (c < 0 || r < 0 || c >= e.b.cols || r >= e.b.rows) return null; return { c, r, f: e.b.cross[r * e.b.cols + c] }; };
   const dire = (x: number, y: number) => { const k = caseDe(x, y); if (!k) return; const f = FLOSS[k.f];
     setDit(f ? `Colonne ${k.c + 1}, rang ${k.r + 1} : DMC ${f.code}, ${f.name}` : `Colonne ${k.c + 1}, rang ${k.r + 1} : toile nue`); };
-  const poser = (x: number, y: number) => { etat.current.loupe = { x, y }; dire(x, y); demander(); };
+  const poser = (x: number, y: number) => { if (fige.current) return; if (fixation) { const e = etat.current, m = Math.min(fixation.marge, e.W / 2, e.H / 2); x = Math.max(m, Math.min(e.W - m, x)); y = Math.max(m, Math.min(e.H - m, y)); } etat.current.loupe = { x, y }; dire(x, y); demander(); };
   useEffect(() => { if (loupeDemandee) { const e = etat.current; poser(e.W / 2 || 300, e.H / 2 || 200); toile.current?.parentElement?.focus({ preventScroll: true }); } }, [loupeDemandee]); // eslint-disable-line react-hooks/exhaustive-deps
+  const liberer = () => { fige.current = false; fixationRef.current?.surFixer(null); vue.current?.focus({ preventScroll: true }); setDit("Cercle libéré. Déplacez-le, puis cliquez pour ouvrir le disque."); };
+  useEffect(() => { if (fixation?.liberation) liberer(); }, [fixation?.liberation]); // eslint-disable-line react-hooks/exhaustive-deps
+  const fixer = () => { if (!fixation || !pret || fige.current) return; const e = etat.current; if (!e.loupe) poser(e.W / 2, e.H / 2); fige.current = true; fixation.surFixer(e.loupe); setDit("Cercle fixé. Disque DMC ouvert. Échap pour libérer le cercle."); };
   const local = (ev: { clientX: number; clientY: number }) => { const r = toile.current!.getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; };
 
   const k = etat.current.loupe ? caseDe(etat.current.loupe.x, etat.current.loupe.y) : null;
   const fil = k && k.f >= 0 ? FLOSS[k.f] : null;
   return <figure ref={fig} className="ed-brode" data-pret={pret ? "oui" : "non"} style={{ ["--d" as string]: depart, ["--f" as string]: fin }}>
     <div ref={vue} className="ed-brode-vue" tabIndex={0} role="application" aria-roledescription="loupe sur la broderie"
-      aria-label={`${alt}. Loupe : flèches pour la déplacer d’une case, Maj et flèches pour dix cases, Échap pour la retirer.`}
+      aria-label={`${alt}. Loupe : flèches pour la déplacer d’une case, Maj et flèches pour dix cases, Échap pour la retirer.${fixation ? " Cliquez ou appuyez sur Entrée pour fixer le cercle et ouvrir le disque DMC. Échap pour le libérer." : ""}`}
+      onClick={fixation ? fixer : undefined}
       onPointerMove={ev => { if (ev.pointerType === "mouse" || ev.buttons) { const { x, y } = local(ev); poser(x, y); } }}
       onPointerDown={ev => { const { x, y } = local(ev); poser(x, y); }}
-      onPointerLeave={ev => { if (ev.pointerType === "mouse") { etat.current.loupe = null; demander(); } }}
+      onPointerLeave={ev => { if (ev.pointerType === "mouse" && !fige.current) { etat.current.loupe = null; demander(); } }}
       onFocus={() => { if (!etat.current.loupe) { const e = etat.current; poser(e.W / 2, e.H / 2); } }}
-      onBlur={() => { etat.current.loupe = null; demander(); }}
+      onBlur={() => { if (fige.current) return; etat.current.loupe = null; demander(); }}
       onKeyDown={ev => {
         const pas = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[ev.key];
         const e = etat.current;
+        if (fixation && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); fixer(); return; }
+        if (ev.key === "Escape" && fixation && fige.current) { ev.preventDefault(); liberer(); return; }
         if (ev.key === "Escape") { e.loupe = null; demander(); setDit("Loupe retirée."); return; }
         if (!pas) return; ev.preventDefault();
         const n = ev.shiftKey ? 10 : 1, l = e.loupe ?? { x: e.W / 2, y: e.H / 2 };

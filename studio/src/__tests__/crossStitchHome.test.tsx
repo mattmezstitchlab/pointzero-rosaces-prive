@@ -7,6 +7,12 @@ import { creation, codeDeCreation } from "../components/edition/creation";
 import { lireCode } from "../lib/motif5d/code";
 import { generer, formatParDefaut } from "../lib/motif5d/generer";
 import { FLOSS } from "../lib/dmc";
+vi.mock("../components/edition/Brode", async original => {
+  const reel = await original<typeof import("../components/edition/Brode")>();
+  return { ...reel, default: (props: Parameters<typeof reel.default>[0]) => props.fixation
+    ? <figure className="ed-brode"><button type="button" className="ed-brode-vue" onClick={() => props.fixation!.surFixer({ x: 300, y: 300 })}>Fixer le cercle de test</button></figure>
+    : <reel.default {...props} /> };
+});
 import CrossStitchHome from "../components/CrossStitchHome";
 import { entryStudio, publicPathFor } from "../lib/entryNavigation";
 
@@ -215,24 +221,21 @@ it("pilote les Rencontres depuis le dock contextuel, sans navigation dans le hé
 });
 
 
-it("relie le dock du nuancier à la recherche et à la fiche du fil", () => {
+it("le premier écran ouvre le disque DMC au clic et garde sa fiche", () => {
   site.broderie = true;
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   const { view } = mount();
-  const section = view.querySelector<HTMLElement>("#ed-fils")!;
-  act(() => window.dispatchEvent(new CustomEvent("pointzero:ouvrir-slide", { detail: section.id })));
-  act(() => view.querySelector<HTMLButtonElement>('[data-nuancier="chercher"]')!.click());
-  const champ = view.querySelector<HTMLInputElement>("#nuancier-dock-recherche")!;
-  expect(champ).toBeTruthy();
-  act(() => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(champ, "310");
-    champ.dispatchEvent(new Event("input", { bubbles: true }));
-  });
-  const resultat = [...view.querySelectorAll<HTMLButtonElement>(".pz-recherche-fils li button")].find(b => b.textContent?.startsWith("DMC 310 ·"));
-  expect(resultat).toBeTruthy();
-  act(() => resultat!.click());
+  expect(view.querySelector(".pz-photo-couronne")).toBeNull();
+  act(() => view.querySelector<HTMLButtonElement>(".ed-brode-vue")!.click());
+  expect(view.querySelector(".pz-photo-couronne")).toBeTruthy();
+  act(() => view.querySelector<HTMLButtonElement>('#ed-fils [data-mode="famille-bleus"]')!.click());
+  const nuance = view.querySelector<HTMLButtonElement>('#ed-fils [data-mode^="dmc-"]')!;
+  act(() => nuance.click());
+  expect(view.querySelector("#ed-fils .ed-fiche-code")!.textContent).toBe("DMC " + nuance.dataset.mode!.slice(4));
+  const recherche = view.querySelector<HTMLInputElement>(".pz-photo-recherche input")!;
+  act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(recherche, "310"); recherche.dispatchEvent(new Event("input", { bubbles: true })); });
+  act(() => view.querySelector<HTMLButtonElement>(".pz-photo-resultats button")!.click());
   expect(view.querySelector("#ed-fils .ed-fiche-code")!.textContent).toBe("DMC 310");
-  expect(view.querySelector(".pz-recherche-fils")).toBeNull();
 });
 
 
@@ -263,19 +266,20 @@ it("réunit les quatre sections dans le héros sans perdre choix, fil ni accès 
   const visibles = () => [...view.querySelectorAll<HTMLElement>("[data-hero-slide]")].filter(el => !el.hidden).map(el => el.dataset.heroSlide);
   expect(visibles()).toEqual(["accueil"]);
   expect(view.querySelectorAll("[data-hero-slide]")).toHaveLength(4);
+  choisir("ed-rencontres");
+  expect(visibles()).toEqual(["ed-rencontres"]);
+  act(() => view.querySelector<HTMLButtonElement>('[data-mode="reponse-structure-1"]')!.click());
   choisir("accueil");
   expect(visibles()).toEqual(["accueil"]);
-  act(() => view.querySelector<HTMLButtonElement>('[data-mode="reponse-structure-1"]')!.click());
-  choisir("ed-fils");
-  expect(visibles()).toEqual(["ed-fils"]);
+  act(() => view.querySelector<HTMLButtonElement>(".ed-brode-vue")!.click());
   act(() => view.querySelector<HTMLButtonElement>('#ed-fils [data-mode="famille-bleus"]')!.click());
   const fil = view.querySelector<HTMLButtonElement>('#ed-fils [data-mode^="dmc-"]')!;
   act(() => fil.click());
   const code = view.querySelector("#ed-fils .ed-fiche-code")!.textContent;
   choisir("ed-rosace"); choisir("ed-studio");
   expect(visibles()).toEqual(["ed-studio"]);
-  choisir("ed-fils"); expect(view.querySelector("#ed-fils .ed-fiche-code")!.textContent).toBe(code);
-  choisir("accueil");
+  choisir("accueil"); expect(view.querySelector("#ed-fils .ed-fiche-code")!.textContent).toBe(code);
+  choisir("ed-rencontres");
   expect(view.querySelector('[data-mode="reponse-structure-1"]')!.getAttribute("aria-label")).toContain("actif");
   act(() => window.dispatchEvent(new CustomEvent("pointzero:ouvrir-slide", { detail: "ed-rosace" })));
   expect(visibles()).toEqual(["ed-rosace"]);
@@ -295,7 +299,8 @@ it("offre une rosace indiennes dès l’arrivée, modifiable, réinitialisable s
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   localStorage.setItem("ouvrage-existant", "ne pas toucher");
   const { view } = mount();
-  expect(view.querySelector('[data-hero-slide="accueil"] #ed-rencontres [data-mode="reponse-structure-0"]')).toBeTruthy();
+  act(() => window.dispatchEvent(new CustomEvent("pointzero:ouvrir-slide", { detail: "ed-rencontres" })));
+  expect(view.querySelector('[data-hero-slide="ed-rencontres"] #ed-rencontres [data-mode="reponse-structure-0"]')).toBeTruthy();
   expect(view.querySelector(".pzh-rosace-fond canvas")).toBeTruthy();
   expect(creation.lire().choix).toEqual({}); // aucune réponse personnelle inventée
   const origine = codeDeCreation(creation.lire());
@@ -316,4 +321,17 @@ it("offre une rosace indiennes dès l’arrivée, modifiable, réinitialisable s
   act(() => view.querySelector<HTMLButtonElement>(".pzh-origine")!.click());
   expect(codeDeCreation(creation.lire())).toBe(origine);
   expect(localStorage.getItem("ouvrage-existant")).toBe("ne pas toucher");
+});
+
+it("fait passer au disque suivant au défilement et permet le retour par la navigation verticale", () => {
+  site.broderie = true;
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const { view } = mount();
+  const stage = view.querySelector<HTMLElement>(".pzh-hero-stage")!;
+  act(() => stage.dispatchEvent(new WheelEvent("wheel", { deltaY: 100, bubbles: true })));
+  expect(view.querySelector<HTMLSelectElement>("#dock-section")!.value).toBe("ed-rencontres");
+  const nav = view.querySelector('nav[aria-label="Disques de découverte"]')!;
+  expect(nav.querySelectorAll("button")).toHaveLength(4);
+  act(() => nav.querySelector<HTMLButtonElement>('button[aria-label="Nuancier DMC"]')!.click());
+  expect(view.querySelector<HTMLSelectElement>("#dock-section")!.value).toBe("accueil");
 });

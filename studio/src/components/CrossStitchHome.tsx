@@ -11,7 +11,7 @@ import { chapitresEdition, EditionEnLigne, type FonctionStudio } from "./edition
 /* le site Point Zéro (broderie seule) : l’édition en chapitres est sa landing, sans paramètre */
 import { revelerSlide } from "./edition/Slides";
 import { SITE_BRODERIE } from "../lib/site";
-const HERO_SLIDES = [["accueil", "Créer ma rosace"], ["ed-fils", "Nuancier DMC"], ["ed-rosace", "Ma rosace"], ["ed-studio", "Dans le studio"]] as const;
+const HERO_SLIDES = [["accueil", "Nuancier DMC"], ["ed-rencontres", "Créer ma rosace"], ["ed-rosace", "Ma rosace"], ["ed-studio", "Dans le studio"]] as const;
 const estEdition = () => { if (SITE_BRODERIE) return true; try { return new URLSearchParams(window.location.search).has("edition"); } catch { return false; } };
 
 export type StitchEntry = "create" | "library" | "prepare" | "stitch";
@@ -172,7 +172,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
       const cible = document.getElementById(id);
       const parent = cible?.closest<HTMLElement>("[data-hero-slide]")?.dataset.heroSlide;
       const slide = HERO_SLIDES.find(([cle]) => cle === id || cle === parent)?.[0];
-      if (id === "ed-rencontres") setContexte("accueil");
+      if (id === "ed-fils") setContexte("accueil");
       else if (slide) setContexte(slide);
     };
     const evenement = (e: Event) => ouvrir((e as CustomEvent<string>).detail);
@@ -184,6 +184,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
     return () => { window.removeEventListener("pointzero:rencontres-etat", etat); window.removeEventListener("pointzero:ouvrir-slide", evenement); window.removeEventListener("hashchange", ancre); };
   }, []);
   const stage = useRef<HTMLDivElement>(null);
+  const dernierDefilement = useRef(0);
   const toucher = useRef<{ x: number; y: number } | null>(null);
   const indexSlide = HERO_SLIDES.findIndex(([id]) => id === contexte);
   const choisirSlide = (id: string) => revelerSlide(id);
@@ -268,7 +269,15 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
       <ol>{(SITE_BRODERIE ? chapitresEdition() : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)} aria-current={chapitre === c.id ? "true" : undefined}><span className="ix-nom">{c.titre}</span><span className="ix-points" aria-hidden="true" /><span className="ix-num">{c.num}</span></a></li>)}</ol>
     </nav>}
 
-    <div ref={stage} className={SITE_BRODERIE ? "pzh-hero-stage" : undefined}>
+    <div ref={stage} className={SITE_BRODERIE ? "pzh-hero-stage" : undefined} onWheel={e => {
+      if (!SITE_BRODERIE || Math.abs(e.deltaY) < 25 || (e.target as Element).closest('input, select, [role="menu"], .ed-fiche, .pz-photo-fiche')) return;
+      const el = e.currentTarget, bas = el.scrollTop + el.clientHeight >= el.scrollHeight - 3;
+      if ((e.deltaY > 0 && bas) || (e.deltaY < 0 && el.scrollTop <= 0)) {
+        const maintenant = Date.now(); if (maintenant - dernierDefilement.current < 900) return;
+        const suivant = Math.max(0, Math.min(HERO_SLIDES.length - 1, indexSlide + (e.deltaY > 0 ? 1 : -1)));
+        if (suivant !== indexSlide) { dernierDefilement.current = maintenant; choisirSlide(HERO_SLIDES[suivant][0]); }
+      }
+    }}>
     <main id="csh-main" aria-roledescription={SITE_BRODERIE ? "carrousel" : undefined} aria-label={SITE_BRODERIE ? "Découvrir Point Zéro" : undefined}
       onTouchStart={e => {
         toucher.current = null;
@@ -373,6 +382,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
     </footer>
     </div>
 
+    {SITE_BRODERIE && <nav className="pz-disques-navigation" aria-label="Disques de découverte">{HERO_SLIDES.map(([id, titre], n) => <button key={id} type="button" onClick={() => choisirSlide(id)} aria-label={titre} aria-current={contexte === id ? "location" : undefined} title={titre}><span aria-hidden="true" className={"pz-mini-disque pz-mini-" + n} /></button>)}</nav>}
     {SITE_BRODERIE && <ContextDock label="Actions de la page">
       <div className="pzh-slide-navigation">
         <button type="button" aria-label="Section précédente" disabled={indexSlide === 0} onClick={() => choisirSlide(HERO_SLIDES[indexSlide - 1][0])}>←</button>
@@ -381,16 +391,15 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
         <button type="button" aria-label="Section suivante" disabled={indexSlide === HERO_SLIDES.length - 1} onClick={() => choisirSlide(HERO_SLIDES[indexSlide + 1][0])}>→</button>
       </div>
       <div className="pzh-slide-actions">
-      {contexte === "accueil" ? <>
+      {contexte === "ed-rencontres" ? <>
         <button type="button" disabled={rencontre.active === 0} onClick={() => changerRencontre(rencontre.active - 1)}>Précédent</button>
         <label className="sr-only" htmlFor="dock-rencontre">Rencontre</label>
         <select id="dock-rencontre" value={rencontre.active} onChange={e => changerRencontre(Number(e.target.value))}>{rencontre.titres.map((t, n) => <option key={t} value={n}>{n + 1}/5 · {t}</option>)}</select>
         <button type="button" disabled={rencontre.active === 4} onClick={() => changerRencontre(rencontre.active + 1)}>Suivant</button>
-      </> : contexte === "ed-fils" ? <>
-        <a href="#ed-rencontres" onClick={go("ed-rencontres")}>Découvrir</a>
-        <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("pointzero:nuancier-dock", { detail: "familles" }))}>Familles</button>
-        <button type="button" data-nuancier="chercher" onClick={() => window.dispatchEvent(new CustomEvent("pointzero:nuancier-dock", { detail: "chercher" }))}>Rechercher</button>
-        <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("pointzero:nuancier-dock", { detail: "fiche" }))}>Fil choisi</button>
+      </> : contexte === "accueil" ? <>
+        <button type="button" onClick={importer}>Importer</button>
+        <button type="button" onClick={onStudio ?? (() => onOpen("stitch"))}>Reprendre</button>
+        <button type="button" onClick={() => choisirSlide("ed-rencontres")}>Créer ma rosace</button>
       </> : null}
       </div>
     </ContextDock>}

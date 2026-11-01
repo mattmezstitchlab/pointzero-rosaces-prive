@@ -17,6 +17,7 @@ import { etapeDe, lisse, mouvementReduit, suivreScene } from "./defilement";
 import { dessinerRosace, ETAPES_ROSACE, rosaceDe, SEUILS_ROSACE } from "./rosace";
 import { SITE_BRODERIE } from "../../lib/site";
 import { revelerSlide } from "./Slides";
+import Brode, { type Point as PositionLoupe } from "./Brode";
 import Histoire, { CHAPITRES_HISTOIRE } from "./Histoire";
 import { Apercu, Cadeau, MaRosace, Orbe, RencontreOrbe, useCommandesTrace, useRencontres } from "./Participation";
 import { codeDeCreation, creation, indiennesDe, graineDe, nbChoix, reponseDe, signatureDe, useCreation } from "./creation";
@@ -284,7 +285,9 @@ function Echeveau({ hex }: { hex: string }) {
     <text x="120" y="66" textAnchor="middle" fontSize="13" fontWeight="800" fill="#0b0b0c">DMC</text>
   </svg>;
 }
-function NuageFils() {
+function NuageFils({ immersif = false }: { immersif?: boolean }) {
+  const [fixe, setFixe] = useState<PositionLoupe | null>(null);
+  const [liberation, setLiberation] = useState(0);
   const [rechercheDock, setRechercheDock] = useState(false);
   const [texteDock, setTexteDock] = useState("");
   const champDock = useRef<HTMLInputElement>(null);
@@ -328,6 +331,29 @@ function NuageFils() {
   }));
   const F = FLOSS[fil], famille = FAMILLES.find(x => x.id === familleDe(F.hex));
   const T = useContenus().fils, etapes = T.etapes;
+  if (immersif) return <section ref={scene} id="ed-fils" className="pz-photo-dmc" aria-label="Explorer les couleurs du palampore">
+    <Brode src={import.meta.env.BASE_URL + "images/histoire/met-palampore-2010-337.webp"} cols={120} maxFils={18}
+      alt="Palampore rouge garance et bleu indigo : le cercle révèle les points de croix."
+      legende="Palampore, côte de Coromandel, XVIIIᵉ siècle · The Met, 2010.337 · domaine public. Conversion en fils DMC indicative."
+      cadrage={{ ordinateur: { x: 50, y: 40 }, mobile: { x: 55, y: 35 } }}
+      fixation={{ rayon: 64, marge: 170, liberation, surFixer: setFixe }} />
+    <header className="pz-photo-titre"><h1>Point Zéro</h1><p role="status">{fixe ? "Cercle fixé · explorez les fils autour." : "Déplacez le cercle, puis cliquez pour ouvrir le disque DMC."}</p></header>
+    {fixe && <>
+      <div className="pz-photo-couronne" style={{ left: fixe.x, top: fixe.y }} onKeyDown={e => { if (e.key === "Escape" && !e.defaultPrevented) { e.stopPropagation(); setLiberation(n => n + 1); } }}>
+        <Point contexte="photo-dmc" scene tambour={{ rayon: 120, cote: 340, parPage: 8 }} modes={modes} etiquette="Nuancier autour du cercle fixé" />
+        <button type="button" className="pz-photo-liberer" onClick={() => setLiberation(n => n + 1)} aria-label="Libérer le cercle et déplacer la loupe">Déplacer</button>
+      </div>
+      <aside className="ed-fiche pz-photo-fiche" tabIndex={-1} aria-label="Le fil choisi" aria-live="polite">
+        <details open={typeof window === "undefined" || window.innerWidth > 820}><summary><span className="ed-pastille" style={{ background: F.hex }} /> <span className="ed-fiche-code">DMC {F.code}</span></summary>
+          <p className="ed-fiche-nom">{F.name}</p><p className="ed-fiche-famille">{famille?.nom}</p>
+          <Echeveau hex={F.hex} />
+          <label className="pz-photo-recherche">Chercher un fil DMC<input type="search" value={texteDock} onChange={e => setTexteDock(e.target.value)} placeholder="Référence ou nom" /></label>
+          {texteDock.trim() && <ul className="pz-photo-resultats">{FLOSS.map((f, i) => ({ f, i })).filter(({ f }) => (f.code + " " + f.name).toLowerCase().includes(texteDock.trim().toLowerCase())).slice(0, 12).map(({ f, i }) => <li key={f.code}><button type="button" onClick={() => { setFil(i); setTexteDock(""); }}>DMC {f.code} · {f.name}</button></li>)}</ul>}
+          <p className="pz-photo-precision"><code>{F.hex.toUpperCase()}</code> · sRGB indicatif. Écheveau simulé.</p><p className="pz-photo-precision">Teinte écran indicative. Le choix consulte la fiche : il ne recolore ni la photo ni votre rosace.</p>
+        </details>
+      </aside>
+    </>}
+  </section>;
   return <section ref={scene} id="ed-fils" className="ed-scene ed-fils" aria-labelledby="ed-fils-titre" data-etape={etape}>
     <div className="ed-plateau">
       <div className="ed-texte">
@@ -381,14 +407,14 @@ function Corps({ actions, heroSlide, heroEntree }: { actions: Actions; heroSlide
   const slide = (id: string, titre: string, contenu: ReactNode) => heroSlide === undefined ? contenu : <div data-hero-slide={id} hidden={heroSlide !== id} role="group" aria-roledescription="diapositive" aria-label={titre}>{contenu}</div>;
   const fichier = useFichier(actions.importer), A = useContenus().appareils;
   return <div className="ed" data-edition="c">
-    {SITE_BRODERIE && slide(heroEntree ? "accueil" : "ed-rencontres", "Créer ma rosace", <Rencontres5D heroEntree={heroEntree} />)}
+    {SITE_BRODERIE && slide("ed-rencontres", "Créer ma rosace", <Rencontres5D heroEntree={heroEntree} />)}
     {!SITE_BRODERIE && <Histoire slides={false} Disque={Disque} actions={{ ouvrir: actions.ouvrir, visite: actions.visite, choisirFichier: fichier.choisir, aller }}
       objet={<div className="hi-objet"><Appareil type="ipad" src={adresse(A.ipad.src)} alt={A.ipad.alt} /></div>} entre={{
       "hi-indiennes": <RencontreOrbe cle="structure" variante="cartes" />,
       "hi-mulhouse": <RencontreDisque />,
       "hi-brodeuses": <RencontreOrbe cle="echelle" variante="loupes" />,
     }} />}
-    {slide("ed-fils", "Nuancier DMC", <NuageFils />)}
+    {slide(heroEntree ? "accueil" : "ed-fils", "Nuancier DMC", <NuageFils immersif={!!heroEntree} />)}
     {!SITE_BRODERIE && <RencontreOrbe cle="palette" variante="echeveaux" />}
     {slide("ed-rosace", "Ma rosace", <RosaceNait />)}
     {SITE_BRODERIE && slide("ed-studio", "Dans le studio", <StudioDecouverte actions={actions} />)}
