@@ -117,42 +117,33 @@ describe("Trois scènes, le même Point, de vraies actions", () => {
 });
 
 
-describe("Accueil autonome : rencontres sans historique", () => {
-  it("conserve les cinq rencontres sans historique et sans perdre les choix", async () => {
+describe("Accueil autonome : onboarding 5D", () => {
+  it("cinq questions dans le disque, aperçu personnel et réponses conservées", async () => {
     site.broderie = true;
     hote = document.createElement("div"); document.body.appendChild(hote); root = createRoot(hote);
     await act(async () => { root!.render(<Edition actions={{ ouvrir: vi.fn(), importer: vi.fn(), visite: vi.fn() }} />); });
-    const rencontres = document.getElementById("ed-rencontres")!;
-    expect(document.getElementById("ed-histoire")).toBeNull();
-    expect(document.querySelector(".hi")).toBeNull();
-    expect(rencontres.querySelector(".ed-slides-onglets")).toBeNull();
-    expect(rencontres.querySelector("nav")).toBeNull();
-    expect(rencontres.querySelectorAll("[data-slide]")).toHaveLength(5);
-    expect(document.querySelectorAll("[data-rencontre]")).toHaveLength(5);
-    expect(rencontres.querySelectorAll("[data-slide]:not([hidden])")).toHaveLength(1);
-    await cliquer(document.querySelector('[data-reponse="structure-3"]'));
+    const section = document.querySelector("#ed-rencontres")!;
+    expect(section.querySelector(".ed-nuancier")).toBeTruthy();
+    expect(section.querySelector(".ed-fiche-personnelle canvas")).toBeTruthy();
+    expect(section.textContent).toContain("facultatif");
+    expect(creation.lire().choix).toEqual({});
+    await cliquer(section.querySelector('[data-mode="reponse-structure-1"]'));
+    expect(section.querySelector(".ed-fiche")!.textContent).toContain("1 choix sur 5");
     await act(async () => { window.dispatchEvent(new CustomEvent("pointzero:rencontres-choisir", { detail: 1 })); });
-    expect(rencontres.querySelector('[data-slide]:not([hidden]) #or-lignes')).toBeTruthy();
+    expect(section.querySelector('[data-mode="reponse-trace-0"]')).toBeTruthy();
     await act(async () => { window.dispatchEvent(new CustomEvent("pointzero:rencontres-choisir", { detail: 0 })); });
-    expect(document.querySelector('[data-reponse="structure-3"]')!.getAttribute("aria-checked")).toBe("true");
-    await act(async () => { window.dispatchEvent(new CustomEvent("pointzero:rencontres-choisir", { detail: 4 })); });
-    expect(rencontres.querySelector('[data-slide]:not([hidden]) #or-plein')).toBeTruthy();
-    expect(document.querySelectorAll(".hi-sources a")).toHaveLength(0);
+    expect(section.querySelector('[data-mode="reponse-structure-1"]')!.getAttribute("aria-label")).toContain("actif");
+    for (let n = 1; n < 5; n++) {
+      await act(async () => { window.dispatchEvent(new CustomEvent("pointzero:rencontres-choisir", { detail: n })); });
+      await cliquer(section.querySelector('[data-mode^="reponse-"]'));
+    }
+    expect(section.querySelector(".ed-fiche")!.textContent).toContain("5 choix sur 5");
+    expect(section.querySelector(".ed-cta")!.textContent).toBe("Voir ma rosace");
     expect(document.querySelector("#ed-cadeau")).toBeNull();
-    expect(chapitresEdition().some(c => c.id === "ed-cadeau")).toBe(false);
-    expect(document.querySelector('[href*="offerte"]')).toBeNull();
-    await act(async () => { creation.completer(); });
-    await cliquer(document.querySelector(".or-pastille"));
-    const panneau = document.querySelector(".or-panneau")!;
-    expect(panneau.textContent).not.toMatch(/cadeau|offerte/i);
-    expect(panneau.textContent).toContain("Voir ma rosace");
-    const saut = vi.fn(); (document.getElementById("ed-rosace") as HTMLElement).scrollIntoView = saut;
-    await cliquer([...panneau.querySelectorAll("button")].find(b => b.textContent === "Voir ma rosace"));
-    await act(async () => { await new Promise(resolve => requestAnimationFrame(resolve)); });
-    expect(saut).toHaveBeenCalled();
+    expect(document.querySelector(".hi")).toBeNull();
+    expect(chapitresEdition().some(c => c.id === "ed-studio")).toBe(true);
   });
 });
-
 
 it("présente Ma rosace comme le nuancier : texte, disque et fiche réactive", async () => {
   site.broderie = true;
@@ -173,4 +164,21 @@ it("présente Ma rosace comme le nuancier : texte, disque et fiche réactive", a
   expect(code()).not.toBe(avant);
   expect(fiche.textContent).toContain("Anneaux");
   expect(fiche.querySelector(".ed-cta")!.textContent).toBe("Ouvrir dans l’atelier");
+});
+
+
+it("le disque des usages ouvre les espaces existants sans créer d’ouvrage", async () => {
+  site.broderie = true;
+  const fonction = vi.fn(), ouvrir = vi.fn();
+  hote = document.createElement("div"); document.body.appendChild(hote); root = createRoot(hote);
+  await act(async () => { root!.render(<Edition actions={{ ouvrir, fonction, importer: vi.fn(), visite: vi.fn() }} />); });
+  const section = document.querySelector("#ed-studio")!;
+  for (const id of ["dessiner", "broder", "fils", "ouvrages", "exporter", "camera"]) {
+    await cliquer(section.querySelector(`[data-mode="usage-${id}"]`));
+    await cliquer(section.querySelector(".ed-cta"));
+    expect(fonction).toHaveBeenLastCalledWith(id);
+  }
+  await cliquer(section.querySelector('[data-mode="usage-pdf"]'));
+  expect(section.querySelector(".ed-fiche")!.textContent).toContain("corrections");
+  expect(ouvrir).not.toHaveBeenCalled();
 });

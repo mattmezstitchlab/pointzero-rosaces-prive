@@ -429,3 +429,18 @@ it("garde les deux docks autonomes pendant l’utilisation des disques", async (
   expect(container!.querySelector(".pzt")).toBeNull();
   expect(contexte()).toBeTruthy(); expect(global()).toBeTruthy();
 });
+
+
+it("ouvre les vrais espaces depuis la découverte des fonctions", async () => {
+  site.broderie = true;
+  await mount(true);
+  await click(container!.querySelector('#ed-studio [data-mode="usage-broder"]'));
+  await click(container!.querySelector('#ed-studio .ed-cta'));
+  expect(container!.querySelector('.pzt [data-mode="b-mark"]')).toBeTruthy();
+  expect(container!.querySelector('nav[aria-label="Actions de l’atelier"]')).toBeTruthy();
+  await click([...container!.querySelectorAll<HTMLButtonElement>('.pz-site-docks button')].find(b => b.textContent === "Point Zéro"));
+  await click(container!.querySelector('#ed-studio [data-mode="usage-exporter"]'));
+  await click(container!.querySelector('#ed-studio .ed-cta'));
+  expect(container!.textContent).toContain("Exporter le patron");
+  expect(container!.querySelector('#ed-studio')).toBeNull();
+});

@@ -55,6 +55,7 @@ interface Props {
   /** un autre contexte (le compositeur) a la main sur le Point : le dock ne le rend pas, un seul Point à l'écran */
   sansPoint?: boolean;
   preparation?: boolean;
+  familleDemande?: { id: "points" | "broder"; n: number } | null;
   onStudio?: () => void;
   quitterPreparation?: () => boolean;
   patternName: string;
@@ -455,6 +456,7 @@ export default function StudioDocks(p: Props) {
   } : undefined;
   const [familleDisque, setFamilleDisque] = useState<string | null>(null);
   const ouvrirDisque = (id: string) => { if (p.preparation) return; p.onStudio?.(); setFamilleDisque(id); setTambourOuvert(true); setBloc(null); if (id === "broder" || id === "points") p.onWorkspace(id === "broder" ? "stitch" : "create"); };
+  useEffect(() => { if (SITE_BRODERIE && p.familleDemande) ouvrirDisque(p.familleDemande.id); }, [p.familleDemande]);
   const commandesSite = () => {
     const surMaToile = () => { window.location.href = import.meta.env.BASE_URL + "tambour?mode=superposer" + (p.pattern?.id ? "&ouvrage=" + encodeURIComponent(p.pattern.id) : ""); };
     const familles = commandesDuBloc<ContexteBroderie>("broderie", { ...contexteBroderie, dockClassique: undefined, surMaToile });

@@ -124,6 +124,7 @@ export default function App() {
   const [, setMobileLibraryOpen] = useState(false);
   const [dockPath, setDockPath] = useState<DockPath>(null);
   /* un bloc du dock du haut à ouvrir depuis ailleurs (Mes ouvrages depuis l'accueil, le nuancier depuis le rail de fils) */
+  const [familleDemande, setFamilleDemande] = useState<{ id: "points" | "broder"; n: number } | null>(null);
   const [blocDemande, setBlocDemande] = useState<{ bloc: BlocDemande; n: number } | null>(null);
   const [, setVisibilityTick] = useState(0);
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
@@ -595,7 +596,15 @@ export default function App() {
     openCategory(entry === "prepare" ? "threads" : entry === "stitch" ? "stitch" : "create");
   };
   return studioMode === "stitch-home"
-    ? <CrossStitchHome onStudio={() => { switchStudio("embroidery"); setMobileInspectorOpen(false); setPanel(null); setDockPath(null); }} projectName={P.name} onOpen={enterStitchStudio}
+    ? <CrossStitchHome onFeature={fonction => {
+        setFamilleDemande(null);
+        if (fonction === "camera") { window.location.assign(import.meta.env.BASE_URL + "tambour?mode=superposer"); return; }
+        if (fonction === "ouvrages") { enterStitchStudio("library"); return; }
+        switchStudio("embroidery"); setMobileInspectorOpen(false); setPanel(null);
+        if (fonction === "exporter") setPanel("export");
+        else if (fonction === "fils") openCategory("threads");
+        else { chooseWorkspace(fonction === "broder" ? "stitch" : "create"); setDockPath(null); setFamilleDemande(v => ({ id: fonction === "broder" ? "broder" : "points", n: (v?.n ?? 0) + 1 })); }
+      }} onStudio={() => { setFamilleDemande(null); switchStudio("embroidery"); setMobileInspectorOpen(false); setPanel(null); setDockPath(null); }} projectName={P.name} onOpen={enterStitchStudio}
         onOuvrages={() => enterStitchStudio("library")}
         onShare={() => { switchStudio("embroidery"); setPanel("share"); }}
         onImport={chosen => { switchStudio("embroidery"); importAnyFile(chosen); }}
@@ -651,6 +660,7 @@ export default function App() {
     {composer && <ComposerRosace depart={composer.depart} lecture={composer.lecture} onFermer={() => { setComposer(null); retirerParametreRosace(); }}
       onBroder={(p) => { void useImportedPattern(p).then(ok => { if (ok) { setComposer(null); retirerParametreRosace(); } }); }} />}
     {(SITE_BRODERIE || (!pdfFile && !promptOpen && !compositionInput && !file && !autoImage)) && <StudioDocks
+      familleDemande={familleDemande}
       onStudio={() => { setMobileInspectorOpen(false); setPanel(null); setDockPath(null); }}
       preparation={SITE_BRODERIE && (!!composer || !!pdfFile || promptOpen || !!compositionInput || !!file || !!autoImage)}
       quitterPreparation={() => {

@@ -16,9 +16,9 @@ import { FAMILLES, filsParFamille, familleDe, hsl } from "../../lib/famillesFils
 import { etapeDe, lisse, mouvementReduit, suivreScene } from "./defilement";
 import { dessinerRosace, ETAPES_ROSACE, rosaceDe, SEUILS_ROSACE } from "./rosace";
 import { SITE_BRODERIE } from "../../lib/site";
-import Slides, { revelerSlide } from "./Slides";
+import { revelerSlide } from "./Slides";
 import Histoire, { CHAPITRES_HISTOIRE } from "./Histoire";
-import { Cadeau, MaRosace, Orbe, RencontreOrbe, useCommandesTrace, useRencontres } from "./Participation";
+import { Apercu, Cadeau, MaRosace, Orbe, RencontreOrbe, useCommandesTrace, useRencontres } from "./Participation";
 import { codeDeCreation, creation, graineDe, nbChoix, reponseDe, signatureDe, useCreation } from "./creation";
 import "./Participation.css";
 import Appareil from "./Appareil";
@@ -37,9 +37,12 @@ export const chapitresEdition = () => SITE_BRODERIE ? [
   { id: "ed-rencontres", num: "01", titre: "Composer une rosace" },
   { id: "ed-fils", num: "02", titre: "Nuancier DMC" },
   { id: "ed-rosace", num: "03", titre: "Ma rosace" },
+  { id: "ed-studio", num: "04", titre: "Dans le studio" },
 ] : CHAPITRES_EDITION;
 
+export type FonctionStudio = "dessiner" | "broder" | "fils" | "exporter" | "ouvrages" | "camera";
 interface Actions {
+  fonction?: (fonction: FonctionStudio) => void;
   /** ouvrir l'atelier : un nouveau motif, la bibliothèque, broder */
   ouvrir: (entree: "create" | "library" | "stitch") => void;
   importer: (f: File) => void;
@@ -175,6 +178,68 @@ function RosaceNait() {
   </section>;
 }
 
+
+/** Cinq questions facultatives : le même état et le même moteur que Ma rosace. */
+function Rencontres5D() {
+  const rencontres = useRencontres(), c = useCreation();
+  const [active, setActive] = useState(0);
+  const r = rencontres[active], dim = DIMENSIONS.find(d => d.cle === r.cle)!;
+  const sig = signatureDe(c), graine = graineDe(c);
+  const ro = useMemo(() => rosaceDe(sig, graine), [sig.structure, sig.trace, sig.densite, sig.echelle, sig.palette, graine]);
+  useEffect(() => {
+    const publier = () => window.dispatchEvent(new CustomEvent("pointzero:rencontres-etat", { detail: { active, titres: rencontres.map(x => x.titre) } }));
+    const choisir = (e: Event) => { const n = Number((e as CustomEvent<number>).detail); if (Number.isInteger(n)) setActive(Math.max(0, Math.min(4, n))); };
+    const ancre = (e: Event) => { const n = rencontres.findIndex(x => x.id === (e as CustomEvent<string>).detail); if (n >= 0) setActive(n); };
+    publier(); window.addEventListener("pointzero:rencontres-demande", publier); window.addEventListener("pointzero:rencontres-choisir", choisir); window.addEventListener("pointzero:ouvrir-slide", ancre);
+    return () => { window.removeEventListener("pointzero:rencontres-demande", publier); window.removeEventListener("pointzero:rencontres-choisir", choisir); window.removeEventListener("pointzero:ouvrir-slide", ancre); };
+  }, [active, rencontres]);
+  const modes: ModePoint[] = dim.reponses.map(([nom, aide], n) => ({ id: `reponse-${r.cle}-${n}`, nom, aide, groupe: "metier", actif: c.choix[r.cle] === n, resteOuvert: true, ouvrir: () => creation.choisir(r.cle, n as Choix) }));
+  return <section id="ed-rencontres" className="ed-scene ed-fils ed-rencontre-reference" aria-label="Composer ma rosace personnelle">
+    <div className="ed-plateau">
+      <div className="ed-texte">
+        <p className="ed-num" role="status" aria-live="polite">Rencontre {active + 1} sur 5 · {r.titre}</p>
+        <h2 tabIndex={-1}>{dim.question}</h2>
+        <p className="ed-chapeau">Cinq choix pour composer votre rosace personnelle. Choisissez une réponse dans le disque, puis continuez dans le dock du bas.</p>
+        <p className="ed-aide">Ce parcours est facultatif. Vous pouvez importer votre patron ou ouvrir le studio à tout moment.</p>
+        <ol className="ed-phrases">{rencontres.map((x, n) => <li key={x.id} aria-current={n === active ? "step" : undefined}>{x.titre}{c.choix[x.cle] !== undefined ? " ✓" : ""}</li>)}</ol>
+        <div className="sr-only">{rencontres.map(x => <span id={x.id} key={x.id} />)}</div>
+      </div>
+      <div className="ed-scene-disque ed-nuancier" data-rencontre={r.cle}>
+        <Disque contexte={`rencontre-5d-${r.cle}`} modes={modes} etiquette={`Réponses : ${dim.question}`} max={1.1} />
+      </div>
+      <aside className="ed-fiche ed-fiche-personnelle" aria-label="Ma rosace personnelle" tabIndex={-1}>
+        <p className="ed-fiche-code">Ma rosace</p>
+        <p className="ed-fiche-nom" role="status">{nbChoix(c)} choix sur 5{nbChoix(c) < 5 ? " · aperçu provisoire" : " · recette complète"}</p>
+        <figure className="ed-apercu-rosace"><Apercu r={ro} label="Aperçu de ma rosace personnelle, calculé par le moteur 5D" /><figcaption>Le même motif que dans le studio, avec vos choix.</figcaption></figure>
+        <dl className="ed-fiche-valeurs">{rencontres.map(x => <div key={x.cle}><dt>{x.titre}</dt><dd>{c.choix[x.cle] === undefined ? "À choisir" : DIMENSIONS.find(d => d.cle === x.cle)!.reponses[c.choix[x.cle]!][0]}</dd></div>)}<div><dt>Format</dt><dd>{ro.w} × {ro.h} points · {ro.fils} fils DMC</dd></div></dl>
+        <p className="ed-aide">{c.choix[r.cle] === undefined ? "Aucune réponse choisie pour cette question." : `${dim.reponses[c.choix[r.cle]!][0]} : ce choix est retenu dans votre rosace.`}</p>
+        {nbChoix(c) === 5 && <button type="button" className="ed-cta" onClick={() => aller("ed-rosace")}>Voir ma rosace</button>}
+      </aside>
+    </div>
+  </section>;
+}
+
+const USAGES = [
+ { id: "pdf", titre: "Importer un patron", phrase: "Votre PDF devient une grille de travail.", details: "PDF multipage : analyse, calage et assemblage avant l’ouverture dans l’atelier.", limite: "Selon la structure du PDF, des corrections sont nécessaires. Vérifiez les symboles, les couleurs et les dimensions.", action: "Importer mon patron PDF", accept: ".pdf,application/pdf", points: ["Analyse des pages", "Calage et montage", "Patron à vérifier"] },
+ { id: "photo", titre: "Photo et dessin", phrase: "Une image, convertie en fils DMC.", details: "Importez une photo, puis ajustez son cadre, ses couleurs et ses réglages dans l’atelier.", limite: "La conversion est une interprétation de l’image, pas une lecture exacte de patron.", action: "Importer une image", accept: "image/png,image/jpeg,image/webp", points: ["Image sur votre appareil", "Palette DMC", "Cadre et réglages"] },
+ { id: "dessiner", titre: "Créer dans le Cadre", phrase: "Dessiner, composer et ajuster le format.", details: "Croix, fractions, contours, motifs, calques et symétrie dans la même grille.", limite: "Redimensionner le motif change ses points ; agrandir la toile est une action différente.", action: "Ouvrir le dessin", fonction: "dessiner", points: ["Points et formes", "Cadre et toile", "Motifs et calques"] },
+ { id: "broder", titre: "Suivre ma broderie", phrase: "Marquer les points sans redessiner le patron.", details: "Marquer, bloc 10 × 10, rangée, parking, notes et suivi des couleurs depuis le disque de broderie.", limite: "Le suivi est manuel : l’application ne détecte pas les points cousus physiquement.", action: "Ouvrir le suivi", fonction: "broder", points: ["Fil actif", "Points réalisés", "Progression et rappels"] },
+ { id: "fils", titre: "Fils et fournitures", phrase: "Préparer la toile, les brins et le stock.", details: "Références DMC, stock, quantités estimées et liste des fils à prévoir pour votre ouvrage.", limite: "Les teintes écran et les quantités de fil restent indicatives.", action: "Préparer les fils", fonction: "fils", points: ["Toile et brins", "Stock de fils", "Quantités estimées"] },
+ { id: "ouvrages", titre: "Garder mes ouvrages", phrase: "Retrouver son travail sur cet appareil.", details: "Bibliothèque locale, dossiers et versions. Téléchargez le projet JSON pour disposer d’une copie portable.", limite: "Pas de sauvegarde cloud autonome. Effacer les données du navigateur peut supprimer les ouvrages locaux.", action: "Mes ouvrages", fonction: "ouvrages", points: ["Sauvegarde locale", "Bibliothèque et versions", "Copie JSON"] },
+ { id: "exporter", titre: "Exporter et imprimer", phrase: "Un patron prêt à consulter ou à emporter.", details: "Export PDF paginé, symboles et légende ; formats JSON, SVG, PNG, OXS et listes CSV disponibles dans l’export.", limite: "Les formats n’emportent pas tous les mêmes informations. Utilisez le JSON pour reprendre le projet complet.", action: "Ouvrir les exports", fonction: "exporter", points: ["PDF et légende", "Images et formats ouverts", "Projet complet JSON"] },
+ { id: "camera", titre: "Sur ma toile", phrase: "Superposer un patron sur l’image de la caméra.", details: "Choisissez un ouvrage et alignez manuellement ses quatre coins sur la toile filmée ; ajustez l’opacité et l’affichage.", limite: "Fonction expérimentale : permission caméra et téléphone immobile nécessaires. Superposition à l’écran, pas projection physique.", action: "Découvrir Sur ma toile", fonction: "camera", points: ["Caméra ou photo", "Quatre coins", "Superposition à l’écran"] },
+] as const;
+function StudioDecouverte({ actions }: { actions: Actions }) {
+  const [index, setIndex] = useState(0), fichier = useFichier(actions.importer), usage = USAGES[index];
+  const modes: ModePoint[] = USAGES.map((u, n) => ({ id: "usage-" + u.id, nom: u.titre, aide: u.phrase, groupe: "metier", actif: n === index, resteOuvert: true, ouvrir: () => setIndex(n) }));
+  const ouvrir = () => { if ("accept" in usage) fichier.choisir(usage.accept); else if (actions.fonction) actions.fonction(usage.fonction); else actions.ouvrir(usage.fonction === "ouvrages" ? "library" : usage.fonction === "dessiner" ? "create" : "stitch"); };
+  return <section id="ed-studio" className="ed-scene ed-fils ed-studio-reference" aria-labelledby="ed-studio-titre"><div className="ed-plateau">
+    <div className="ed-texte"><p className="ed-num">04 · Dans le studio</p><h2 id="ed-studio-titre" tabIndex={-1}>Du patron<br />à l’ouvrage.</h2><p className="ed-chapeau">Explorez les outils déjà présents dans Point Zéro. Choisissez un usage dans le disque pour ouvrir le bon espace.</p><ol className="ed-phrases">{usage.points.map(t => <li key={t}>{t}</li>)}</ol></div>
+    <div className="ed-scene-disque ed-nuancier"><Disque contexte="studio-decouverte" modes={modes} etiquette="Découvrir les fonctions du studio" max={1.1} /></div>
+    <aside className="ed-fiche" aria-label="La fonction choisie" tabIndex={-1}><p className="ed-fiche-code">{usage.titre}</p><p className="ed-fiche-nom">{usage.phrase}</p><p>{usage.details}</p><p className="ed-aide">{usage.limite}</p><button type="button" className="ed-cta" onClick={ouvrir}>{usage.action}</button></aside>
+  </div>{fichier.champ}</section>;
+}
+
 /* ——— Rencontre 2 · Les lignes : dans le disque, le même Point ——— */
 function RencontreDisque() {
   const c = useCreation(), r = useRencontres()[1], modes = useCommandesTrace(), choisi = c.choix.trace;
@@ -296,10 +361,8 @@ export default function Edition({ actions, contenus = ORIGINE }: { actions: Acti
 
 function Corps({ actions }: { actions: Actions }) {
   const fichier = useFichier(actions.importer), A = useContenus().appareils;
-  const rencontres = useRencontres();
-  const choix = [<RencontreOrbe cle="structure" variante="cartes" />, <RencontreDisque />, <RencontreOrbe cle="echelle" variante="loupes" />, <RencontreOrbe cle="palette" variante="echeveaux" />, <RencontreOrbe cle="densite" variante="curseur" />];
   return <div className="ed" data-edition="c">
-    {SITE_BRODERIE && <Slides id="ed-rencontres" titre="Les cinq rencontres" slides={rencontres.map((r, i) => ({ id: r.id, titre: r.titre, contenu: choix[i] }))} />}
+    {SITE_BRODERIE && <Rencontres5D />}
     {!SITE_BRODERIE && <Histoire slides={false} Disque={Disque} actions={{ ouvrir: actions.ouvrir, visite: actions.visite, choisirFichier: fichier.choisir, aller }}
       objet={<div className="hi-objet"><Appareil type="ipad" src={adresse(A.ipad.src)} alt={A.ipad.alt} /></div>} entre={{
       "hi-indiennes": <RencontreOrbe cle="structure" variante="cartes" />,
@@ -309,6 +372,7 @@ function Corps({ actions }: { actions: Actions }) {
     <NuageFils />
     {!SITE_BRODERIE && <RencontreOrbe cle="palette" variante="echeveaux" />}
     <RosaceNait />
+    {SITE_BRODERIE && <StudioDecouverte actions={actions} />}
     {!SITE_BRODERIE && <Cadeau aller={aller} appareils={<div className="cd-appareils">
       <Appareil type="ordinateur" src={adresse(A.ordinateur.src)} alt={A.ordinateur.alt} />
       <Appareil type="iphone" src={adresse(A.iphone.src)} alt={A.iphone.alt} className="cd-iphone" />

@@ -202,12 +202,12 @@ it("pilote les Rencontres depuis le dock contextuel, sans navigation dans le hé
   expect(section.querySelector(".ed-slides-onglets")).toBeNull();
   const dock = view.querySelector('nav[aria-label="Actions de la page"]')!;
   act(() => [...dock.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Suivant")!.click());
-  expect(section.querySelector('[data-slide]:not([hidden]) #or-lignes')).toBeTruthy();
+  expect(section.querySelector('[data-mode="reponse-trace-0"]')).toBeTruthy();
   const choix = dock.querySelector<HTMLSelectElement>("select")!;
   act(() => { choix.value = "4"; choix.dispatchEvent(new Event("change", { bubbles: true })); });
-  expect(section.querySelector('[data-slide]:not([hidden]) #or-plein')).toBeTruthy();
+  expect(section.querySelector('[data-mode="reponse-densite-0"]')).toBeTruthy();
   act(() => [...dock.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Précédent")!.click());
-  expect(section.querySelector('[data-slide]:not([hidden]) #or-couleurs')).toBeTruthy();
+  expect(section.querySelector('[data-mode="reponse-palette-0"]')).toBeTruthy();
 });
 
 
@@ -228,7 +228,7 @@ it("relie le dock du nuancier à la recherche et à la fiche du fil", () => {
   const resultat = [...view.querySelectorAll<HTMLButtonElement>(".pz-recherche-fils li button")].find(b => b.textContent?.startsWith("DMC 310 ·"));
   expect(resultat).toBeTruthy();
   act(() => resultat!.click());
-  expect(view.querySelector(".ed-fiche-code")!.textContent).toBe("DMC 310");
+  expect(view.querySelector("#ed-fils .ed-fiche-code")!.textContent).toBe("DMC 310");
   expect(view.querySelector(".pz-recherche-fils")).toBeNull();
 });
 

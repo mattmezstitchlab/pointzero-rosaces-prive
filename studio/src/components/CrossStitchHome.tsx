@@ -5,7 +5,7 @@ import UneFlorale from "./UneFlorale";
 import TraineePoints from "./TraineePoints";
 import "../design/aime.css";
 import "./CrossStitchHome.css";
-import { chapitresEdition, EditionEnLigne } from "./edition/Edition";
+import { chapitresEdition, EditionEnLigne, type FonctionStudio } from "./edition/Edition";
 
 /** L'édition (la nouvelle narration sous le héros) : en essai privé derrière ?edition, la page actuelle reste la même sans ce paramètre. */
 /* le site Point Zéro (broderie seule) : l’édition en chapitres est sa landing, sans paramètre */
@@ -16,6 +16,7 @@ const estEdition = () => { if (SITE_BRODERIE) return true; try { return new URLS
 export type StitchEntry = "create" | "library" | "prepare" | "stitch";
 interface Props {
   onStudio?: () => void;
+  onFeature?: (fonction: FonctionStudio) => void;
   projectName: string;
   onOpen: (entry: StitchEntry) => void;
   onImport: (file: File) => void;
@@ -155,7 +156,7 @@ function useParallaxe() {
 }
 
 /** Un écran d'accueil seulement : l'ouvrir ne crée aucun patron et ne réécrit aucun projet. */
-export default function CrossStitchHome({ projectName, onOpen, onImport, onShare, onOuvrages, onVisite, onStudio }: Props) {
+export default function CrossStitchHome({ projectName, onOpen, onImport, onShare, onOuvrages, onVisite, onStudio, onFeature }: Props) {
   const [current, setCurrent] = useState<string | null>(null);
   const [chapitre, setChapitre] = useState<string | null>(null);
   const enter = () => (onOuvrages ? onOuvrages() : onOpen("library"));
@@ -169,7 +170,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
     const suivre = () => {
       const ligne = innerHeight * .45;
       let prochain = "accueil";
-      for (const id of ["ed-rencontres", "ed-fils", "ed-rosace"]) { const e = document.getElementById(id); if (e && e.getBoundingClientRect().top <= ligne && e.getBoundingClientRect().bottom > ligne) prochain = id; }
+      for (const id of ["ed-rencontres", "ed-fils", "ed-rosace", "ed-studio"]) { const e = document.getElementById(id); if (e && e.getBoundingClientRect().top <= ligne && e.getBoundingClientRect().bottom > ligne) prochain = id; }
       setContexte(prochain);
     };
     window.addEventListener("pointzero:rencontres-etat", etat);
@@ -180,7 +181,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
   const changerRencontre = (n: number) => window.dispatchEvent(new CustomEvent("pointzero:rencontres-choisir", { detail: n }));
   const importer = () => document.getElementById("pzh-import-unique")?.click();
   const sections = SITE_BRODERIE
-    ? [["ed-rencontres", "Composer"], ["ed-fils", "Nuancier"], ["ed-rosace", "Ma rosace"]] as const
+    ? [["ed-rencontres", "Composer"], ["ed-fils", "Nuancier"], ["ed-rosace", "Ma rosace"], ["ed-studio", "Outils"]] as const
     : SECTIONS;
   useParallaxe();
 
@@ -268,7 +269,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
       </UneFlorale>
 
       {edition
-        ? <div id="chapitres"><EditionEnLigne actions={{ ouvrir: e => onOpen(e), importer: onImport, visite }} /></div>
+        ? <div id="chapitres"><EditionEnLigne actions={{ fonction: onFeature, ouvrir: e => onOpen(e), importer: onImport, visite }} /></div>
         : <div id="chapitres" className="chapitres">
         {CHAPITRES.map((c, n) => <ChapitreVue key={c.id} c={c} n={n} onVoir={setChapitre} />)}
       </div>}
