@@ -74,3 +74,16 @@
 .dq-mobile .dq-tete { padding: 12px 16px; } .dq-mobile .dq-zone { width: min(100%, 420px); }
 @media (max-width: 640px) { .dq-bouton-grille { padding: 0 12px; } .dq-fil { min-width: 0; } .dq-fil span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .dq-fil .dq-statut-mini { display: none; } .dq-tete { gap: 8px; } .dq-accueil { padding: 0 12px; } .dq-accueil-aime { display: none; } .dq-bouton-grille svg { display: none; } }
 .dq-grille-pied { margin: 18px 0 0; font-size: .86rem; } .dq-grille-pied a { color: inherit; }
+
+/* — la carte ATLAS (one/disque/atlas) : un lien sortant, pas un lecteur ; le carré d'ATLAS dans le cercle de .0NE — */
+.dq-atlas { display: grid; gap: 8px; justify-items: center; text-align: center; padding: 0 16%; font-size: .9rem; color: var(--aime-texte-2, #55555a); }
+.dq-atlas p { margin: 0; }
+.dq-atlas-sur { display: block; font-size: .74rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.dq-atlas-carre { display: inline-block; vertical-align: -1px; margin-right: 8px; width: 11px; height: 11px; border: 1.5px solid currentColor; border-radius: 2px; }
+.dq-atlas-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.dq-atlas-liste li { display: grid; gap: 6px; justify-items: center; }
+.dq-atlas-titre { font-weight: 650; font-size: 1.15rem; color: var(--aime-texte, #111) !important; }
+.dq-atlas-periode { font-size: .78rem; font-variant-numeric: tabular-nums; }
+.dq-atlas .one-bouton { margin-top: 4px; }
+.dq-atlas-refus { font-size: .82rem; color: #8a6a2a; max-width: 34ch; }
+.dq-mobile .dq-atlas { padding: 12px 4px; }

@@ -21,13 +21,14 @@ import type { ModePoint } from "../lib/point/modes";
 import { GALERIE } from "./disque/galerie";
 import { BUREAU } from "./disque/bureau";
 import { BRODERIE, deploiement, presentation } from "./disque/autres";
+import { ATLAS } from "./disque/atlas";
 import "../design/aime.css";
 import "./one.css";
 import "./disque.css";
 
 const BASE = import.meta.env.BASE_URL;
 const RACCORDES: Record<string, ContexteUnivers> = {
-  galerie: GALERIE, bureau: BUREAU, broderie: BRODERIE,
+  galerie: GALERIE, bureau: BUREAU, broderie: BRODERIE, atlas: ATLAS,
   terminal: deploiement("terminal", "one/terminal", "Le Disque Terminal : vos fichiers, Git et l’audio, sur un vrai dossier"),
   "carte-vivante": deploiement("carte-vivante", "essai-carte", "La Carte vivante : une carte, plusieurs formes, une seule adresse"),
 };

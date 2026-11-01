@@ -12,6 +12,7 @@ import { IconeOne } from "../components/one/icones";
 import { NOMS_STATUTS, universPublics, type Univers } from "../lib/one/contrat";
 import { enregistrerUnivers, suivreUnivers, tousLesUnivers, UNIVERS_DEMONSTRATION } from "../lib/one/univers";
 import { appliquerOne, lireOne, themeOne } from "../lib/one/preferences";
+import { LIEN_SORTANT, resoudreAtlas, type ReferenceAtlas } from "../lib/one/atlas";
 import type { ModePoint } from "../lib/point/modes";
 import "../design/aime.css";
 import "./one.css";
@@ -20,6 +21,13 @@ import "./mosaique.css";
 const media = (src: string) => /^https:/.test(src) ? src : import.meta.env.BASE_URL + src;
 
 /** l'aperçu du Disque d'un univers : sa couronne (ses familles), son centre (son visuel réel, ou son pictogramme) ; décoratif, tout est dit à côté */
+/** une création publique d'ATLAS : un lien sortant (destination fixe), ou la raison pour laquelle rien ne s'ouvre */
+function LienAtlas({ reference }: { reference: ReferenceAtlas }) {
+  const r = resoudreAtlas(reference);
+  return r.ok ? <a className="one-bouton one-bouton-plein" href={r.adresse} {...LIEN_SORTANT}>Ouvrir « {r.publication.titre} » dans ATLAS<ExternalLink aria-hidden="true" /><span className="sr-only"> (site séparé, nouvel onglet)</span></a>
+    : <p className="om-prep">{r.message}</p>;
+}
+
 function MiniDisque({ u }: { u: Univers }) {
   const n = u.familles.length;
   return <div className="om-mini" aria-hidden="true" style={{ ["--om-teinte" as string]: u.teinte }}>
@@ -91,6 +99,7 @@ export default function Mosaique() {
           {choisi.visuel && <p className="om-credit">Visuel : {choisi.visuel.credit}</p>}
           <div className="one-pied">
             {choisi.ouverture.type === "route" ? <a className="one-bouton one-bouton-plein" href={adresseUnivers(choisi)}>Ouvrir {choisi.nom}<ArrowRight aria-hidden="true" /></a>
+              : choisi.ouverture.type === "atlas" ? <LienAtlas reference={choisi.ouverture.reference} />
               : <p className="om-prep">En préparation : rien ne s’ouvre encore.</p>}
             {choisi.ailleurs && <a className="one-bouton" href={choisi.ailleurs.chemin}>{choisi.ailleurs.nom} (hors .0NE)<ExternalLink aria-hidden="true" /></a>}
           </div>
