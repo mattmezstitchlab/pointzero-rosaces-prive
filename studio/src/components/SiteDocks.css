@@ -36,3 +36,11 @@ html:has(.pz-site-docks) .pz-panneau { max-height: calc(100dvh - 180px); }
 .pz-site-docks .pzs-head .pzs-ligne .pzs-tool.pzs-noir { color: #111 !important; background: #fff !important; }
 .pz-site-docks .pzs-marque { display: inline-flex; }
 .pz-site-panels.pzs-head { top: 84px; }
+
+@media(max-width: 600px) {
+ .pz-context-dock { gap: 4px; padding: 5px; }
+ .pz-context-dock :is(button,a) { padding: 0 8px; font-size: 12px; }
+ .pz-context-dock select { max-width: 145px; font-size: 12px; }
+}
+
+.pz-atelier[data-site="broderie"] .cr { top: 84px; bottom: calc(84px + env(safe-area-inset-bottom)); }

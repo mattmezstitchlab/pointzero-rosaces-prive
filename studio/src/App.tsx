@@ -595,7 +595,7 @@ export default function App() {
     openCategory(entry === "prepare" ? "threads" : entry === "stitch" ? "stitch" : "create");
   };
   return studioMode === "stitch-home"
-    ? <CrossStitchHome projectName={P.name} onOpen={enterStitchStudio}
+    ? <CrossStitchHome onStudio={() => { switchStudio("embroidery"); setMobileInspectorOpen(false); setPanel(null); setDockPath(null); }} projectName={P.name} onOpen={enterStitchStudio}
         onOuvrages={() => enterStitchStudio("library")}
         onShare={() => { switchStudio("embroidery"); setPanel("share"); }}
         onImport={chosen => { switchStudio("embroidery"); importAnyFile(chosen); }}
@@ -651,10 +651,11 @@ export default function App() {
     {composer && <ComposerRosace depart={composer.depart} lecture={composer.lecture} onFermer={() => { setComposer(null); retirerParametreRosace(); }}
       onBroder={(p) => { void useImportedPattern(p).then(ok => { if (ok) { setComposer(null); retirerParametreRosace(); } }); }} />}
     {(SITE_BRODERIE || (!pdfFile && !promptOpen && !compositionInput && !file && !autoImage)) && <StudioDocks
-      preparation={SITE_BRODERIE && (!!pdfFile || promptOpen || !!compositionInput || !!file || !!autoImage)}
+      onStudio={() => { setMobileInspectorOpen(false); setPanel(null); setDockPath(null); }}
+      preparation={SITE_BRODERIE && (!!composer || !!pdfFile || promptOpen || !!compositionInput || !!file || !!autoImage)}
       quitterPreparation={() => {
-        if ((pdfFile || promptOpen || compositionInput || file || autoImage) && !window.confirm("Quitter cette préparation ? Le fichier original et vos ouvrages enregistrés sont conservés.")) return false;
-        setPdfFile(null); setPromptOpen(false); setCompositionInput(null); setFile(null); setAutoImage(null); return true;
+        if ((composer || pdfFile || promptOpen || compositionInput || file || autoImage) && !window.confirm("Quitter cette préparation ? Le fichier original et vos ouvrages enregistrés sont conservés.")) return false;
+        setComposer(null); retirerParametreRosace(); setPdfFile(null); setPromptOpen(false); setCompositionInput(null); setFile(null); setAutoImage(null); return true;
       }}
       sansPoint={!!composer || !!pdfFile || promptOpen || !!compositionInput || !!file || !!autoImage}
       grille={grille} onGrille={basculerGrille} onImporter={genre => { const el = actionImportRef.current; if (!el) return; el.accept = genre === "image" ? "image/png,image/jpeg,image/webp" : genre === "pdf" ? ".pdf,application/pdf" : genre === "projet" ? ".json,.oxs" : "image/png,image/jpeg,image/webp,.pdf,.json,.oxs"; el.click(); }} onComposer={() => setComposer({})}

@@ -15,6 +15,7 @@ const estEdition = () => { if (SITE_BRODERIE) return true; try { return new URLS
 
 export type StitchEntry = "create" | "library" | "prepare" | "stitch";
 interface Props {
+  onStudio?: () => void;
   projectName: string;
   onOpen: (entry: StitchEntry) => void;
   onImport: (file: File) => void;
@@ -154,7 +155,7 @@ function useParallaxe() {
 }
 
 /** Un écran d'accueil seulement : l'ouvrir ne crée aucun patron et ne réécrit aucun projet. */
-export default function CrossStitchHome({ projectName, onOpen, onImport, onShare, onOuvrages, onVisite }: Props) {
+export default function CrossStitchHome({ projectName, onOpen, onImport, onShare, onOuvrages, onVisite, onStudio }: Props) {
   const [current, setCurrent] = useState<string | null>(null);
   const [chapitre, setChapitre] = useState<string | null>(null);
   const enter = () => (onOuvrages ? onOuvrages() : onOpen("library"));
@@ -231,7 +232,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
     <a className="csh-skip" href="#csh-main">Aller au contenu</a>
     <TraineePoints />
 
-    {SITE_BRODERIE && <GlobalDock accueil={() => window.scrollTo({ top: 0, behavior: "auto" })} studio={() => onOpen("stitch")} importer={importer} ouvrages={enter} visite={visite} />}
+    {SITE_BRODERIE && <GlobalDock accueil={() => window.scrollTo({ top: 0, behavior: "auto" })} studio={onStudio ?? (() => onOpen("stitch"))} importer={importer} ouvrages={enter} visite={visite} />}
     {!SITE_BRODERIE && <TopDock label="Navigation point de croix" idBloc="pzh-menu"
       menu={[...(SITE_BRODERIE ? [{ label: "Importer", faire: importer }] : []), { label: "Mes ouvrages", faire: SITE_BRODERIE ? enter : () => onOpen("library") }, { label: "Ouvrir le studio", faire: () => onOpen("stitch") }, { label: "Faire la visite avec Le Point", faire: visite }]}
       droite={<button type="button" className="pzs-tool pzs-noir pzh-entrer" onClick={enter} aria-label={SITE_BRODERIE ? "Mes ouvrages" : "Entrer dans Point Zéro"}>{SITE_BRODERIE ? "Mes ouvrages" : <><span aria-hidden="true">+</span> Entrer</>}</button>}>
@@ -346,7 +347,6 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
 
     {SITE_BRODERIE && <ContextDock label="Actions de la page">
       {contexte === "ed-rencontres" ? <>
-        <a href="#ed-fils" onClick={go("ed-fils")}>Nuancier</a>
         <button type="button" disabled={rencontre.active === 0} onClick={() => changerRencontre(rencontre.active - 1)}>Précédent</button>
         <label className="sr-only" htmlFor="dock-rencontre">Rencontre</label>
         <select id="dock-rencontre" value={rencontre.active} onChange={e => changerRencontre(Number(e.target.value))}>{rencontre.titres.map((t, n) => <option key={t} value={n}>{n + 1}/5 · {t}</option>)}</select>

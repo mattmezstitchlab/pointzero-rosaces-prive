@@ -85,6 +85,7 @@ afterEach(async () => {
   container = null;
   localStorage.clear();
   site.broderie = false;
+  vi.unstubAllGlobals();
 });
 describe("POINTZERO : atelier unique sans assistant", () => {
   it("range le studio entre deux docks, la grille en plein écran", async () => {
@@ -403,6 +404,7 @@ describe("POINTZERO : atelier unique sans assistant", () => {
 
 it("garde les deux docks autonomes pendant l’utilisation des disques", async () => {
   site.broderie = true;
+  vi.stubGlobal("innerWidth", 390);
   // D'anciens réglages expérimentaux ne doivent plus supprimer les docks.
   localStorage.setItem("pointzero:essai:navigation-0", "1");
   await mount();
@@ -413,6 +415,8 @@ it("garde les deux docks autonomes pendant l’utilisation des disques", async (
   expect([...contexte()!.querySelectorAll("button")].map(b => b.textContent)).toEqual(["Dessiner", "Broder", "Fils", "Affichage", "Loupe"]);
   await click(commande("Broder"));
   expect(container!.querySelector('.pzt [data-mode="b-mark"]')).toBeTruthy();
+  expect(container!.querySelector(".pzt-replie")).toBeNull();
+  expect(inspector()?.hasAttribute("hidden")).toBe(true);
   expect(global()).toBeTruthy(); expect(contexte()).toBeTruthy();
   await click(container!.querySelector('.pzt [data-mode="b-mark"]'));
   expect(container!.querySelector('.pzt [data-mode="b-mark"]')?.getAttribute("aria-label")).toContain("actif");

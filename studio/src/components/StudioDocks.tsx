@@ -55,6 +55,7 @@ interface Props {
   /** un autre contexte (le compositeur) a la main sur le Point : le dock ne le rend pas, un seul Point à l'écran */
   sansPoint?: boolean;
   preparation?: boolean;
+  onStudio?: () => void;
   quitterPreparation?: () => boolean;
   patternName: string;
   saving: string;
@@ -453,17 +454,20 @@ export default function StudioDocks(p: Props) {
       ouvrir={id => { setBureauPlein(false); setVueDisque("atelier"); p.ouvrages!.ouvrir(id); }} importer={f => { setBureauPlein(false); setVueDisque("atelier"); p.ouvrages!.importer(f); }} />,
   } : undefined;
   const [familleDisque, setFamilleDisque] = useState<string | null>(null);
-  const ouvrirDisque = (id: string) => { if (p.preparation) return; setFamilleDisque(id); setTambourOuvert(true); setBloc(null); if (id === "broder" || id === "points") p.onWorkspace(id === "broder" ? "stitch" : "create"); };
+  const ouvrirDisque = (id: string) => { if (p.preparation) return; p.onStudio?.(); setFamilleDisque(id); setTambourOuvert(true); setBloc(null); if (id === "broder" || id === "points") p.onWorkspace(id === "broder" ? "stitch" : "create"); };
   const commandesSite = () => {
     const surMaToile = () => { window.location.href = import.meta.env.BASE_URL + "tambour?mode=superposer" + (p.pattern?.id ? "&ouvrage=" + encodeURIComponent(p.pattern.id) : ""); };
     const familles = commandesDuBloc<ContexteBroderie>("broderie", { ...contexteBroderie, dockClassique: undefined, surMaToile });
     const famille = familles.find(m => m.id === familleDisque);
-    return [...(famille?.enfants?.() ?? familles), { id: "actions-ouvrage", nom: "Autres outils", aide: "toutes les familles, export et suivi", groupe: "socle" as const, ouvrir: () => setFamilleDisque(null) }];
+    return [...(famille?.enfants?.() ?? familles),
+      { id: "annuler-action", nom: "Annuler", aide: p.canUndo ? "annuler la dernière modification" : "rien à annuler", groupe: "socle" as const, ouvrir: () => { if (p.canUndo) p.onUndo(); } },
+      { id: "retablir-action", nom: "Rétablir", aide: p.canRedo ? "rétablir la modification annulée" : "rien à rétablir", groupe: "socle" as const, ouvrir: () => { if (p.canRedo) p.onRedo(); } },
+      { id: "actions-ouvrage", nom: "Autres outils", aide: "toutes les familles, export et suivi", groupe: "socle" as const, ouvrir: () => setFamilleDisque(null) }];
   };
   const retracterTambour = () => { setTambourOuvert(false); requestAnimationFrame(() => { if (SITE_BRODERIE) document.querySelector<HTMLButtonElement>('[data-famille="' + familleDisque + '"]')?.focus(); else tambourBouton.current?.focus(); }); };
 
   return <>
-    {SITE_BRODERIE && <GlobalDock accueil={() => { if (!p.preparation || p.quitterPreparation?.() !== false) p.actions.home(); }} studio={() => { if (p.preparation && p.quitterPreparation?.() === false) return; setBloc(null); setTambourOuvert(false); }} importer={() => { if (!p.preparation) p.onImporter?.(); }} ouvrages={() => { setTambourOuvert(false); ouvrir("inviter"); }} visite={p.actions.visite} preferences={p.actions.settings} preparation={p.preparation} />}
+    {SITE_BRODERIE && <GlobalDock accueil={() => { if (!p.preparation || p.quitterPreparation?.() !== false) p.actions.home(); }} studio={() => { if (p.preparation && p.quitterPreparation?.() === false) return; setBloc(null); setTambourOuvert(false); p.onStudio?.(); }} importer={() => { if (!p.preparation) p.onImporter?.(); }} ouvrages={() => { setTambourOuvert(false); ouvrir("inviter"); }} visite={p.actions.visite} preferences={p.actions.settings} preparation={p.preparation} />}
     <header className={"pzs-head" + (SITE_BRODERIE ? " pz-site-panels" : "")} aria-label="En-tête du studio">
       <button type="button" className="lp-evitement" onClick={() => { setLoupe(false); ouvrirConfort(); }}>Réglages de confort</button>
       {bloc && <div className="pzs-voile" aria-hidden="true" onClick={fermer} />}
@@ -621,7 +625,7 @@ export default function StudioDocks(p: Props) {
       <button type="button" data-guide="loupe" className="pzs-btm pzs-loupe-btn" aria-pressed={loupe} aria-label="Loupe : la grille agrandie sous le pointeur" title="Loupe" onClick={() => setLoupe(v => !v)}><Search size={17} aria-hidden="true" /><span className="pzs-loupe-txt">Loupe</span></button>
         </>}
     </nav>}
-    {cadreTambour && tambourOuvert && !p.sansPoint && <TambourAtelier key={SITE_BRODERIE ? familleDisque ?? "toutes" : "classique"} racine={SITE_BRODERIE ? commandesSite() : nav0 ? (vueDisque === "bureau" ? racineBureau() : racine0()) : undefined} centreContenu={bureauCentre} indicateurs={indicateurs} ouvrage={p.pattern?.id} contexte={contexteBroderie} retracter={retracterTambour} suivi={active && active.cells > 0 && p.pattern && p.couleur != null ? { code: active.code, hex: active.hex, cells: active.cells, done: active.done, motif: p.pattern!, couleur: p.couleur!, depuis, montrer: suggestions && (p.workspace === "stitch" || conseil?.commande === "broder") } : undefined} part={prog} etiquette={total ? "patron brodé à " + Math.round(prog * 100) + " %" : undefined} />}
+    {cadreTambour && tambourOuvert && !p.sansPoint && <TambourAtelier outilsOuverts={SITE_BRODERIE} key={SITE_BRODERIE ? familleDisque ?? "toutes" : "classique"} racine={SITE_BRODERIE ? commandesSite() : nav0 ? (vueDisque === "bureau" ? racineBureau() : racine0()) : undefined} centreContenu={bureauCentre} indicateurs={indicateurs} ouvrage={p.pattern?.id} contexte={contexteBroderie} retracter={retracterTambour} suivi={active && active.cells > 0 && p.pattern && p.couleur != null ? { code: active.code, hex: active.hex, cells: active.cells, done: active.done, motif: p.pattern!, couleur: p.couleur!, depuis, montrer: suggestions && (p.workspace === "stitch" || conseil?.commande === "broder") } : undefined} part={prog} etiquette={total ? "patron brodé à " + Math.round(prog * 100) + " %" : undefined} />}
     </>}
   </>;
 }
