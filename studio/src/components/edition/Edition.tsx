@@ -53,6 +53,7 @@ interface Actions {
 /* ——— Le disque dans la page : le même Point, posé, ajusté à la largeur disponible ——— */
 export function Disque({ contexte, modes, etiquette, children, max = 1 }: { contexte: string; modes: ModePoint[]; etiquette: string; children?: ReactNode; max?: number }) {
   const hote = useRef<HTMLDivElement>(null);
+  const uniforme = SITE_BRODERIE;
   useLayoutEffect(() => {
     const el = hote.current; if (!el) return;
     const ajuster = () => {
@@ -60,7 +61,7 @@ export function Disque({ contexte, modes, etiquette, children, max = 1 }: { cont
       /* la place : la largeur de la cellule qui accueille le disque, et la hauteur de l'écran (le disque doit tenir entier, cartouche compris) */
       const parent = el.parentElement, cs = parent ? getComputedStyle(parent) : null;
       const dispo = parent ? parent.clientWidth - parseFloat(cs!.paddingLeft) - parseFloat(cs!.paddingRight) : window.innerWidth, haut = window.innerHeight - 170, cote = a.offsetWidth || 1;
-      el.style.setProperty("--ajuste", String(Math.max(0.5, Math.min(max, (dispo - 8) / cote, window.innerWidth > 820 ? haut / cote : 9))));
+      el.style.setProperty("--ajuste", String(uniforme ? Math.max(.25, Math.min(1, (dispo - 8) / cote, (window.innerHeight - 200) / cote)) : Math.max(0.5, Math.min(max, (dispo - 8) / cote, window.innerWidth > 820 ? haut / cote : 9))));
       el.style.setProperty("--cote", cote + "px");
     };
     ajuster();
@@ -69,10 +70,10 @@ export function Disque({ contexte, modes, etiquette, children, max = 1 }: { cont
     const mo = new MutationObserver(ajuster); mo.observe(el, { subtree: true, attributes: true, attributeFilter: ["style"], childList: true });
     window.addEventListener("resize", ajuster);
     return () => { ro?.disconnect(); mo.disconnect(); window.removeEventListener("resize", ajuster); };
-  }, [max]);
+  }, [max, uniforme]);
   return <div className="ed-disque" ref={hote} aria-label={etiquette} role="group">
     {children}
-    <div className="ed-disque-corps"><Point contexte={contexte} scene modes={modes} /></div>
+    <div className="ed-disque-corps"><Point contexte={contexte} scene diametre={uniforme ? 540 : undefined} modes={modes} /></div>
   </div>;
 }
 
@@ -195,6 +196,11 @@ function Rencontres5D({ heroEntree }: { heroEntree?: ReactNode }) {
     return () => { window.removeEventListener("pointzero:rencontres-demande", publier); window.removeEventListener("pointzero:rencontres-choisir", choisir); window.removeEventListener("pointzero:ouvrir-slide", ancre); };
   }, [active, rencontres]);
   const modes: ModePoint[] = dim.reponses.map(([nom, aide], n) => ({ id: `reponse-${r.cle}-${n}`, nom, aide, groupe: "metier", actif: c.choix[r.cle] === n, resteOuvert: true, ouvrir: () => creation.choisir(r.cle, n as Choix) }));
+  const modesGuide: ModePoint[] = [...modes,
+    ...(active > 0 ? [{ id: "question-precedente", nom: "Précédent", aide: "Revenir à la question précédente sans perdre vos choix", groupe: "socle" as const, resteOuvert: true, ouvrir: () => setActive(n => n - 1) }] : []),
+    ...(active < 4 ? [{ id: "question-suivante", nom: "Suivant", aide: "Passer à la question suivante", groupe: "socle" as const, resteOuvert: true, ouvrir: () => setActive(n => n + 1) }] : []),
+    { id: "broder-ma-rosace", nom: "Broder", aide: "Ouvrir votre rosace dans l’atelier", groupe: "creation", ouvrir: () => window.location.assign(import.meta.env.BASE_URL + "atelier?rosace=" + encodeURIComponent(codeDeCreation(c))) },
+  ];
   if (heroEntree) return <section id="ed-rencontres" className="ru pzh-rosace-vivante" aria-label="Créer ma rosace personnelle">
     <div className="pzh-rosace-fond"><Apercu r={ro} fond="#f2eee5" label="Rosace personnelle en direct, calculée par le moteur 5D" /></div>
     <div className="pzh-rosace-accueil">
@@ -206,7 +212,7 @@ function Rencontres5D({ heroEntree }: { heroEntree?: ReactNode }) {
     </div>
     <div className="pzh-guide-rosace">
       <div className="pzh-guide-question" role="status" aria-live="polite"><Orbe taille={32} /><div><p>Rencontre {active + 1} sur 5 · {r.titre}</p><h2 tabIndex={-1}>{dim.question}</h2></div></div>
-      <div className="ed-scene-disque" data-rencontre={r.cle}><Disque contexte={`rencontre-5d-${r.cle}`} modes={modes} etiquette={`Réponses : ${dim.question}`} max={1.1} /></div>
+      <div className="ed-scene-disque" data-rencontre={r.cle}><Disque contexte={`rencontre-5d-${r.cle}`} modes={modesGuide} etiquette={`Réponses : ${dim.question}`} max={1.1} /></div>
       <p className="pzh-guide-reponse" role="status">{c.choix[r.cle] === undefined ? "Choisissez dans le disque. Explorez librement, sans questionnaire obligatoire." : `${dim.reponses[c.choix[r.cle]!][0]} · votre rosace évolue en direct.`}</p>
       <button type="button" className="pzh-btn pzh-btn-clair" onClick={() => window.location.assign(import.meta.env.BASE_URL + "atelier?rosace=" + encodeURIComponent(codeDeCreation(c)))}>Broder ma rosace</button>
       <div className="sr-only">{rencontres.map(x => <span id={x.id} key={x.id} />)}</div>

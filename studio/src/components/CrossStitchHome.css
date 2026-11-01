@@ -414,3 +414,7 @@ html[data-pz-motion="reduce"] .pzh-hero-stage [data-hero-slide]:not([hidden]) { 
 @media(max-width: 820px) {
  [data-disques="centres"] :is(.ed-plateau, .pzh-rosace-vivante) { padding: 100px 55px 150px 16px; }
 }
+
+/* Un seul appel à créer ; le motif vivant remplace la photo pendant la création. */
+[data-disques="centres"][data-contexte="ed-rencontres"] .pzh-rosace-fond { display: block !important; }
+[data-disques="centres"] .pz-context-dock > button { background: #fff; color: #111; padding-inline: 24px; }

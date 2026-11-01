@@ -163,11 +163,9 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
   const enter = () => (onOuvrages ? onOuvrages() : onOpen("library"));
   const visite = () => (onVisite ? onVisite() : onOpen("create"));
   const [edition] = useState(estEdition);
-  const [rencontre, setRencontre] = useState({ active: 0, titres: ["La forme", "Les lignes", "La finesse", "Les couleurs", "Le plein"] });
   const [contexte, setContexte] = useState("accueil");
   useEffect(() => {
     if (!SITE_BRODERIE) return;
-    const etat = (e: Event) => setRencontre((e as CustomEvent<typeof rencontre>).detail);
     const ouvrir = (id: string) => {
       const cible = document.getElementById(id);
       const parent = cible?.closest<HTMLElement>("[data-hero-slide]")?.dataset.heroSlide;
@@ -177,11 +175,9 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
     };
     const evenement = (e: Event) => ouvrir((e as CustomEvent<string>).detail);
     const ancre = () => ouvrir(window.location.hash.slice(1));
-    window.addEventListener("pointzero:rencontres-etat", etat);
-    window.dispatchEvent(new Event("pointzero:rencontres-demande"));
     window.addEventListener("pointzero:ouvrir-slide", evenement);
     window.addEventListener("hashchange", ancre); ancre();
-    return () => { window.removeEventListener("pointzero:rencontres-etat", etat); window.removeEventListener("pointzero:ouvrir-slide", evenement); window.removeEventListener("hashchange", ancre); };
+    return () => { window.removeEventListener("pointzero:ouvrir-slide", evenement); window.removeEventListener("hashchange", ancre); };
   }, []);
   const stage = useRef<HTMLDivElement>(null);
   const dernierDefilement = useRef(0);
@@ -194,11 +190,10 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
     const frame = requestAnimationFrame(() => {
       window.dispatchEvent(new Event("resize"));
       // Ne pas laisser le focus dans une diapositive devenue invisible.
-      if (document.activeElement?.closest("[hidden]")) document.getElementById("dock-section")?.focus();
+      if (document.activeElement?.closest("[hidden]")) document.querySelector<HTMLButtonElement>('nav[aria-label="Actions de la page"] button')?.focus();
     });
     return () => cancelAnimationFrame(frame);
   }, [contexte]);
-  const changerRencontre = (n: number) => window.dispatchEvent(new CustomEvent("pointzero:rencontres-choisir", { detail: n }));
   const importer = () => document.getElementById("pzh-import-unique")?.click();
   const sections = SITE_BRODERIE
     ? [["ed-rencontres", "Composer"], ["ed-fils", "Nuancier"], ["ed-rosace", "Ma rosace"], ["ed-studio", "Outils"]] as const
@@ -387,24 +382,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
 
     {SITE_BRODERIE && <nav className="pz-disques-navigation" aria-label="Disques de découverte">{HERO_SLIDES.map(([id, titre], n) => <button key={id} type="button" onClick={() => choisirSlide(id)} aria-label={titre} aria-current={contexte === id ? "location" : undefined} title={titre}><span aria-hidden="true" className={"pz-mini-disque pz-mini-" + n} /></button>)}</nav>}
     {SITE_BRODERIE && <ContextDock label="Actions de la page">
-      <div className="pzh-slide-navigation">
-        <button type="button" aria-label="Section précédente" disabled={indexSlide === 0} onClick={() => choisirSlide(HERO_SLIDES[indexSlide - 1][0])}>←</button>
-        <label className="sr-only" htmlFor="dock-section">Section du héros</label>
-        <select id="dock-section" value={contexte} onChange={e => choisirSlide(e.target.value)}>{HERO_SLIDES.map(([id, titre], n) => <option key={id} value={id}>{n + 1}/{HERO_SLIDES.length} · {titre}</option>)}</select>
-        <button type="button" aria-label="Section suivante" disabled={indexSlide === HERO_SLIDES.length - 1} onClick={() => choisirSlide(HERO_SLIDES[indexSlide + 1][0])}>→</button>
-      </div>
-      <div className="pzh-slide-actions">
-      {contexte === "ed-rencontres" ? <>
-        <button type="button" disabled={rencontre.active === 0} onClick={() => changerRencontre(rencontre.active - 1)}>Précédent</button>
-        <label className="sr-only" htmlFor="dock-rencontre">Rencontre</label>
-        <select id="dock-rencontre" value={rencontre.active} onChange={e => changerRencontre(Number(e.target.value))}>{rencontre.titres.map((t, n) => <option key={t} value={n}>{n + 1}/5 · {t}</option>)}</select>
-        <button type="button" disabled={rencontre.active === 4} onClick={() => changerRencontre(rencontre.active + 1)}>Suivant</button>
-      </> : contexte === "accueil" ? <>
-        <button type="button" onClick={importer}>Importer</button>
-        <button type="button" onClick={onStudio ?? (() => onOpen("stitch"))}>Reprendre</button>
-        <button type="button" onClick={() => choisirSlide("ed-rencontres")}>Créer ma rosace</button>
-      </> : null}
-      </div>
+      <button type="button" onClick={() => choisirSlide("ed-rencontres")}>Créer ma rosace</button>
     </ContextDock>}
     {!SITE_BRODERIE && <nav className="pzh-bottom" aria-label="Sections de la page">
       <button type="button" className="pzh-bottom-orb" aria-label="Le Point : faire la visite du studio" title="Le Point : faire la visite" onClick={visite} />

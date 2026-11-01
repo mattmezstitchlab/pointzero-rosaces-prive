@@ -202,7 +202,7 @@ it("unifie les imports et rend chaque destination explicite sans perdre les form
 });
 
 
-it("pilote les Rencontres depuis le dock contextuel, sans navigation dans le héros", async () => {
+it("pilote les Rencontres depuis le disque et garde un seul bouton dans le dock", async () => {
   site.broderie = true;
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   const { view } = mount();
@@ -211,12 +211,15 @@ it("pilote les Rencontres depuis le dock contextuel, sans navigation dans le hé
   expect(view.querySelector(".ru .mm-sommaire")).toBeNull();
   expect(section.querySelector(".ed-slides-onglets")).toBeNull();
   const dock = view.querySelector('nav[aria-label="Actions de la page"]')!;
-  act(() => [...dock.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Suivant")!.click());
+  expect(dock.querySelectorAll("button")).toHaveLength(1);
+  expect(dock.textContent).toBe("Créer ma rosace");
+  expect(dock.querySelector("select")).toBeNull();
+  const suivant = () => act(() => section.querySelector<HTMLButtonElement>('[data-mode="question-suivante"]')!.click());
+  suivant();
   expect(section.querySelector('[data-mode="reponse-trace-0"]')).toBeTruthy();
-  const choix = dock.querySelector<HTMLSelectElement>("#dock-rencontre")!;
-  act(() => { choix.value = "4"; choix.dispatchEvent(new Event("change", { bubbles: true })); });
+  suivant(); suivant(); suivant();
   expect(section.querySelector('[data-mode="reponse-densite-0"]')).toBeTruthy();
-  act(() => [...dock.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Précédent")!.click());
+  act(() => section.querySelector<HTMLButtonElement>('[data-mode="question-precedente"]')!.click());
   expect(section.querySelector('[data-mode="reponse-palette-0"]')).toBeTruthy();
 });
 
@@ -256,8 +259,7 @@ it("réunit les quatre sections dans le héros sans perdre choix, fil ni accès 
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   const { view } = mount();
   const choisir = (id: string) => act(() => {
-    const select = view.querySelector<HTMLSelectElement>("#dock-section")!;
-    select.value = id; select.dispatchEvent(new Event("change", { bubbles: true }));
+    window.dispatchEvent(new CustomEvent("pointzero:ouvrir-slide", { detail: id }));
   });
   const visibles = () => [...view.querySelectorAll<HTMLElement>("[data-hero-slide]")].filter(el => !el.hidden).map(el => el.dataset.heroSlide);
   expect(visibles()).toEqual(["accueil"]);
@@ -307,10 +309,7 @@ it("offre une rosace indiennes dès l’arrivée, modifiable, réinitialisable s
   act(() => view.querySelector<HTMLButtonElement>('[data-mode="reponse-structure-1"]')!.click());
   expect(codeDeCreation(creation.lire())).not.toBe(origine);
   expect(codeDeCreation(creation.lire())).toContain(".g59.v0.1.indiennes");
-  act(() => {
-    const select = view.querySelector<HTMLSelectElement>("#dock-rencontre")!;
-    select.value = "3"; select.dispatchEvent(new Event("change", { bubbles: true }));
-  });
+  for (let n = 0; n < 3; n++) act(() => view.querySelector<HTMLButtonElement>('#ed-rencontres [data-mode="question-suivante"]')!.click());
   act(() => view.querySelector<HTMLButtonElement>('[data-mode="reponse-palette-2"]')!.click());
   expect(codeDeCreation(creation.lire())).not.toContain(".indiennes");
   act(() => view.querySelector<HTMLButtonElement>(".pzh-origine")!.click());
@@ -324,9 +323,25 @@ it("fait passer au disque suivant au défilement et permet le retour par la navi
   const { view } = mount();
   const stage = view.querySelector<HTMLElement>(".pzh-hero-stage")!;
   act(() => stage.dispatchEvent(new WheelEvent("wheel", { deltaY: 100, bubbles: true })));
-  expect(view.querySelector<HTMLSelectElement>("#dock-section")!.value).toBe("ed-rencontres");
+  expect(view.querySelector(".cross-stitch-home")!.getAttribute("data-contexte")).toBe("ed-rencontres");
   const nav = view.querySelector('nav[aria-label="Disques de découverte"]')!;
   expect(nav.querySelectorAll("button")).toHaveLength(4);
   act(() => nav.querySelector<HTMLButtonElement>('button[aria-label="Nuancier DMC"]')!.click());
-  expect(view.querySelector<HTMLSelectElement>("#dock-section")!.value).toBe("accueil");
+  expect(view.querySelector(".cross-stitch-home")!.getAttribute("data-contexte")).toBe("accueil");
+});
+
+
+it("garde le même grand diamètre dans tous les disques et leurs nuances", () => {
+  site.broderie = true;
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const { view } = mount();
+  const taille = () => [...view.querySelectorAll<HTMLElement>(".ed-disque .lp-anneau")].map(el => el.style.width);
+  expect(taille()).toEqual(["540px", "540px", "540px", "540px"]);
+  act(() => view.querySelector<HTMLButtonElement>('#ed-fils [data-mode="famille-bleus"]')!.click());
+  expect(taille()).toEqual(["540px", "540px", "540px", "540px"]);
+  expect(view.querySelector<HTMLElement>('#ed-fils [data-mode^="dmc-"]')!.style.left).not.toBe("");
+  const dock = view.querySelector('nav[aria-label="Actions de la page"]')!;
+  act(() => dock.querySelector<HTMLButtonElement>("button")!.click());
+  expect(view.querySelector(".cross-stitch-home")!.getAttribute("data-contexte")).toBe("ed-rencontres");
+  expect(dock.querySelectorAll("button")).toHaveLength(1);
 });

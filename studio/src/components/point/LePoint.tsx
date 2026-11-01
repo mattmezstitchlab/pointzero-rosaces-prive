@@ -28,8 +28,10 @@ const SIGNES: Record<string, ReactNode> = {
   [EFFACER]: svg(<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />),
 };
 
-export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette, guide = "cercle", annonceExterne, refBouton, ancrage = "dessus", memoire, scene = false, centre, tambour }: {
+export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette, guide = "cercle", annonceExterne, refBouton, ancrage = "dessus", memoire, scene = false, centre, tambour, diametre }: {
   modes: ModePoint[];
+  /** Diamètre constant des scènes de la landing, y compris les sous-niveaux. */
+  diametre?: number;
   /**
    * Facultatif (mode Tambour seulement, accord de Matt du 29/10) : au premier cercle, la sphère centrale devient un raccourci vers cette action
    * (la caméra). Elle reste un double d’une commande de l’anneau, qui seule la porte pour le clavier et le lecteur d’écran. Sans elle, rien ne change.
@@ -101,7 +103,8 @@ export default function LePoint({ modes, part = 0, teinte = "#FFFFFF", etiquette
   const choixNiveau = courant.filter(m => !NAV.has(m.id)), nCouleurs = choixNiveau.filter(m => !!m.couleur || !!m.valeur).length;
   const pastilles = profondeur > 0 && nCouleurs >= 3 && nCouleurs >= 0.7 * choixNiveau.length;
   const enTambour = scene && !!tambour && tambour.rayon > 0;
-  const RAYON = enTambour ? tambour!.rayon : rayonPour(n, pastilles), COTE = enTambour ? tambour!.cote : cotePour(n, pastilles);
+  const fixe = scene && diametre ? diametre : null;
+  const RAYON = enTambour ? tambour!.rayon : fixe ? (fixe - 112) / 2 : rayonPour(n, pastilles), COTE = enTambour ? tambour!.cote : fixe ?? cotePour(n, pastilles);
   /* l'anneau intérieur : la famille d'où viennent les nuances, quand elle est faite de couleurs elle aussi */
   const freres = profondeur >= 1 ? (profondeur === 1 ? racineModes : familles[profondeur - 2].enfants!()) : [];
   const interieur = pastilles && freres.filter(m => m.couleur).length >= 3 ? freres.filter(m => m.couleur) : [];
