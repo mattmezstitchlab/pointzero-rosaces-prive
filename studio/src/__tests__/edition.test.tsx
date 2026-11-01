@@ -173,7 +173,7 @@ it("le disque des usages ouvre les espaces existants sans créer d’ouvrage", a
   hote = document.createElement("div"); document.body.appendChild(hote); root = createRoot(hote);
   await act(async () => { root!.render(<Edition actions={{ ouvrir, fonction, importer: vi.fn(), visite: vi.fn() }} />); });
   const section = document.querySelector("#ed-studio")!;
-  for (const id of ["dessiner", "broder", "fils", "ouvrages", "exporter", "camera"]) {
+  for (const id of ["dessiner", "broder", "fils", "ouvrages", "exporter", "partager", "camera"]) {
     await cliquer(section.querySelector(`[data-mode="usage-${id}"]`));
     await cliquer(section.querySelector(".ed-cta"));
     expect(fonction).toHaveBeenLastCalledWith(id);

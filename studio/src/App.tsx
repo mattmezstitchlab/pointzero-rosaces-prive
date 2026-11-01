@@ -602,6 +602,7 @@ export default function App() {
         if (fonction === "ouvrages") { enterStitchStudio("library"); return; }
         switchStudio("embroidery"); setMobileInspectorOpen(false); setPanel(null);
         if (fonction === "exporter") setPanel("export");
+        else if (fonction === "partager") setPanel("share");
         else if (fonction === "fils") openCategory("threads");
         else { chooseWorkspace(fonction === "broder" ? "stitch" : "create"); setDockPath(null); setFamilleDemande(v => ({ id: fonction === "broder" ? "broder" : "points", n: (v?.n ?? 0) + 1 })); }
       }} onStudio={() => { setFamilleDemande(null); switchStudio("embroidery"); setMobileInspectorOpen(false); setPanel(null); setDockPath(null); }} projectName={P.name} onOpen={enterStitchStudio}

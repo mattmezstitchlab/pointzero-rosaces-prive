@@ -229,7 +229,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
     else defiler();
   };
 
-  return <div className="cross-stitch-home" data-site={SITE_BRODERIE ? "broderie" : undefined}>
+  return <div className="cross-stitch-home" data-site={SITE_BRODERIE ? "broderie" : undefined} data-contexte={SITE_BRODERIE ? contexte : undefined}>
     <a className="csh-skip" href="#csh-main">Aller au contenu</a>
     <TraineePoints />
 

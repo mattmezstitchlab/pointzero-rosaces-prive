@@ -127,3 +127,6 @@ html[data-pz-motion="reduce"] .ed-grandit .lp-anneau > .lp-secteur { opacity: 1;
  .ed-rencontre-reference .ed-texte h2, .ed-studio-reference .ed-texte h2 { font-size: clamp(36px, 3.6vw, 60px); }
  .ed-rencontre-reference .ed-plateau, .ed-studio-reference .ed-plateau { padding-bottom: 100px; }
 }
+
+/* La fiche présente déjà la création : ne pas superposer sa pastille aux actions. */
+.cross-stitch-home[data-site="broderie"]:is([data-contexte="ed-rencontres"], [data-contexte="ed-rosace"], [data-contexte="ed-studio"]) .or-ma { display: none; }
