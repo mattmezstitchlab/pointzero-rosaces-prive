@@ -6,7 +6,7 @@
 export type Choix = 0 | 1 | 2 | 3;
 export interface Signature { structure: Choix; trace: Choix; densite: Choix; echelle: Choix; palette: Choix }
 export const VERSION = "v0.1" as const;
-export interface Recette { signature: Signature; graine: number; version: typeof VERSION }
+export interface Recette { signature: Signature; graine: number; version: typeof VERSION; indiennes?: true }
 
 /** Les cinq dimensions, dans l'ordre des gestes, avec leurs quatre réponses (nom, phrase lue au lecteur d'écran). */
 export const DIMENSIONS: { cle: keyof Signature; nom: string; question: string; reponses: [string, string][] }[] = [
@@ -40,7 +40,7 @@ export const CLES: (keyof Signature)[] = DIMENSIONS.map(d => d.cle);
 
 /** « 5D-13133.g3.v0.1 » : un chiffre de 1 à 4 par dimension, la graine, la version. */
 export function codeDe(r: Recette): string {
-  return "5D-" + CLES.map(k => r.signature[k] + 1).join("") + ".g" + r.graine + "." + r.version;
+  return "5D-" + CLES.map(k => r.signature[k] + 1).join("") + ".g" + r.graine + "." + r.version + (r.indiennes ? ".indiennes" : "");
 }
 /** Le code court de la signature seule : « 5D-13133 ». */
 export const codeSignature = (s: Signature) => "5D-" + CLES.map(k => s[k] + 1).join("");
@@ -49,12 +49,12 @@ export const MAX_GRAINE = 99999;
 /** Lit un code de recette ; refuse tout ce qui n'est pas exactement de la forme attendue. */
 export function lireCode(texte: unknown): Recette | null {
   if (typeof texte !== "string" || texte.length > 40) return null;
-  const m = /^5D-([1-4]{5})\.g([1-9][0-9]{0,4})\.(v0\.1)$/.exec(texte.trim());
+  const m = /^5D-([1-4]{5})\.g([1-9][0-9]{0,4})\.(v0\.1)(\.indiennes)?$/.exec(texte.trim());
   if (!m) return null;
   const graine = Number(m[2]);
   if (!Number.isInteger(graine) || graine < 1 || graine > MAX_GRAINE) return null;
   const c = m[1].split("").map(x => (Number(x) - 1) as Choix);
-  return { signature: { structure: c[0], trace: c[1], densite: c[2], echelle: c[3], palette: c[4] }, graine, version: VERSION };
+  return { signature: { structure: c[0], trace: c[1], densite: c[2], echelle: c[3], palette: c[4] }, graine, version: VERSION, ...(m[4] ? { indiennes: true as const } : {}) };
 }
 
 /** Les cinq réponses en clair : « rosace, courbe, aérée, fin, vive ». */

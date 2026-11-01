@@ -19,7 +19,7 @@ import { SITE_BRODERIE } from "../../lib/site";
 import { revelerSlide } from "./Slides";
 import Histoire, { CHAPITRES_HISTOIRE } from "./Histoire";
 import { Apercu, Cadeau, MaRosace, Orbe, RencontreOrbe, useCommandesTrace, useRencontres } from "./Participation";
-import { codeDeCreation, creation, graineDe, nbChoix, reponseDe, signatureDe, useCreation } from "./creation";
+import { codeDeCreation, creation, indiennesDe, graineDe, nbChoix, reponseDe, signatureDe, useCreation } from "./creation";
 import "./Participation.css";
 import Appareil from "./Appareil";
 import { adresse, ContexteContenus, ORIGINE, useContenus, type Contenus } from "./contenus";
@@ -99,7 +99,7 @@ function RosaceNait() {
   const scene = useRef<HTMLElement>(null), toile = useRef<HTMLCanvasElement>(null), pRef = useRef(mouvementReduit() ? 1 : 0);
   const c = useCreation(), sig = signatureDe(c), graine = graineDe(c);
   const [etape, setEtape] = useState(0);
-  const rosace = useMemo(() => rosaceDe(sig, graine), [sig.structure, sig.trace, sig.densite, sig.echelle, sig.palette, graine]); // eslint-disable-line react-hooks/exhaustive-deps
+  const rosace = useMemo(() => rosaceDe(sig, graine, indiennesDe(c)), [indiennesDe(c), sig.structure, sig.trace, sig.densite, sig.echelle, sig.palette, graine]); // eslint-disable-line react-hooks/exhaustive-deps
   const code = codeDeCreation(c);
   const nom = RECETTES.find(r => r.code === code)?.nom;
   const T = useContenus().rosace;
@@ -180,12 +180,12 @@ function RosaceNait() {
 
 
 /** Cinq questions facultatives : le même état et le même moteur que Ma rosace. */
-function Rencontres5D() {
+function Rencontres5D({ heroEntree }: { heroEntree?: ReactNode }) {
   const rencontres = useRencontres(), c = useCreation();
   const [active, setActive] = useState(0);
   const r = rencontres[active], dim = DIMENSIONS.find(d => d.cle === r.cle)!;
   const sig = signatureDe(c), graine = graineDe(c);
-  const ro = useMemo(() => rosaceDe(sig, graine), [sig.structure, sig.trace, sig.densite, sig.echelle, sig.palette, graine]);
+  const ro = useMemo(() => rosaceDe(sig, graine, indiennesDe(c)), [indiennesDe(c), sig.structure, sig.trace, sig.densite, sig.echelle, sig.palette, graine]);
   useEffect(() => {
     const publier = () => window.dispatchEvent(new CustomEvent("pointzero:rencontres-etat", { detail: { active, titres: rencontres.map(x => x.titre) } }));
     const choisir = (e: Event) => { const n = Number((e as CustomEvent<number>).detail); if (Number.isInteger(n)) setActive(Math.max(0, Math.min(4, n))); };
@@ -194,6 +194,23 @@ function Rencontres5D() {
     return () => { window.removeEventListener("pointzero:rencontres-demande", publier); window.removeEventListener("pointzero:rencontres-choisir", choisir); window.removeEventListener("pointzero:ouvrir-slide", ancre); };
   }, [active, rencontres]);
   const modes: ModePoint[] = dim.reponses.map(([nom, aide], n) => ({ id: `reponse-${r.cle}-${n}`, nom, aide, groupe: "metier", actif: c.choix[r.cle] === n, resteOuvert: true, ouvrir: () => creation.choisir(r.cle, n as Choix) }));
+  if (heroEntree) return <section id="ed-rencontres" className="ru pzh-rosace-vivante" aria-label="Créer ma rosace personnelle">
+    <div className="pzh-rosace-fond"><Apercu r={ro} fond="#f2eee5" label="Rosace personnelle en direct, calculée par le moteur 5D" /></div>
+    <div className="pzh-rosace-accueil">
+      <h1>Point Zéro</h1>
+      <p className="pzh-hommage">Une première rosace, inspirée des indiennes. À vous de la transformer.</p>
+      <p className="pzh-teintes" title="Évocation en fils DMC 321 et 823 ; teintes écran indicatives, pas une reproduction mesurée des pigments historiques.">{indiennesDe(c) ? "Rouge garance · bleu indigo · toile écrue" : "Votre palette personnelle"}</p>
+      {heroEntree}
+      <button type="button" className="pzh-origine" onClick={() => { creation.oublier(); setActive(0); }}>Retrouver la rosace d’origine</button>
+    </div>
+    <div className="pzh-guide-rosace">
+      <div className="pzh-guide-question" role="status" aria-live="polite"><Orbe taille={32} /><div><p>Rencontre {active + 1} sur 5 · {r.titre}</p><h2 tabIndex={-1}>{dim.question}</h2></div></div>
+      <div className="ed-scene-disque" data-rencontre={r.cle}><Disque contexte={`rencontre-5d-${r.cle}`} modes={modes} etiquette={`Réponses : ${dim.question}`} max={.82} /></div>
+      <p className="pzh-guide-reponse" role="status">{c.choix[r.cle] === undefined ? "Choisissez dans le disque. Explorez librement, sans questionnaire obligatoire." : `${dim.reponses[c.choix[r.cle]!][0]} · votre rosace évolue en direct.`}</p>
+      <button type="button" className="pzh-btn pzh-btn-clair" onClick={() => window.location.assign(import.meta.env.BASE_URL + "atelier?rosace=" + encodeURIComponent(codeDeCreation(c)))}>Broder ma rosace</button>
+      <div className="sr-only">{rencontres.map(x => <span id={x.id} key={x.id} />)}</div>
+    </div>
+  </section>;
   return <section id="ed-rencontres" className="ed-scene ed-fils ed-rencontre-reference" aria-label="Composer ma rosace personnelle">
     <div className="ed-plateau">
       <div className="ed-texte">
@@ -344,37 +361,37 @@ function NuageFils() {
 }
 
 /** L'édition en ligne : la version publiée (ou l'aperçu d'une version, pour l'administration), sinon les textes d'origine. */
-export function EditionEnLigne({ actions, heroSlide }: { actions: Actions; heroSlide?: string }) {
+export function EditionEnLigne({ actions, heroSlide, heroEntree }: { actions: Actions; heroSlide?: string; heroEntree?: ReactNode }) {
   const { contenus, apercu, refus, bureau } = useContenusPublies();
   useSelectionBureau(bureau);
   return <>
     {(apercu || refus) && <p className="ed-apercu" role="status">{apercu
       ? <>Aperçu de la version {apercu.id} : elle n’est pas publiée.{apercu.ecarts ? ` ${apercu.ecarts} champ(s) refusé(s) par la validation montrent le texte d’origine.` : ""}</>
       : refus}</p>}
-    <Edition actions={actions} contenus={contenus} heroSlide={heroSlide} />
+    <Edition actions={actions} contenus={contenus} heroSlide={heroSlide} heroEntree={heroEntree} />
   </>;
 }
 
 /** L'édition. contenus : la version publiée, déjà validée (validerContenus) ; sans elle, les textes d'origine. */
-export default function Edition({ actions, contenus = ORIGINE, heroSlide }: { actions: Actions; contenus?: Contenus; heroSlide?: string }) {
-  return <ContexteContenus.Provider value={contenus}><Corps actions={actions} heroSlide={heroSlide} /></ContexteContenus.Provider>;
+export default function Edition({ actions, contenus = ORIGINE, heroSlide, heroEntree }: { actions: Actions; contenus?: Contenus; heroSlide?: string; heroEntree?: ReactNode }) {
+  return <ContexteContenus.Provider value={contenus}><Corps actions={actions} heroSlide={heroSlide} heroEntree={heroEntree} /></ContexteContenus.Provider>;
 }
 
-function Corps({ actions, heroSlide }: { actions: Actions; heroSlide?: string }) {
+function Corps({ actions, heroSlide, heroEntree }: { actions: Actions; heroSlide?: string; heroEntree?: ReactNode }) {
   const slide = (id: string, titre: string, contenu: ReactNode) => heroSlide === undefined ? contenu : <div data-hero-slide={id} hidden={heroSlide !== id} role="group" aria-roledescription="diapositive" aria-label={titre}>{contenu}</div>;
   const fichier = useFichier(actions.importer), A = useContenus().appareils;
   return <div className="ed" data-edition="c">
-    {SITE_BRODERIE && slide("ed-rencontres", "2 sur 5 : Rencontres", <Rencontres5D />)}
+    {SITE_BRODERIE && slide(heroEntree ? "accueil" : "ed-rencontres", "Créer ma rosace", <Rencontres5D heroEntree={heroEntree} />)}
     {!SITE_BRODERIE && <Histoire slides={false} Disque={Disque} actions={{ ouvrir: actions.ouvrir, visite: actions.visite, choisirFichier: fichier.choisir, aller }}
       objet={<div className="hi-objet"><Appareil type="ipad" src={adresse(A.ipad.src)} alt={A.ipad.alt} /></div>} entre={{
       "hi-indiennes": <RencontreOrbe cle="structure" variante="cartes" />,
       "hi-mulhouse": <RencontreDisque />,
       "hi-brodeuses": <RencontreOrbe cle="echelle" variante="loupes" />,
     }} />}
-    {slide("ed-fils", "3 sur 5 : Nuancier DMC", <NuageFils />)}
+    {slide("ed-fils", "Nuancier DMC", <NuageFils />)}
     {!SITE_BRODERIE && <RencontreOrbe cle="palette" variante="echeveaux" />}
-    {slide("ed-rosace", "4 sur 5 : Ma rosace", <RosaceNait />)}
-    {SITE_BRODERIE && slide("ed-studio", "5 sur 5 : Dans le studio", <StudioDecouverte actions={actions} />)}
+    {slide("ed-rosace", "Ma rosace", <RosaceNait />)}
+    {SITE_BRODERIE && slide("ed-studio", "Dans le studio", <StudioDecouverte actions={actions} />)}
     {!SITE_BRODERIE && <Cadeau aller={aller} appareils={<div className="cd-appareils">
       <Appareil type="ordinateur" src={adresse(A.ordinateur.src)} alt={A.ordinateur.alt} />
       <Appareil type="iphone" src={adresse(A.iphone.src)} alt={A.iphone.alt} className="cd-iphone" />

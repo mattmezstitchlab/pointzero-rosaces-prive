@@ -179,7 +179,8 @@ export function generer(d: Demande): { pattern: Pattern; controle: Controle } {
   while ((m.confettis > 0.02 || m.croix === 0) && essai < 8) { essai++; res = dessiner(s, melanger(d.graine, 7919 + essai), W, H); m = mesurer(res.L, W, H); }
   const { L, nf } = res;
   const couleurs = hasard(melanger(d.graine, 211 + s.palette));
-  const pal = palette(s.palette, nf + (s.densite === 3 ? 1 : 0), couleurs);
+  // Deux références DMC évocatrices, pas une mesure des pigments du palampore.
+  const pal = d.indiennes ? [FLOSS.findIndex(f => f.code === "321"), FLOSS.findIndex(f => f.code === "823")] : palette(s.palette, nf + (s.densite === 3 ? 1 : 0), couleurs);
   const ajustements = [...notes];
   // Totale : le fond = le fil le plus clair (le plus sombre en Vive) ; les autres fils dessinent le motif
   let fond = -1;

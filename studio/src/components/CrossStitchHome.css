@@ -328,3 +328,33 @@ html[data-aime-studio="nuit"] .cross-stitch-home .pzs-head :is(button, a):focus-
 }
 @media(prefers-reduced-motion: reduce) { .pzh-hero-stage [data-hero-slide]:not([hidden]) { animation: none; } }
 html[data-pz-motion="reduce"] .pzh-hero-stage [data-hero-slide]:not([hidden]) { animation: none; }
+
+/* Une proposition vivante, indigo et garance : le motif réel derrière le disque. */
+.pzh-hero-stage .pzh-rosace-vivante { --ed-encre: #161c2b; --ed-gris: #55515a; position: relative; display: grid; grid-template-columns: minmax(280px, .85fr) minmax(0, 1.15fr); gap: 36px; align-items: center; min-height: 100svh; padding: 100px 5vw 170px; color: #161c2b; background: #f2eee5; isolation: isolate; }
+.pzh-rosace-fond { position: absolute; inset: 0; z-index: -2; pointer-events: none; }
+.pzh-rosace-fond canvas { width: 100%; height: 100%; display: block; object-fit: cover; }
+.pzh-rosace-vivante::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(90deg, #f2eee5f5 0%, #f2eee5df 25%, #f2eee540 65%, #f2eee525); }
+.pzh-rosace-accueil h1 { font-size: clamp(48px, 7vw, 106px); font-weight: 500; line-height: .95; letter-spacing: -.05em; }
+.pzh-hommage { font-size: clamp(20px, 2.1vw, 29px); line-height: 1.22; max-width: 440px; margin: 24px 0 12px !important; }
+.pzh-teintes { color: #71363c; font-size: 14px; }
+.pzh-rosace-vivante .mm-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+.pzh-rosace-vivante .pzh-btn { min-height: 44px; padding: 10px 20px; background: #f2eee5e8; color: #161c2b; border: 1px solid #161c2b80; border-radius: 999px; font-size: 15px; }
+.pzh-rosace-vivante .pzh-btn-clair { background: #fff; border-color: #fff; }
+.pzh-rosace-vivante .pzh-hero-note { color: #45434a; font-size: 12px; }
+.pzh-origine { margin-top: 22px; min-height: 44px; border: 0; background: #f2eee5cc; border-radius: 12px; padding: 10px; text-decoration: underline; }
+.pzh-guide-rosace { display: grid; justify-items: center; gap: 16px; min-width: 0; }
+.pzh-guide-question { display: flex; align-items: center; gap: 12px; background: #f2eee5ed; padding: 14px 20px; border-radius: 18px; }
+.pzh-guide-question p { font-size: 13px; }
+.pzh-guide-question h2 { font-size: clamp(23px, 2.4vw, 34px); line-height: 1.1; letter-spacing: -.025em; }
+.pzh-guide-reponse { background: #f2eee5eb; border-radius: 12px; padding: 10px 16px; font-size: 13px; text-align: center; max-width: 410px; }
+.cross-stitch-home[data-site="broderie"][data-contexte="accueil"] .or-ma { display: none; }
+@media(max-width: 820px) {
+ .pzh-hero-stage .pzh-rosace-vivante { grid-template-columns: minmax(0, 1fr); padding: 92px 16px 175px; gap: 28px; }
+ .pzh-rosace-accueil { display: contents; }
+ .pzh-rosace-accueil h1 { font-size: 44px; }
+ .pzh-hommage { font-size: 19px; margin: 0 !important; }
+ .pzh-teintes { display: none; }
+ .pzh-guide-rosace { grid-row: 3; }
+ .pzh-rosace-vivante::after { background: linear-gradient(#f2eee5e8, #f2eee535 50%, #f2eee5e8); }
+ .pzh-rosace-vivante .mm-actions { margin-top: 0; }
+}

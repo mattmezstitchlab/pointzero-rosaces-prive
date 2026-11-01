@@ -69,6 +69,7 @@ export default function ComposerRosace({ depart, lecture = false, onBroder, onFe
   const initiale = depart ? lireCode(depart) : null;
   const [etape, setEtape] = useState(initiale ? 5 : 0);
   const [choix, setChoix] = useState<Partial<Signature>>(initiale ? initiale.signature : {});
+  const [indiennes, setIndiennes] = useState(!!initiale?.indiennes);
   const [graine, setGraine] = useState(initiale?.graine ?? GRAINE_DEPART);
   const [historique, setHistorique] = useState<number[]>(initiale ? [initiale.graine] : []);
   const [focus, setFocus] = useState(0);
@@ -91,10 +92,10 @@ export default function ComposerRosace({ depart, lecture = false, onBroder, onFe
     const s = { ...DEFAUT, ...choix, [dim.cle]: r as Choix } as Signature, [w, h] = formatParDefaut(s);
     return generer({ signature: s, graine: GRAINE_DEPART, version: VERSION, w, h }).pattern;
   }), [etape, choix, dim.cle]);
-  const recette: Recette | null = etape >= 5 ? { signature, graine, version: VERSION } : null;
+  const recette: Recette | null = etape >= 5 ? { signature, graine, version: VERSION, ...(indiennes ? { indiennes: true } : {}) } : null;
   const final = useMemo(() => { if (!recette) return null; const [w, h] = formatParDefaut(recette.signature); const code = codeDe(recette); return generer({ ...recette, w, h, nom: nomRecette(code) }); },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [etape, graine, choix.structure, choix.trace, choix.densite, choix.echelle, choix.palette]);
+    [etape, graine, indiennes, choix.structure, choix.trace, choix.densite, choix.echelle, choix.palette]);
   const couleurs = useMemo(() => {
     if (final) return final.pattern.palette.map(i => FLOSS[i].hex);
     if (choix.palette === undefined) return [];
@@ -114,6 +115,7 @@ export default function ComposerRosace({ depart, lecture = false, onBroder, onFe
   }, [mur, onFermer]);
 
   const choisir = (r: number) => {
+    if (dim.cle === "palette") setIndiennes(false);
     const suivant = { ...choix, [dim.cle]: r as Choix };
     setChoix(suivant); setOnde(o => o + 1); setFocus(etape < 4 ? (suivant[DIMENSIONS[etape + 1].cle] ?? 0) : 0);
     setAnnonce(`Anneau ${etape + 1} dessiné : ${dim.reponses[r][0].toLowerCase()}.`);
@@ -136,7 +138,7 @@ export default function ComposerRosace({ depart, lecture = false, onBroder, onFe
     if (q !== null) choisir(q);
   };
   const uneAutre = () => { const g = nouvelleGraine(); setGraine(g); setHistorique(h => [g, ...h.filter(x => x !== g)].slice(0, 10)); setAnnonce(`Nouvelle variante : graine ${g}.`); };
-  const ouvrirRecette = (code: string) => { const r = lireCode(code); if (!r) return; setChoix(r.signature); setGraine(r.graine); setHistorique(h => [r.graine, ...h.filter(x => x !== r.graine)].slice(0, 10)); setMur(false); setEtape(5); };
+  const ouvrirRecette = (code: string) => { const r = lireCode(code); if (!r) return; setIndiennes(!!r.indiennes); setChoix(r.signature); setGraine(r.graine); setHistorique(h => [r.graine, ...h.filter(x => x !== r.graine)].slice(0, 10)); setMur(false); setEtape(5); };
 
   const m = final ? mesures(final.pattern) : null;
   const murCouleurs = useMemo(() => mur ? RECETTES.map(r => { const rc = lireCode(r.code)!, [w, h] = formatParDefaut(rc.signature); return generer({ ...rc, w, h }).pattern.palette.map(i => FLOSS[i].hex); }) : [], [mur]);

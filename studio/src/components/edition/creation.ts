@@ -2,9 +2,10 @@
  * La création du visiteur : UNE recette 5D, nourrie par les cinq rencontres avec l'Orbe.
  * Les dimensions sont celles du moteur (structure, tracé, densité, échelle, palette), quatre réponses chacune, dans n'importe quel ordre.
  * Tant qu'une dimension n'est pas choisie, l'aperçu emploie un choix PROVISOIRE, toujours signalé comme tel, jamais confondu avec une réponse.
- * La graine est tirée une fois, au premier choix : la même recette redonne le même motif, ici comme dans l'atelier.
+ * La graine est fixée au départ pour Broderie, tirée au premier choix pour les autres éditions : la même recette redonne le même motif, ici comme dans l'atelier.
  * Gardée sur cet appareil (stockage du navigateur), pour reprendre la visite ; jamais envoyée ailleurs.
  */
+import { SITE_BRODERIE } from "../../lib/site";
 import { useSyncExternalStore } from "react";
 import { CLES, DIMENSIONS, MAX_GRAINE, VERSION, codeDe, lireCode, type Choix, type Signature } from "../../lib/motif5d/code";
 import { formatParDefaut } from "../../lib/motif5d/generer";
@@ -42,7 +43,7 @@ export const creation = {
   lire: () => etat,
   /** un choix explicite de la personne (jamais le défilement) */
   choisir(cle: keyof Signature, k: Choix) {
-    publier({ choix: { ...etat.choix, [cle]: k }, graine: etat.graine || nouvelleGraine(), historique: [...etat.historique, { cle, k, t: Date.now() }].slice(-40) });
+    publier({ choix: { ...etat.choix, [cle]: k }, graine: etat.graine || (SITE_BRODERIE ? 59 : nouvelleGraine()), historique: [...etat.historique, { cle, k, t: Date.now() }].slice(-40) });
   },
   /** une recette entière (une recette nommée) : les cinq choix d'un coup */
   recette(s: Signature, graine?: number) {
@@ -66,7 +67,8 @@ export const nbChoix = (c: CreationVisite) => CLES.filter(k => c.choix[k] !== un
 export const complete = (c: CreationVisite) => nbChoix(c) === 5;
 /** La graine de l'aperçu : celle du visiteur, ou une graine d'attente avant le premier choix. */
 export const graineDe = (c: CreationVisite) => c.graine || 59;
-export const codeDeCreation = (c: CreationVisite) => codeDe({ signature: signatureDe(c), graine: graineDe(c), version: VERSION });
+export const indiennesDe = (c: CreationVisite) => SITE_BRODERIE && c.choix.palette === undefined;
+export const codeDeCreation = (c: CreationVisite) => codeDe({ signature: signatureDe(c), graine: graineDe(c), version: VERSION, ...(indiennesDe(c) ? { indiennes: true } : {}) });
 /** La taille réelle de l'ouvrage, la même que le compositeur de l'atelier (même recette, même motif). */
 export const formatDe = (s: Signature) => formatParDefaut(s);
 export const reponseDe = (cle: keyof Signature, k: Choix) => DIMENSIONS.find(d => d.cle === cle)!.reponses[k];

@@ -3,6 +3,10 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 const site = vi.hoisted(() => ({ broderie: false }));
 vi.mock("../lib/site", () => ({ get SITE_BRODERIE() { return site.broderie; }, PROTOTYPES: false, GALERIE: false }));
+import { creation, codeDeCreation } from "../components/edition/creation";
+import { lireCode } from "../lib/motif5d/code";
+import { generer, formatParDefaut } from "../lib/motif5d/generer";
+import { FLOSS } from "../lib/dmc";
 import CrossStitchHome from "../components/CrossStitchHome";
 import { entryStudio, publicPathFor } from "../lib/entryNavigation";
 
@@ -13,6 +17,7 @@ afterEach(() => {
   act(() => root?.unmount());
   host?.remove();
   root = undefined;
+  creation.oublier();
   localStorage.clear();
   site.broderie = false;
   vi.restoreAllMocks();
@@ -247,7 +252,7 @@ it("déplace Reprendre dans le héros sans liens vers une section supprimée", (
 });
 
 
-it("réunit les cinq sections dans le héros sans perdre choix, fil ni accès à l’import", () => {
+it("réunit les quatre sections dans le héros sans perdre choix, fil ni accès à l’import", () => {
   site.broderie = true;
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   const { view } = mount();
@@ -257,9 +262,9 @@ it("réunit les cinq sections dans le héros sans perdre choix, fil ni accès à
   });
   const visibles = () => [...view.querySelectorAll<HTMLElement>("[data-hero-slide]")].filter(el => !el.hidden).map(el => el.dataset.heroSlide);
   expect(visibles()).toEqual(["accueil"]);
-  expect(view.querySelectorAll("[data-hero-slide]")).toHaveLength(5);
-  choisir("ed-rencontres");
-  expect(visibles()).toEqual(["ed-rencontres"]);
+  expect(view.querySelectorAll("[data-hero-slide]")).toHaveLength(4);
+  choisir("accueil");
+  expect(visibles()).toEqual(["accueil"]);
   act(() => view.querySelector<HTMLButtonElement>('[data-mode="reponse-structure-1"]')!.click());
   choisir("ed-fils");
   expect(visibles()).toEqual(["ed-fils"]);
@@ -270,7 +275,7 @@ it("réunit les cinq sections dans le héros sans perdre choix, fil ni accès à
   choisir("ed-rosace"); choisir("ed-studio");
   expect(visibles()).toEqual(["ed-studio"]);
   choisir("ed-fils"); expect(view.querySelector("#ed-fils .ed-fiche-code")!.textContent).toBe(code);
-  choisir("ed-rencontres");
+  choisir("accueil");
   expect(view.querySelector('[data-mode="reponse-structure-1"]')!.getAttribute("aria-label")).toContain("actif");
   act(() => window.dispatchEvent(new CustomEvent("pointzero:ouvrir-slide", { detail: "ed-rosace" })));
   expect(visibles()).toEqual(["ed-rosace"]);
@@ -281,4 +286,34 @@ it("réunit les cinq sections dans le héros sans perdre choix, fil ni accès à
   act(() => [...haut.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Point Zéro")!.click());
   expect(visibles()).toEqual(["accueil"]);
   expect(view.querySelector(".tp-traine")).toBeTruthy();
+});
+
+
+it("offre une rosace indiennes dès l’arrivée, modifiable, réinitialisable sans toucher aux ouvrages", () => {
+  site.broderie = true;
+  creation.oublier();
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  localStorage.setItem("ouvrage-existant", "ne pas toucher");
+  const { view } = mount();
+  expect(view.querySelector('[data-hero-slide="accueil"] #ed-rencontres [data-mode="reponse-structure-0"]')).toBeTruthy();
+  expect(view.querySelector(".pzh-rosace-fond canvas")).toBeTruthy();
+  expect(creation.lire().choix).toEqual({}); // aucune réponse personnelle inventée
+  const origine = codeDeCreation(creation.lire());
+  expect(origine).toContain(".indiennes");
+  const recette = lireCode(origine)!;
+  const [w, h] = formatParDefaut(recette.signature);
+  const p = generer({ ...recette, w, h }).pattern;
+  expect(p.palette.map(i => FLOSS[i].code).sort()).toEqual(["321", "823"]);
+  act(() => view.querySelector<HTMLButtonElement>('[data-mode="reponse-structure-1"]')!.click());
+  expect(codeDeCreation(creation.lire())).not.toBe(origine);
+  expect(codeDeCreation(creation.lire())).toContain(".g59.v0.1.indiennes");
+  act(() => {
+    const select = view.querySelector<HTMLSelectElement>("#dock-rencontre")!;
+    select.value = "3"; select.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  act(() => view.querySelector<HTMLButtonElement>('[data-mode="reponse-palette-2"]')!.click());
+  expect(codeDeCreation(creation.lire())).not.toContain(".indiennes");
+  act(() => view.querySelector<HTMLButtonElement>(".pzh-origine")!.click());
+  expect(codeDeCreation(creation.lire())).toBe(origine);
+  expect(localStorage.getItem("ouvrage-existant")).toBe("ne pas toucher");
 });

@@ -11,7 +11,7 @@ import { chapitresEdition, EditionEnLigne, type FonctionStudio } from "./edition
 /* le site Point Zéro (broderie seule) : l’édition en chapitres est sa landing, sans paramètre */
 import { revelerSlide } from "./edition/Slides";
 import { SITE_BRODERIE } from "../lib/site";
-const HERO_SLIDES = [["accueil", "Accueil"], ["ed-rencontres", "Rencontres"], ["ed-fils", "Nuancier DMC"], ["ed-rosace", "Ma rosace"], ["ed-studio", "Dans le studio"]] as const;
+const HERO_SLIDES = [["accueil", "Créer ma rosace"], ["ed-fils", "Nuancier DMC"], ["ed-rosace", "Ma rosace"], ["ed-studio", "Dans le studio"]] as const;
 const estEdition = () => { if (SITE_BRODERIE) return true; try { return new URLSearchParams(window.location.search).has("edition"); } catch { return false; } };
 
 export type StitchEntry = "create" | "library" | "prepare" | "stitch";
@@ -172,7 +172,8 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
       const cible = document.getElementById(id);
       const parent = cible?.closest<HTMLElement>("[data-hero-slide]")?.dataset.heroSlide;
       const slide = HERO_SLIDES.find(([cle]) => cle === id || cle === parent)?.[0];
-      if (slide) setContexte(slide);
+      if (id === "ed-rencontres") setContexte("accueil");
+      else if (slide) setContexte(slide);
     };
     const evenement = (e: Event) => ouvrir((e as CustomEvent<string>).detail);
     const ancre = () => ouvrir(window.location.hash.slice(1));
@@ -275,30 +276,25 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
         const t = e.touches[0]; toucher.current = { x: t.clientX, y: t.clientY };
       }} onTouchEnd={e => {
         const p = toucher.current; toucher.current = null; const t = e.changedTouches[0];
-        if (p && Math.abs(t.clientX - p.x) > 80 && Math.abs(t.clientX - p.x) > Math.abs(t.clientY - p.y) * 1.5) choisirSlide(HERO_SLIDES[Math.max(0, Math.min(4, indexSlide + (t.clientX < p.x ? 1 : -1)))][0]);
+        if (p && Math.abs(t.clientX - p.x) > 80 && Math.abs(t.clientX - p.x) > Math.abs(t.clientY - p.y) * 1.5) choisirSlide(HERO_SLIDES[Math.max(0, Math.min(HERO_SLIDES.length - 1, indexSlide + (t.clientX < p.x ? 1 : -1)))][0]);
       }} onTouchCancel={() => { toucher.current = null; }}>
-      <div data-hero-slide={SITE_BRODERIE ? "accueil" : undefined} hidden={SITE_BRODERIE && contexte !== "accueil"} role={SITE_BRODERIE ? "group" : undefined} aria-roledescription={SITE_BRODERIE ? "diapositive" : undefined} aria-label={SITE_BRODERIE ? "1 sur 5 : Accueil" : undefined}>
-      <UneFlorale titre="Point Zéro">
+      {!SITE_BRODERIE && <UneFlorale titre="Point Zéro">
         <p className="mm-sous">Du tableau à la dernière croix.</p>
-        {SITE_BRODERIE && <div id="hero-import" className="pzh-hero-entree" tabIndex={-1}>
-          <h2 className="sr-only">Importer mon patron</h2>
-          <div className="mm-actions">
-            <Imports onImport={onImport} hero />
-            <button type="button" className="pzh-btn mm-btn-point" onClick={onStudio ?? (() => onOpen("stitch"))} title={"Reprendre « " + projectName + " »"}>Reprendre</button>
-            <button className="pzh-btn mm-btn-point" onClick={visite}><span className="pzh-dot" aria-hidden="true" />Faire la visite avec Le Point</button>
-          </div>
-          <p className="pzh-hero-note">PDF, photo, JSON ou OXS · Vos fichiers restent sur votre appareil.<br />Un calage du PDF peut être nécessaire.</p>
-        </div>}
-        {!SITE_BRODERIE && <ol className="mm-sommaire">{(edition ? chapitresEdition() : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.titre}</a><span>{c.num}</span></li>)}</ol>}
-        {!SITE_BRODERIE && <div className="mm-actions">
+        <ol className="mm-sommaire">{(edition ? chapitresEdition() : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.titre}</a><span>{c.num}</span></li>)}</ol>
+        <div className="mm-actions">
           <button className="pzh-btn pzh-btn-clair" onClick={() => onOpen("create")}>Créer mon patron</button>
           <button className="pzh-btn mm-btn-point" onClick={visite}><span className="pzh-dot" aria-hidden="true" />Faire la visite avec Le Point</button>
-        </div>}
-      </UneFlorale>
-      </div>
+        </div>
+      </UneFlorale>}
 
       {edition
-        ? <div id="chapitres"><EditionEnLigne heroSlide={SITE_BRODERIE ? contexte : undefined} actions={{ fonction: onFeature, ouvrir: e => onOpen(e), importer: onImport, visite }} /></div>
+        ? <div id="chapitres"><EditionEnLigne heroEntree={SITE_BRODERIE ? <div id="hero-import" className="pzh-hero-entree" tabIndex={-1}>
+          <h2 className="sr-only">Importer mon patron</h2><div className="mm-actions">
+          <Imports onImport={onImport} hero />
+          <button type="button" className="pzh-btn" onClick={onStudio ?? (() => onOpen("stitch"))} title={"Reprendre « " + projectName + " »"}>Reprendre</button>
+          <button type="button" className="pzh-btn" onClick={visite}><span className="pzh-dot" aria-hidden="true" />Faire la visite avec Le Point</button>
+          </div><p className="pzh-hero-note">PDF, photo, JSON ou OXS · Vos fichiers restent sur votre appareil.<br />Un calage du PDF peut être nécessaire.</p>
+        </div> : undefined} heroSlide={SITE_BRODERIE ? contexte : undefined} actions={{ fonction: onFeature, ouvrir: e => onOpen(e), importer: onImport, visite }} /></div>
         : <div id="chapitres" className="chapitres">
         {CHAPITRES.map((c, n) => <ChapitreVue key={c.id} c={c} n={n} onVoir={setChapitre} />)}
       </div>}
@@ -381,11 +377,11 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
       <div className="pzh-slide-navigation">
         <button type="button" aria-label="Section précédente" disabled={indexSlide === 0} onClick={() => choisirSlide(HERO_SLIDES[indexSlide - 1][0])}>←</button>
         <label className="sr-only" htmlFor="dock-section">Section du héros</label>
-        <select id="dock-section" value={contexte} onChange={e => choisirSlide(e.target.value)}>{HERO_SLIDES.map(([id, titre], n) => <option key={id} value={id}>{n + 1}/5 · {titre}</option>)}</select>
-        <button type="button" aria-label="Section suivante" disabled={indexSlide === 4} onClick={() => choisirSlide(HERO_SLIDES[indexSlide + 1][0])}>→</button>
+        <select id="dock-section" value={contexte} onChange={e => choisirSlide(e.target.value)}>{HERO_SLIDES.map(([id, titre], n) => <option key={id} value={id}>{n + 1}/{HERO_SLIDES.length} · {titre}</option>)}</select>
+        <button type="button" aria-label="Section suivante" disabled={indexSlide === HERO_SLIDES.length - 1} onClick={() => choisirSlide(HERO_SLIDES[indexSlide + 1][0])}>→</button>
       </div>
       <div className="pzh-slide-actions">
-      {contexte === "ed-rencontres" ? <>
+      {contexte === "accueil" ? <>
         <button type="button" disabled={rencontre.active === 0} onClick={() => changerRencontre(rencontre.active - 1)}>Précédent</button>
         <label className="sr-only" htmlFor="dock-rencontre">Rencontre</label>
         <select id="dock-rencontre" value={rencontre.active} onChange={e => changerRencontre(Number(e.target.value))}>{rencontre.titres.map((t, n) => <option key={t} value={n}>{n + 1}/5 · {t}</option>)}</select>
