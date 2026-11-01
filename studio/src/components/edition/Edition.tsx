@@ -15,6 +15,8 @@ import { FLOSS } from "../../lib/dmc";
 import { FAMILLES, filsParFamille, familleDe, hsl } from "../../lib/famillesFils";
 import { etapeDe, lisse, mouvementReduit, suivreScene } from "./defilement";
 import { dessinerRosace, ETAPES_ROSACE, rosaceDe, SEUILS_ROSACE } from "./rosace";
+import { SITE_BRODERIE } from "../../lib/site";
+import Slides, { revelerSlide } from "./Slides";
 import Histoire, { CHAPITRES_HISTOIRE } from "./Histoire";
 import { Cadeau, MaRosace, Orbe, RencontreOrbe, useCommandesTrace, useRencontres } from "./Participation";
 import { codeDeCreation, creation, graineDe, nbChoix, reponseDe, signatureDe, useCreation } from "./creation";
@@ -74,9 +76,13 @@ function useFichier(importer: (f: File) => void) {
 }
 
 const aller = (id: string) => {
-  const el = document.getElementById(id); if (!el) return;
-  el.scrollIntoView?.({ behavior: mouvementReduit() ? "auto" : "smooth", block: "start" });
-  el.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+  const defiler = () => {
+    const el = document.getElementById(id); if (!el) return;
+    el.scrollIntoView?.({ behavior: mouvementReduit() ? "auto" : "smooth", block: "start" });
+    el.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+  };
+  if (SITE_BRODERIE) { revelerSlide(id); requestAnimationFrame(defiler); }
+  else defiler();
 };
 
 /* ——— 02 · Une rosace naît : le vrai moteur 5D, révélé au défilement, réglé par le disque ——— */
@@ -127,7 +133,7 @@ function RosaceNait() {
       <figure className="ed-toile-rosace">
         <canvas ref={toile} role="img" aria-label={`Votre rosace, par le moteur 5D : ${DIMENSIONS.map(d => (c.choix[d.cle] === undefined ? "provisoire " : "") + d.reponses[sig[d.cle]][0].toLowerCase()).join(", ")}. ${rosace.fils} fils.`} />
         <figcaption>{T.legende}</figcaption>
-        <RencontreOrbe cle="densite" variante="curseur" sombre compacte />
+        {!SITE_BRODERIE && <RencontreOrbe cle="densite" variante="curseur" sombre compacte />}
       </figure>
       <div className="ed-scene-disque">
         <Disque contexte="edition-rosace" modes={modes} etiquette="Le Point du compositeur : revenir sur chaque choix de votre rosace" />
@@ -237,15 +243,18 @@ export default function Edition({ actions, contenus = ORIGINE }: { actions: Acti
 
 function Corps({ actions }: { actions: Actions }) {
   const fichier = useFichier(actions.importer), A = useContenus().appareils;
+  const rencontres = useRencontres();
+  const choix = [<RencontreOrbe cle="structure" variante="cartes" />, <RencontreDisque />, <RencontreOrbe cle="echelle" variante="loupes" />, <RencontreOrbe cle="palette" variante="echeveaux" />, <RencontreOrbe cle="densite" variante="curseur" />];
   return <div className="ed" data-edition="c">
-    <Histoire Disque={Disque} actions={{ ouvrir: actions.ouvrir, visite: actions.visite, choisirFichier: fichier.choisir, aller }}
+    {SITE_BRODERIE && <Slides id="ed-rencontres" titre="Les cinq rencontres" slides={rencontres.map((r, i) => ({ id: r.id, titre: r.titre, contenu: choix[i] }))} />}
+    <Histoire slides={SITE_BRODERIE} Disque={Disque} actions={{ ouvrir: actions.ouvrir, visite: actions.visite, choisirFichier: fichier.choisir, aller }}
       objet={<div className="hi-objet"><Appareil type="ipad" src={adresse(A.ipad.src)} alt={A.ipad.alt} /></div>} entre={{
       "hi-indiennes": <RencontreOrbe cle="structure" variante="cartes" />,
       "hi-mulhouse": <RencontreDisque />,
       "hi-brodeuses": <RencontreOrbe cle="echelle" variante="loupes" />,
     }} />
     <NuageFils />
-    <RencontreOrbe cle="palette" variante="echeveaux" />
+    {!SITE_BRODERIE && <RencontreOrbe cle="palette" variante="echeveaux" />}
     <RosaceNait />
     <Cadeau aller={aller} appareils={<div className="cd-appareils">
       <Appareil type="ordinateur" src={adresse(A.ordinateur.src)} alt={A.ordinateur.alt} />

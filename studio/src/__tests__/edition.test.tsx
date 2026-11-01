@@ -4,6 +4,8 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+const site = vi.hoisted(() => ({ broderie: false }));
+vi.mock("../lib/site", () => ({ get SITE_BRODERIE() { return site.broderie; }, PROTOTYPES: false, GALERIE: false }));
 import Edition from "../components/edition/Edition";
 import { creation, codeDeCreation, PROVISOIRE, signatureDe } from "../components/edition/creation";
 import { progression, etapeDe } from "../components/edition/defilement";
@@ -45,7 +47,7 @@ beforeAll(() => {
 });
 afterAll(() => { globalThis.matchMedia = saved.matchMedia; HTMLCanvasElement.prototype.getContext = saved.getContext; });
 let root: Root | null = null, hote: HTMLElement | null = null;
-afterEach(async () => { await act(async () => root?.unmount()); root = null; hote?.remove(); hote = null; creation.oublier(); });
+afterEach(async () => { await act(async () => root?.unmount()); root = null; hote?.remove(); hote = null; creation.oublier(); site.broderie = false; });
 const cliquer = async (el: Element | null | undefined) => { expect(el).toBeTruthy(); await act(async () => { el!.dispatchEvent(new MouseEvent("click", { bubbles: true })); }); };
 const dans = (scene: string, id: string) => document.querySelector<HTMLButtonElement>(`#${scene} [data-mode="${id}"]`);
 
@@ -111,5 +113,32 @@ describe("Trois scènes, le même Point, de vraies actions", () => {
     expect(document.querySelector("#ed-cadeau h2")!.textContent).toBe("Cette rosace est la vôtre.");
     expect(document.querySelector("#ed-cadeau .cd-recette code")!.textContent).toBe(codeDeCreation(creation.lire()));
     expect(JSON.parse(localStorage.getItem("pointzero:creation-visite:v1")!).choix.structure).toBe(3);
+  });
+});
+
+
+describe("Accueil autonome : deux sections en diapositives", () => {
+  it("regroupe les cinq rencontres et les quatre chapitres sans perdre les choix", async () => {
+    site.broderie = true;
+    hote = document.createElement("div"); document.body.appendChild(hote); root = createRoot(hote);
+    await act(async () => { root!.render(<Edition actions={{ ouvrir: vi.fn(), importer: vi.fn(), visite: vi.fn() }} />); });
+    const rencontres = document.getElementById("ed-rencontres")!;
+    const histoire = document.getElementById("ed-histoire")!;
+    expect(rencontres.querySelectorAll("[data-slide]")).toHaveLength(5);
+    expect(histoire.querySelectorAll("[data-slide]")).toHaveLength(4);
+    expect(document.querySelectorAll("[data-rencontre]")).toHaveLength(5);
+    expect(rencontres.querySelectorAll("[data-slide]:not([hidden])")).toHaveLength(1);
+    expect(histoire.querySelectorAll("[data-slide]:not([hidden])")).toHaveLength(1);
+    await cliquer(document.querySelector('[data-reponse="structure-3"]'));
+    await cliquer(rencontres.querySelector(".ed-slides-suivant"));
+    expect(rencontres.querySelector('[data-slide]:not([hidden]) #or-lignes')).toBeTruthy();
+    await cliquer(rencontres.querySelector('[aria-label$="diapositive précédente"]'));
+    expect(document.querySelector('[data-reponse="structure-3"]')!.getAttribute("aria-checked")).toBe("true");
+    await act(async () => { window.dispatchEvent(new CustomEvent("pointzero:ouvrir-slide", { detail: "hi-mulhouse" })); });
+    expect(histoire.querySelector('[data-slide]:not([hidden]) #hi-mulhouse')).toBeTruthy();
+    expect(histoire.querySelectorAll("[data-slide]:not([hidden])")).toHaveLength(1);
+    await cliquer([...rencontres.querySelectorAll(".ed-slides-onglets button")][4]);
+    expect(rencontres.querySelector('[data-slide]:not([hidden]) #or-plein')).toBeTruthy();
+    expect(document.querySelectorAll(".hi-sources a")).toHaveLength(5);
   });
 });

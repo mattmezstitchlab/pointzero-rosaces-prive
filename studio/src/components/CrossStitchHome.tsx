@@ -8,6 +8,7 @@ import { CHAPITRES_EDITION, EditionEnLigne } from "./edition/Edition";
 
 /** L'édition (la nouvelle narration sous le héros) : en essai privé derrière ?edition, la page actuelle reste la même sans ce paramètre. */
 /* le site Point Zéro (broderie seule) : l’édition en chapitres est sa landing, sans paramètre */
+import { revelerSlide } from "./edition/Slides";
 import { SITE_BRODERIE } from "../lib/site";
 const estEdition = () => { if (SITE_BRODERIE) return true; try { return new URLSearchParams(window.location.search).has("edition"); } catch { return false; } };
 
@@ -158,9 +159,13 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
     if (!el) return;
     event.preventDefault();
     const reduce = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView?.({ behavior: reduce ? "auto" : "smooth", block: "start" });
-    window.history?.replaceState?.(null, "", window.location.pathname + window.location.search);
-    (el.querySelector<HTMLElement>("h2") ?? el).focus?.({ preventScroll: true });
+    const defiler = () => {
+      el.scrollIntoView?.({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      window.history?.replaceState?.(null, "", window.location.pathname + window.location.search);
+      (el.querySelector<HTMLElement>("h2") ?? el).focus?.({ preventScroll: true });
+    };
+    if (SITE_BRODERIE) { revelerSlide(id); requestAnimationFrame(defiler); }
+    else defiler();
   };
 
   return <div className="cross-stitch-home">
@@ -171,15 +176,15 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
       menu={[{ label: "Mes ouvrages", faire: () => onOpen("library") }, { label: "Ouvrir le studio", faire: () => onOpen("stitch") }, { label: "Faire la visite avec Le Point", faire: visite }]}
       droite={<button type="button" className="pzs-tool pzs-noir pzh-entrer" onClick={enter} aria-label="Entrer dans Point Zéro"><span aria-hidden="true">+</span> Entrer</button>}>
       <a className="pzs-tool" href="#chapitres" onClick={go("chapitres")}>Le studio</a>
-      <a className="pzs-tool" href={edition ? "#ed-origine" : "#ch-point"} onClick={go(edition ? "ed-origine" : "ch-point")}>Le Point</a>
-      <a className="pzs-tool" href="#tout" onClick={go("tout")}>Tout le studio</a>
+      <a className="pzs-tool" href={SITE_BRODERIE ? "#ed-rencontres" : edition ? "#ed-origine" : "#ch-point"} onClick={go(SITE_BRODERIE ? "ed-rencontres" : edition ? "ed-origine" : "ch-point")}>Le Point</a>
+      {!SITE_BRODERIE && <a className="pzs-tool" href="#tout" onClick={go("tout")}>Tout le studio</a>}
       <a className="pzs-tool" href="#csh-import" onClick={go("csh-import")}>Importer</a>
     </TopDock>
 
     {/* l'index des chapitres, à gauche, comme une table des matières qui suit la lecture */}
     {!edition && <nav className={"ix" + (chapitre ? " ix-on" : "")} aria-label="Chapitres">
       <p className="ix-tete">Point Zéro<span>Édition point de croix</span></p>
-      <ol>{CHAPITRES.map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)} aria-current={chapitre === c.id ? "true" : undefined}><span className="ix-nom">{c.titre}</span><span className="ix-points" aria-hidden="true" /><span className="ix-num">{c.num}</span></a></li>)}</ol>
+      <ol>{(SITE_BRODERIE ? CHAPITRES_EDITION : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)} aria-current={chapitre === c.id ? "true" : undefined}><span className="ix-nom">{c.titre}</span><span className="ix-points" aria-hidden="true" /><span className="ix-num">{c.num}</span></a></li>)}</ol>
     </nav>}
 
     <main id="csh-main">
@@ -198,14 +203,14 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
         {CHAPITRES.map((c, n) => <ChapitreVue key={c.id} c={c} n={n} onVoir={setChapitre} />)}
       </div>}
 
-      <section className="pzh-section tout" id="tout" aria-labelledby="tout-titre">
+      {!SITE_BRODERIE && <section className="pzh-section tout" id="tout" aria-labelledby="tout-titre">
         <div className="tout-tete">
           <p className="pzh-kicker">Tout ce que fait le studio</p>
           <h2 id="tout-titre" tabIndex={-1}>Tout le studio</h2>
         </div>
         <dl className="tout-liste">{TOUT.map(([nom, ligne]) => <div key={nom}><dt>{nom}</dt><dd>{ligne}</dd></div>)}</dl>
         <p className="pzh-fine">Bientôt : les SAL à plusieurs, et les commentaires posés sur la grille.</p>
-      </section>
+      </section>}
 
       <section className="pzh-section" id="csh-import" aria-labelledby="csh-import-title">
         <div className="pzh-intro">
@@ -278,8 +283,8 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
         <div>
           <h2>Découvrir</h2>
           <ul>
-            {CHAPITRES.map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.num}. {c.titre}</a></li>)}
-            <li><a href="#tout" onClick={go("tout")}>Tout le studio</a></li>
+            {(SITE_BRODERIE ? CHAPITRES_EDITION : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.num}. {c.titre}</a></li>)}
+            {!SITE_BRODERIE && <li><a href="#tout" onClick={go("tout")}>Tout le studio</a></li>}
           </ul>
         </div>
         <div>
@@ -297,7 +302,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
 
     <nav className="pzh-bottom" aria-label="Sections de la page">
       <button type="button" className="pzh-bottom-orb" aria-label="Le Point : faire la visite du studio" title="Le Point : faire la visite" onClick={visite} />
-      {SECTIONS.map(([id0, label]) => [edition && id0 === "ch-point" ? "ed-origine" : id0, label] as const).map(([id, label]) => <a key={id} href={"#" + id} onClick={go(id)} aria-current={current === id ? "location" : undefined} className={current === id ? "is-on" : undefined}>{label}</a>)}
+      {SECTIONS.filter(([id]) => !SITE_BRODERIE || id !== "tout").map(([id0, label]) => [edition && id0 === "ch-point" ? (SITE_BRODERIE ? "ed-rencontres" : "ed-origine") : id0, label] as const).map(([id, label]) => <a key={id} href={"#" + id} onClick={go(id)} aria-current={current === id ? "location" : undefined} className={current === id ? "is-on" : undefined}>{label}</a>)}
     </nav>
   </div>;
 }

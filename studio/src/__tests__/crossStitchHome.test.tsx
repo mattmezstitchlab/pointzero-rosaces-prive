@@ -1,6 +1,8 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
+const site = vi.hoisted(() => ({ broderie: false }));
+vi.mock("../lib/site", () => ({ get SITE_BRODERIE() { return site.broderie; }, PROTOTYPES: false, GALERIE: false }));
 import CrossStitchHome from "../components/CrossStitchHome";
 import { entryStudio, publicPathFor } from "../lib/entryNavigation";
 
@@ -12,6 +14,7 @@ afterEach(() => {
   host?.remove();
   root = undefined;
   localStorage.clear();
+  site.broderie = false;
   vi.restoreAllMocks();
 });
 function mount(extra: { onOuvrages?: () => void; onShare?: () => void; onVisite?: () => void } = {}) {
@@ -133,4 +136,18 @@ describe("Point Zéro spécialisé", () => {
     act(() => view.querySelector<HTMLButtonElement>('button[aria-label="Entrer dans Point Zéro"]')!.click());
     expect(onOpen).toHaveBeenCalledWith("library");
   });
+});
+
+
+it("retire Tout le studio et ses ancres uniquement sur le site Broderie", () => {
+  site.broderie = true;
+  // Éviter les effets Canvas : ce test vise la structure de la navigation.
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const { view } = mount();
+  expect(view.querySelector("#tout")).toBeNull();
+  expect(view.querySelector('[href="#tout"]')).toBeNull();
+  expect(view.querySelector("#ed-rencontres")).toBeTruthy();
+  expect(view.querySelector("#ed-histoire")).toBeTruthy();
+  expect(view.querySelector('[href="#ed-rencontres"]')).toBeTruthy();
+  expect(view.querySelector('[aria-label="Importer un patron PDF multipage"]')).toBeTruthy();
 });
