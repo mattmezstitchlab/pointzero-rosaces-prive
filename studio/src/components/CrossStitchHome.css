@@ -292,3 +292,11 @@ html[data-aime-studio="nuit"] .cross-stitch-home .pzs-head :is(button, a):focus-
   .ru .pzh-import-pill { max-width: 100%; }
   .ru:has(.pzh-hero-import) .pzh-btn { min-height: 52px; padding: 12px 20px; font-size: 16px; }
 }
+
+/* La navigation de la vitrine autonome suit les docks sombres de la référence. */
+.cross-stitch-home[data-site="broderie"] .pzs-head .pzs-top { background: var(--pz-panel); border-color: var(--pz-border); color: var(--pz-text); box-shadow: var(--pz-shadow-float); backdrop-filter: blur(18px); }
+.cross-stitch-home[data-site="broderie"] .pzs-head .pzs-ligne .pzs-tool { background: transparent; color: var(--pz-text); }
+.cross-stitch-home[data-site="broderie"] .pzs-head .pzs-ligne :is(button, a):focus-visible { outline-color: var(--pz-focus); }
+.cross-stitch-home[data-site="broderie"] .pzs-head .pzs-ligne :is(.pzs-tool, .pzs-orbe):hover { background: var(--pz-raise); }
+.cross-stitch-home[data-site="broderie"] .pzs-head .pzs-ligne .pzh-entrer { background: #fff !important; color: #0b0b0c !important; }
+.cross-stitch-home[data-site="broderie"] .pzs-head .pzs-ligne .pzs-sep { background: var(--pz-border); }
