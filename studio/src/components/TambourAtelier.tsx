@@ -49,7 +49,7 @@ function rectCadre(): Rect | null {
 /** le suivi de la couleur active, dans le cercle : son avancée (l'arc sur le bois, dit aussi en toutes lettres) et le prochain point */
 export interface SuiviCercle { code: string; hex: string; cells: number; done: number; /** le vrai motif, la couleur active, et le dernier point coché (null : on part du centre de la toile) */ motif: Pattern; couleur: number; depuis: number | null; /** montrer le prochain point dans la toile (le Guide est actif, on brode) */ montrer: boolean }
 
-export default function TambourAtelier({ contexte, retracter, part, etiquette, ouvrage, indicateurs, racine, suivi, centreContenu }: { contexte: ContexteBroderie; retracter: () => void; part?: number; etiquette?: string; ouvrage?: string; indicateurs?: Indicateurs; /** une autre racine (Navigation intégrale .0) ; sinon les commandes du bloc broderie */ racine?: ModePoint[]; suivi?: SuiviCercle;
+export default function TambourAtelier({ contexte, retracter, part, etiquette, ouvrage, indicateurs, racine, suivi, centreContenu, outilsOuverts = false }: { outilsOuverts?: boolean; contexte: ContexteBroderie; retracter: () => void; part?: number; etiquette?: string; ouvrage?: string; indicateurs?: Indicateurs; /** une autre racine (Navigation intégrale .0) ; sinon les commandes du bloc broderie */ racine?: ModePoint[]; suivi?: SuiviCercle;
   /** un autre contenu réel au centre (le Bureau : les ouvrages) ; il peut se déployer en plein écran */
   centreContenu?: { titre: string; element: ReactNode; plein: boolean; quitterPlein: () => void; defile?: MutableRefObject<number> } }) {
   if (centreContenu) suivi = undefined;   /* le suivi parle de l'ouvrage : il se tait quand le centre montre autre chose */
@@ -65,7 +65,7 @@ export default function TambourAtelier({ contexte, retracter, part, etiquette, o
   }, [indic]);
   /* trois états : le Point (dans le dock), le Disque, le contenu étendu (couronne repliée). Sur téléphone, le contenu étendu d'abord ;
      la présentation choisie est retenue sur l'appareil */
-  const [replie, setReplieBrut] = useState(() => { try { const v = localStorage.getItem(PRESENTATION_CLE); if (v) return v === "etendu"; } catch { /* rien */ } return window.innerWidth < 600; });
+  const [replie, setReplieBrut] = useState(() => { if (outilsOuverts) return false; try { const v = localStorage.getItem(PRESENTATION_CLE); if (v) return v === "etendu"; } catch { /* rien */ } return window.innerWidth < 600; });
   const setReplie = (v: boolean) => { setReplieBrut(v); try { localStorage.setItem(PRESENTATION_CLE, v ? "etendu" : "disque"); } catch { /* rien */ } };
   const mesurer = useCallback((rep: boolean): Disque => {
     const haut = Math.max(document.querySelector(".pzs-top")?.getBoundingClientRect().bottom ?? 72, document.querySelector(".pzs-crumbs")?.getBoundingClientRect().bottom ?? 0) + 8;

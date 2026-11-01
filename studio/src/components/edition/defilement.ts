@@ -27,7 +27,7 @@ function calculer() {
   for (const a of abonnes) {
     const r = a.el.getBoundingClientRect();
     if (r.bottom < -H || r.top > 2 * H) continue; // hors de vue : rien à faire
-    const p = mouvementReduit() ? 1 : progression(r.top, r.height, H);
+    const p = mouvementReduit() || a.el.closest(".pzh-hero-stage") ? 1 : progression(r.top, r.height, H);
     if (Math.abs(p - a.dernier) < 0.0004) continue;
     a.dernier = p;
     a.el.style.setProperty("--p", p.toFixed(4));

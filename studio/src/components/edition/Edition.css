@@ -93,3 +93,40 @@ html[data-pz-motion="reduce"] .ed-grandit .lp-anneau > .lp-secteur { opacity: 1;
 
 /* dans le cadre du Bureau éditorial : la section choisie est cernée, chaque section se montre au survol */
 .ed [data-bureau-choisi] { outline: 3px solid #e8b86a; outline-offset: -3px; }
+
+/* Ma rosace reprend la composition du nuancier : texte, disque et fiche claire. */
+.ed-rosace-reference .ed-fiche-code { font-size: clamp(25px, 2.6vw, 34px); overflow-wrap: anywhere; }
+.ed-apercu-rosace { margin: 18px 0; }
+.ed-apercu-rosace canvas { display: block; width: 100%; aspect-ratio: 1; border-radius: 8px; background: var(--ed-papier); }
+.ed-apercu-rosace figcaption { margin-top: 8px; font-size: 11px; color: var(--ed-gris); line-height: 1.4; }
+.ed-rosace-reference .ed-recette { margin: 8px 0 !important; }
+.ed-rosace-reference .ed-recette code { color: var(--ed-encre); overflow-wrap: anywhere; }
+.ed-recette-details { margin-top: 16px; font-size: 12px; }
+.ed-recette-details summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+.ed-fiche-rosace .ed-cta { min-height: 44px; padding: 12px 18px; font-size: 15px; width: 100%; box-sizing: border-box; }
+.pzh-sauvegarde-aide { max-width: 32rem; font-size: 14px; }
+.pzh-sauvegarde-aide summary { min-height: 44px; cursor: pointer; }
+@media (min-width: 821px) {
+  .ed-rosace-reference .ed-fiche-rosace { max-height: calc(100svh - 200px); overflow-y: auto; box-sizing: border-box; }
+  .ed-rosace-reference .ed-apercu-rosace { max-width: 200px; margin: 16px auto; }
+  .ed-rosace-reference .ed-texte h2 { font-size: clamp(36px, 3.6vw, 60px); }
+  .ed-rosace-reference .ed-chapeau { font-size: 16px; }
+  .ed-rosace-reference .ed-plateau { padding-bottom: 100px; }
+}
+
+/* Une même grammaire pour le parcours 5D et la découverte des outils. */
+.ed-rencontre-reference { height: auto; }
+.ed-rencontre-reference .ed-plateau { position: relative; }
+.ed-rencontre-reference .ed-fiche-code, .ed-studio-reference .ed-fiche-code { font-size: clamp(25px, 2.6vw, 34px); overflow-wrap: anywhere; }
+.ed-fiche-personnelle .ed-cta, .ed-studio-reference .ed-cta { min-height: 44px; padding: 12px 18px; width: 100%; box-sizing: border-box; font-size: 15px; }
+.ed-studio-reference .ed-phrases li { color: var(--ed-encre); }
+.ed-studio-reference .ed-fiche > p { line-height: 1.5; }
+@media (min-width: 821px) {
+ .ed-rencontre-reference .ed-fiche-personnelle, .ed-studio-reference .ed-fiche { max-height: calc(100svh - 200px); overflow-y: auto; box-sizing: border-box; }
+ .ed-rencontre-reference .ed-apercu-rosace { max-width: 190px; margin: 16px auto; }
+ .ed-rencontre-reference .ed-texte h2, .ed-studio-reference .ed-texte h2 { font-size: clamp(36px, 3.6vw, 60px); }
+ .ed-rencontre-reference .ed-plateau, .ed-studio-reference .ed-plateau { padding-bottom: 100px; }
+}
+
+/* La fiche présente déjà la création : ne pas superposer sa pastille aux actions. */
+.cross-stitch-home[data-site="broderie"]:is([data-contexte="ed-rencontres"], [data-contexte="ed-rosace"], [data-contexte="ed-studio"]) .or-ma { display: none; }

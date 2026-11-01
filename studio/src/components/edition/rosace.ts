@@ -16,11 +16,12 @@ const cacheRosaces = new Map<string, Rosace>();
  * Le motif réel, à la taille que lui donne le compositeur de l'atelier (formatParDefaut) : même recette, même motif, ici et là-bas.
  * Le moteur est déterministe ; le résultat est gardé par recette.
  */
-export function rosaceDe(signature: Signature, graine: number): Rosace {
-  const code = codeDe({ signature, graine, version: VERSION });
+export function rosaceDe(signature: Signature, graine: number, indiennes = false): Rosace {
+  const recette = { signature, graine, version: VERSION, ...(indiennes ? { indiennes: true as const } : {}) };
+  const code = codeDe(recette);
   const deja = cacheRosaces.get(code); if (deja) return deja;
   const [w, h] = formatParDefaut(signature);
-  const { pattern, controle } = generer({ signature, graine, version: VERSION, w, h });
+  const { pattern, controle } = generer({ ...recette, w, h });
   const cx = (pattern.w - 1) / 2, cy = (pattern.h - 1) / 2, dmax = Math.hypot(cx, cy) || 1;
   const cases: CaseRosace[] = [];
   for (let y = 0; y < pattern.h; y++) for (let x = 0; x < pattern.w; x++) {

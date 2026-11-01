@@ -1,18 +1,23 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { GlobalDock, ContextDock } from "./SiteDocks";
 import TopDock from "./TopDock";
 import UneFlorale from "./UneFlorale";
 import TraineePoints from "./TraineePoints";
 import "../design/aime.css";
 import "./CrossStitchHome.css";
-import { CHAPITRES_EDITION, EditionEnLigne } from "./edition/Edition";
+import { chapitresEdition, EditionEnLigne, type FonctionStudio } from "./edition/Edition";
 
 /** L'édition (la nouvelle narration sous le héros) : en essai privé derrière ?edition, la page actuelle reste la même sans ce paramètre. */
 /* le site Point Zéro (broderie seule) : l’édition en chapitres est sa landing, sans paramètre */
+import { revelerSlide } from "./edition/Slides";
 import { SITE_BRODERIE } from "../lib/site";
+const HERO_SLIDES = [["accueil", "Nuancier DMC"], ["ed-rencontres", "Créer ma rosace"], ["ed-rosace", "Ma rosace"], ["ed-studio", "Dans le studio"]] as const;
 const estEdition = () => { if (SITE_BRODERIE) return true; try { return new URLSearchParams(window.location.search).has("edition"); } catch { return false; } };
 
 export type StitchEntry = "create" | "library" | "prepare" | "stitch";
 interface Props {
+  onStudio?: () => void;
+  onFeature?: (fonction: FonctionStudio) => void;
   projectName: string;
   onOpen: (entry: StitchEntry) => void;
   onImport: (file: File) => void;
@@ -30,6 +35,42 @@ function pick(onImport: (file: File) => void) {
     event.target.value = "";
     if (file) onImport(file);
   };
+}
+
+function Imports({ onImport, hero = false }: { onImport: (file: File) => void; hero?: boolean }) {
+  if (hero) return <div className="pzh-hero-import" role="group" aria-label="Importer dans Point Zéro">
+    <label className="pzh-btn pzh-btn-clair pzh-import-pill">
+      <span>Importer</span>
+      <input id="pzh-import-unique" type="file" accept=".pdf,application/pdf,image/png,image/jpeg,image/webp,.json,application/json,.oxs" aria-label="Importer un PDF, une photo ou un projet" onChange={pick(onImport)} />
+    </label>
+  </div>;
+  return <div>
+        <div className="pzh-import">
+          <div className="pzh-ways">
+            <label className="pzh-way">
+              <span><strong>Une photo</strong><span>Convertie en couleurs DMC, puis ajustée avant de broder.</span></span>
+              <span aria-hidden="true">→</span>
+              <input type="file" accept="image/png,image/jpeg,image/webp" aria-label="Importer une photo pour la convertir en patron" onChange={pick(onImport)}/>
+            </label>
+            <label className="pzh-way">
+              <span><strong>Le puzzle PDF</strong><span>Un patron en plusieurs pages : recomposez les pages sur le plateau magnétique, contrôlez les raccords et les symboles.</span></span>
+              <span aria-hidden="true">→</span>
+              <input type="file" accept=".pdf,application/pdf" aria-label="Importer un patron PDF multipage" onChange={pick(onImport)}/>
+            </label>
+            <label className="pzh-way">
+              <span><strong>Un projet existant</strong><span>Rouvrez une sauvegarde JSON ou un fichier OXS.</span></span>
+              <span aria-hidden="true">→</span>
+              <input type="file" accept=".json,.oxs,application/json" aria-label="Ouvrir un projet JSON ou OXS" onChange={pick(onImport)}/>
+            </label>
+          </div>
+          <label className="pzh-drop">
+            <span className="pzh-drop-plus" aria-hidden="true">+</span>
+            <strong>Choisir mon fichier</strong>
+            <span>PNG, JPEG, WebP, PDF, JSON ou OXS</span>
+            <input type="file" aria-label="Importer une image, un PDF ou un projet" accept="image/png,image/jpeg,image/webp,.pdf,.json,.oxs" onChange={pick(onImport)}/>
+          </label>
+        </div>
+  </div>;
 }
 
 const IMG = import.meta.env.BASE_URL + "images/landing/";
@@ -64,7 +105,6 @@ const TOUT: [string, string][] = [
 ];
 
 const SECTIONS = [["chapitres", "Le studio"], ["ch-point", "Le Point"], ["tout", "Tout le studio"], ["commencer", "Commencer"]] as const;
-type SectionId = typeof SECTIONS[number][0];
 
 /** Un chapitre : un grand fond peint (la toile de roses, floutée et teintée), une phrase, l'écran réel ; tout bouge un peu au défilement. */
 function ChapitreVue({ c, n, onVoir }: { c: Chapitre; n: number; onVoir: (id: string) => void }) {
@@ -117,23 +157,60 @@ function useParallaxe() {
 }
 
 /** Un écran d'accueil seulement : l'ouvrir ne crée aucun patron et ne réécrit aucun projet. */
-export default function CrossStitchHome({ projectName, onOpen, onImport, onShare, onOuvrages, onVisite }: Props) {
-  const [current, setCurrent] = useState<SectionId | null>(null);
+export default function CrossStitchHome({ projectName, onOpen, onImport, onShare, onOuvrages, onVisite, onStudio, onFeature }: Props) {
+  const [current, setCurrent] = useState<string | null>(null);
   const [chapitre, setChapitre] = useState<string | null>(null);
   const enter = () => (onOuvrages ? onOuvrages() : onOpen("library"));
   const visite = () => (onVisite ? onVisite() : onOpen("create"));
   const [edition] = useState(estEdition);
+  const [contexte, setContexte] = useState("accueil");
+  useEffect(() => {
+    if (!SITE_BRODERIE) return;
+    const ouvrir = (id: string) => {
+      const cible = document.getElementById(id);
+      const parent = cible?.closest<HTMLElement>("[data-hero-slide]")?.dataset.heroSlide;
+      const slide = HERO_SLIDES.find(([cle]) => cle === id || cle === parent)?.[0];
+      if (id === "ed-fils") setContexte("accueil");
+      else if (slide) setContexte(slide);
+    };
+    const evenement = (e: Event) => ouvrir((e as CustomEvent<string>).detail);
+    const ancre = () => ouvrir(window.location.hash.slice(1));
+    window.addEventListener("pointzero:ouvrir-slide", evenement);
+    window.addEventListener("hashchange", ancre); ancre();
+    return () => { window.removeEventListener("pointzero:ouvrir-slide", evenement); window.removeEventListener("hashchange", ancre); };
+  }, []);
+  const stage = useRef<HTMLDivElement>(null);
+  const dernierDefilement = useRef(0);
+  const toucher = useRef<{ x: number; y: number } | null>(null);
+  const indexSlide = HERO_SLIDES.findIndex(([id]) => id === contexte);
+  const choisirSlide = (id: string) => revelerSlide(id);
+  useEffect(() => {
+    if (!SITE_BRODERIE) return;
+    if (stage.current) stage.current.scrollTop = 0;
+    const frame = requestAnimationFrame(() => {
+      window.dispatchEvent(new Event("resize"));
+      // Ne pas laisser le focus dans une diapositive devenue invisible.
+      if (document.activeElement?.closest("[hidden]")) document.querySelector<HTMLButtonElement>('nav[aria-label="Actions de la page"] button')?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [contexte]);
+  const importer = () => document.getElementById("pzh-import-unique")?.click();
+  const sections = SITE_BRODERIE
+    ? [["ed-rencontres", "Composer"], ["ed-fils", "Nuancier"], ["ed-rosace", "Ma rosace"], ["ed-studio", "Outils"]] as const
+    : SECTIONS;
   useParallaxe();
 
   // Repère : la section visible est mise en évidence dans le dock du bas.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || SITE_BRODERIE) return;
     let frame = 0;
     const compute = () => {
       frame = 0;
       const line = window.innerHeight * 0.4;
-      let found: SectionId | null = null;
-      const marks: [string, SectionId | null][] = [["chapitres", "chapitres"], ["ch-point", "ch-point"], ["ch-nuancier", "chapitres"], ["tout", "tout"], ["csh-import", null], ["commencer", "commencer"]];
+      let found: string | null = null;
+      const marks: [string, string | null][] = SITE_BRODERIE
+        ? [["ed-rencontres", "ed-rencontres"], ["ed-fils", "ed-fils"], ["ed-rosace", "ed-rosace"]]
+        : [["chapitres", "chapitres"], ["ch-point", "ch-point"], ["ch-nuancier", "chapitres"], ["tout", "tout"], ["csh-import", null], ["commencer", "commencer"]];
       for (const [id, key] of marks) {
         const el = document.getElementById(id);
         if (el && el.getBoundingClientRect().top <= line) found = key;
@@ -158,56 +235,87 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
     if (!el) return;
     event.preventDefault();
     const reduce = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView?.({ behavior: reduce ? "auto" : "smooth", block: "start" });
-    window.history?.replaceState?.(null, "", window.location.pathname + window.location.search);
-    (el.querySelector<HTMLElement>("h2") ?? el).focus?.({ preventScroll: true });
+    const defiler = () => {
+      el.scrollIntoView?.({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      window.history?.replaceState?.(null, "", window.location.pathname + window.location.search);
+      (el.querySelector<HTMLElement>("h2") ?? el).focus?.({ preventScroll: true });
+    };
+    if (SITE_BRODERIE) { revelerSlide(id); }
+    else defiler();
   };
 
-  return <div className="cross-stitch-home">
+  return <div className="cross-stitch-home" data-site={SITE_BRODERIE ? "broderie" : undefined} data-disques={SITE_BRODERIE ? "centres" : undefined} data-contexte={SITE_BRODERIE ? contexte : undefined}>
     <a className="csh-skip" href="#csh-main">Aller au contenu</a>
     <TraineePoints />
 
-    <TopDock label="Navigation point de croix" idBloc="pzh-menu"
-      menu={[{ label: "Mes ouvrages", faire: () => onOpen("library") }, { label: "Ouvrir le studio", faire: () => onOpen("stitch") }, { label: "Faire la visite avec Le Point", faire: visite }]}
-      droite={<button type="button" className="pzs-tool pzs-noir pzh-entrer" onClick={enter} aria-label="Entrer dans Point Zéro"><span aria-hidden="true">+</span> Entrer</button>}>
-      <a className="pzs-tool" href="#chapitres" onClick={go("chapitres")}>Le studio</a>
-      <a className="pzs-tool" href={edition ? "#ed-origine" : "#ch-point"} onClick={go(edition ? "ed-origine" : "ch-point")}>Le Point</a>
-      <a className="pzs-tool" href="#tout" onClick={go("tout")}>Tout le studio</a>
-      <a className="pzs-tool" href="#csh-import" onClick={go("csh-import")}>Importer</a>
-    </TopDock>
+    {SITE_BRODERIE && <GlobalDock accueil={() => choisirSlide("accueil")} studio={onStudio ?? (() => onOpen("stitch"))} importer={importer} ouvrages={enter} visite={visite} />}
+    {!SITE_BRODERIE && <TopDock label="Navigation point de croix" idBloc="pzh-menu"
+      menu={[...(SITE_BRODERIE ? [{ label: "Importer", faire: importer }] : []), { label: "Mes ouvrages", faire: SITE_BRODERIE ? enter : () => onOpen("library") }, { label: "Ouvrir le studio", faire: () => onOpen("stitch") }, { label: "Faire la visite avec Le Point", faire: visite }]}
+      droite={<button type="button" className="pzs-tool pzs-noir pzh-entrer" onClick={enter} aria-label={SITE_BRODERIE ? "Mes ouvrages" : "Entrer dans Point Zéro"}>{SITE_BRODERIE ? "Mes ouvrages" : <><span aria-hidden="true">+</span> Entrer</>}</button>}>
+      {SITE_BRODERIE ? <button type="button" className="pzs-tool" onClick={() => onOpen("stitch")}>Ouvrir le studio</button> : <a className="pzs-tool" href="#chapitres" onClick={go("chapitres")}>Le studio</a>}
+      <a className="pzs-tool" href={SITE_BRODERIE ? "#ed-fils" : edition ? "#ed-origine" : "#ch-point"} onClick={go(SITE_BRODERIE ? "ed-fils" : edition ? "ed-origine" : "ch-point")}>{SITE_BRODERIE ? "Nuancier" : "Le Point"}</a>
+      {!SITE_BRODERIE && <a className="pzs-tool" href="#tout" onClick={go("tout")}>Tout le studio</a>}
+      {SITE_BRODERIE ? <button type="button" className="pzs-tool" onClick={importer}>Importer</button> : <a className="pzs-tool" href="#csh-import" onClick={go("csh-import")}>Importer</a>}
+    </TopDock>}
 
     {/* l'index des chapitres, à gauche, comme une table des matières qui suit la lecture */}
     {!edition && <nav className={"ix" + (chapitre ? " ix-on" : "")} aria-label="Chapitres">
       <p className="ix-tete">Point Zéro<span>Édition point de croix</span></p>
-      <ol>{CHAPITRES.map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)} aria-current={chapitre === c.id ? "true" : undefined}><span className="ix-nom">{c.titre}</span><span className="ix-points" aria-hidden="true" /><span className="ix-num">{c.num}</span></a></li>)}</ol>
+      <ol>{(SITE_BRODERIE ? chapitresEdition() : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)} aria-current={chapitre === c.id ? "true" : undefined}><span className="ix-nom">{c.titre}</span><span className="ix-points" aria-hidden="true" /><span className="ix-num">{c.num}</span></a></li>)}</ol>
     </nav>}
 
-    <main id="csh-main">
-      <UneFlorale titre="Point Zéro">
+    <div ref={stage} className={SITE_BRODERIE ? "pzh-hero-stage" : undefined} onWheel={e => {
+      if (!SITE_BRODERIE || Math.abs(e.deltaY) < 25 || (e.target as Element).closest('input, select, .ed-fiche, .pz-photo-fiche')) return;
+      const el = e.currentTarget, bas = el.scrollTop + el.clientHeight >= el.scrollHeight - 3;
+      if ((e.deltaY > 0 && bas) || (e.deltaY < 0 && el.scrollTop <= 0)) {
+        const maintenant = Date.now(); if (maintenant - dernierDefilement.current < 900) return;
+        const suivant = Math.max(0, Math.min(HERO_SLIDES.length - 1, indexSlide + (e.deltaY > 0 ? 1 : -1)));
+        if (suivant !== indexSlide) { dernierDefilement.current = maintenant; choisirSlide(HERO_SLIDES[suivant][0]); }
+      }
+    }}>
+    <main id="csh-main" aria-roledescription={SITE_BRODERIE ? "carrousel" : undefined} aria-label={SITE_BRODERIE ? "Découvrir Point Zéro" : undefined}
+      onTouchStart={e => {
+        toucher.current = null;
+        if (!SITE_BRODERIE || (e.target as Element).closest('button, input, textarea, select, a, label, canvas, [role="menu"], [role="slider"], [role="application"]')) return;
+        const t = e.touches[0]; toucher.current = { x: t.clientX, y: t.clientY };
+      }} onTouchEnd={e => {
+        const p = toucher.current; toucher.current = null; const t = e.changedTouches[0];
+        if (p && SITE_BRODERIE && Math.abs(t.clientY - p.y) > 70 && Math.abs(t.clientY - p.y) > Math.abs(t.clientX - p.x) * 1.5) {
+          choisirSlide(HERO_SLIDES[Math.max(0, Math.min(HERO_SLIDES.length - 1, indexSlide + (t.clientY < p.y ? 1 : -1)))][0]); return;
+        }
+        if (p && Math.abs(t.clientX - p.x) > 80 && Math.abs(t.clientX - p.x) > Math.abs(t.clientY - p.y) * 1.5) choisirSlide(HERO_SLIDES[Math.max(0, Math.min(HERO_SLIDES.length - 1, indexSlide + (t.clientX < p.x ? 1 : -1)))][0]);
+      }} onTouchCancel={() => { toucher.current = null; }}>
+      {!SITE_BRODERIE && <UneFlorale titre="Point Zéro">
         <p className="mm-sous">Du tableau à la dernière croix.</p>
-        <ol className="mm-sommaire">{(edition ? CHAPITRES_EDITION : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.titre}</a><span>{c.num}</span></li>)}</ol>
+        <ol className="mm-sommaire">{(edition ? chapitresEdition() : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.titre}</a><span>{c.num}</span></li>)}</ol>
         <div className="mm-actions">
           <button className="pzh-btn pzh-btn-clair" onClick={() => onOpen("create")}>Créer mon patron</button>
           <button className="pzh-btn mm-btn-point" onClick={visite}><span className="pzh-dot" aria-hidden="true" />Faire la visite avec Le Point</button>
         </div>
-      </UneFlorale>
+      </UneFlorale>}
 
       {edition
-        ? <div id="chapitres"><EditionEnLigne actions={{ ouvrir: e => onOpen(e), importer: onImport, visite }} /></div>
+        ? <div id="chapitres"><EditionEnLigne heroEntree={SITE_BRODERIE ? <div id="hero-import" className="pzh-hero-entree" tabIndex={-1}>
+          <h2 className="sr-only">Importer mon patron</h2><div className="mm-actions">
+          <Imports onImport={onImport} hero />
+          <button type="button" className="pzh-btn" onClick={onStudio ?? (() => onOpen("stitch"))} title={"Reprendre « " + projectName + " »"}>Reprendre</button>
+          <button type="button" className="pzh-btn" onClick={visite}><span className="pzh-dot" aria-hidden="true" />Faire la visite avec Le Point</button>
+          </div><p className="pzh-hero-note">PDF, photo, JSON ou OXS · Vos fichiers restent sur votre appareil.<br />Un calage du PDF peut être nécessaire.</p>
+        </div> : undefined} heroSlide={SITE_BRODERIE ? contexte : undefined} actions={{ fonction: onFeature, ouvrir: e => onOpen(e), importer: onImport, visite }} /></div>
         : <div id="chapitres" className="chapitres">
         {CHAPITRES.map((c, n) => <ChapitreVue key={c.id} c={c} n={n} onVoir={setChapitre} />)}
       </div>}
 
-      <section className="pzh-section tout" id="tout" aria-labelledby="tout-titre">
+      {!SITE_BRODERIE && <section className="pzh-section tout" id="tout" aria-labelledby="tout-titre">
         <div className="tout-tete">
           <p className="pzh-kicker">Tout ce que fait le studio</p>
           <h2 id="tout-titre" tabIndex={-1}>Tout le studio</h2>
         </div>
         <dl className="tout-liste">{TOUT.map(([nom, ligne]) => <div key={nom}><dt>{nom}</dt><dd>{ligne}</dd></div>)}</dl>
         <p className="pzh-fine">Bientôt : les SAL à plusieurs, et les commentaires posés sur la grille.</p>
-      </section>
+      </section>}
 
-      <section className="pzh-section" id="csh-import" aria-labelledby="csh-import-title">
+      {!SITE_BRODERIE && <section className="pzh-section" id="csh-import" aria-labelledby="csh-import-title">
         <div className="pzh-intro">
           <div>
             <p className="pzh-kicker">Partez de ce que vous aimez</p>
@@ -215,35 +323,11 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
           </div>
           <p>Une photo, un patron, un projet à retrouver.</p>
         </div>
-        <div className="pzh-import">
-          <div className="pzh-ways">
-            <label className="pzh-way">
-              <span><strong>Une photo</strong><span>Convertie en couleurs DMC, puis ajustée avant de broder.</span></span>
-              <span aria-hidden="true">→</span>
-              <input type="file" accept="image/png,image/jpeg,image/webp" aria-label="Importer une photo pour la convertir en patron" onChange={pick(onImport)}/>
-            </label>
-            <label className="pzh-way">
-              <span><strong>Le puzzle PDF</strong><span>Un patron en plusieurs pages : recomposez les pages sur le plateau magnétique, contrôlez les raccords et les symboles.</span></span>
-              <span aria-hidden="true">→</span>
-              <input type="file" accept=".pdf,application/pdf" aria-label="Importer un patron PDF multipage" onChange={pick(onImport)}/>
-            </label>
-            <label className="pzh-way">
-              <span><strong>Un projet existant</strong><span>Rouvrez une sauvegarde JSON ou un fichier OXS.</span></span>
-              <span aria-hidden="true">→</span>
-              <input type="file" accept=".json,.oxs,application/json" aria-label="Ouvrir un projet JSON ou OXS" onChange={pick(onImport)}/>
-            </label>
-          </div>
-          <label className="pzh-drop">
-            <span className="pzh-drop-plus" aria-hidden="true">+</span>
-            <strong>Choisir mon fichier</strong>
-            <span>PNG, JPEG, WebP, PDF, JSON ou OXS</span>
-            <input type="file" aria-label="Importer une image, un PDF ou un projet" accept="image/png,image/jpeg,image/webp,.pdf,.json,.oxs" onChange={pick(onImport)}/>
-          </label>
-        </div>
+        <Imports onImport={onImport} />
         <p className="pzh-fine">Vérifiez les détails et les couleurs avant de broder. L’import PDF dépend du document ; un calage peut être nécessaire. Respectez les droits de l’auteur.</p>
-      </section>
+      </section>}
 
-      <section className="pzh-section" id="commencer" aria-labelledby="pzh-resume-title">
+      {!SITE_BRODERIE && <section className="pzh-section" id="commencer" aria-labelledby="pzh-resume-title">
         <div className="pzh-resume">
           <div>
             <p className="pzh-kicker">Projet actif sur cet appareil</p>
@@ -260,10 +344,10 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
           <h3 id="csh-safety-title">Votre ouvrage mérite une vraie sauvegarde.</h3>
           <p>Le stockage du navigateur n’est pas une sauvegarde permanente : son effacement supprime les projets locaux. Dans le studio, téléchargez régulièrement votre projet JSON depuis Exporter. Les couleurs à l’écran sont indicatives et les quantités de fil estimées.</p>
         </aside>
-      </section>
+      </section>}
     </main>
 
-    <footer className="pzh-foot">
+    <footer className="pzh-foot" hidden={SITE_BRODERIE && contexte !== "ed-studio"}>
       <p className="pzh-foot-brand"><span className="pzh-x" aria-hidden="true">×</span> Point Zéro</p>
       <nav aria-label="Plan du site Point Zéro" className="pzh-foot-cols">
         <div>
@@ -278,26 +362,31 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
         <div>
           <h2>Découvrir</h2>
           <ul>
-            {CHAPITRES.map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.num}. {c.titre}</a></li>)}
-            <li><a href="#tout" onClick={go("tout")}>Tout le studio</a></li>
+            {(SITE_BRODERIE ? chapitresEdition() : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.num}. {c.titre}</a></li>)}
+            {!SITE_BRODERIE && <li><a href="#tout" onClick={go("tout")}>Tout le studio</a></li>}
           </ul>
         </div>
         <div>
           <h2>Aide</h2>
           <ul>
             <li><button type="button" onClick={visite}>Faire la visite avec Le Point</button></li>
-            <li><a href="#csh-import" onClick={go("csh-import")}>Importer un patron</a></li>
-            <li><a href="#commencer" onClick={go("commencer")}>Sauvegarder mon ouvrage</a></li>
+            <li>{SITE_BRODERIE ? <button type="button" onClick={importer}>Importer</button> : <a href="#csh-import" onClick={go("csh-import")}>Importer un patron</a>}</li>
+            <li>{SITE_BRODERIE ? <details className="pzh-sauvegarde-aide"><summary>Sauvegarde : ce qu’il faut savoir</summary><p>Vos ouvrages restent sur cet appareil. Effacer les données du navigateur peut les supprimer. Téléchargez régulièrement votre projet JSON depuis l’atelier pour le conserver.</p></details> : <a href="#commencer" onClick={go("commencer")}>Sauvegarder mon ouvrage</a>}</li>
           </ul>
         </div>
       </nav>
       <div className="pzh-dots" aria-hidden="true" />
       <p className="pzh-foot-line">Un studio AIME<sup>®</sup> · Point de croix</p>
     </footer>
+    </div>
 
-    <nav className="pzh-bottom" aria-label="Sections de la page">
+    {SITE_BRODERIE && <nav className="pz-disques-navigation" aria-label="Disques de découverte">{HERO_SLIDES.map(([id, titre], n) => <button key={id} type="button" onClick={() => choisirSlide(id)} aria-label={titre} aria-current={contexte === id ? "location" : undefined} title={titre}><span aria-hidden="true" className={"pz-mini-disque pz-mini-" + n} /></button>)}</nav>}
+    {SITE_BRODERIE && <ContextDock label="Actions de la page">
+      <button type="button" onClick={() => choisirSlide("ed-rencontres")}>Créer ma rosace</button>
+    </ContextDock>}
+    {!SITE_BRODERIE && <nav className="pzh-bottom" aria-label="Sections de la page">
       <button type="button" className="pzh-bottom-orb" aria-label="Le Point : faire la visite du studio" title="Le Point : faire la visite" onClick={visite} />
-      {SECTIONS.map(([id0, label]) => [edition && id0 === "ch-point" ? "ed-origine" : id0, label] as const).map(([id, label]) => <a key={id} href={"#" + id} onClick={go(id)} aria-current={current === id ? "location" : undefined} className={current === id ? "is-on" : undefined}>{label}</a>)}
-    </nav>
+      {sections.map(([id0, label]) => [edition && id0 === "ch-point" ? (SITE_BRODERIE ? "ed-rencontres" : "ed-origine") : id0, label] as const).map(([id, label]) => <a key={id} href={"#" + id} onClick={go(id)} aria-current={current === id ? "location" : undefined} className={current === id ? "is-on" : undefined}>{label}</a>)}
+    </nav>}
   </div>;
 }

@@ -4,12 +4,13 @@
  * Chaque réponse est un geste explicite ; le défilement ne choisit jamais. Chaque aperçu est calculé par le vrai moteur 5D,
  * à la taille du compositeur de l'atelier : la même recette redonne le même motif ici et dans l'atelier.
  */
+import { SITE_BRODERIE } from "../../lib/site";
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { CLES, DIMENSIONS, type Choix, type Signature } from "../../lib/motif5d/code";
 import { FLOSS } from "../../lib/dmc";
 import Sceau from "../Sceau";
 import type { ModePoint } from "../../lib/point/modes";
-import { codeDeCreation, complete, creation, dimensionDe, graineDe, nbChoix, OFFERTE_CLE, PROVISOIRE, reponseDe, signatureDe, useCreation } from "./creation";
+import { codeDeCreation, complete, creation, indiennesDe, dimensionDe, graineDe, nbChoix, OFFERTE_CLE, PROVISOIRE, reponseDe, signatureDe, useCreation } from "./creation";
 import { peindre, rosaceDe, type Rosace } from "./rosace";
 import { mouvementReduit } from "./defilement";
 import { ORIGINE, remplir, useContenus, type Contenus } from "./contenus";
@@ -41,9 +42,9 @@ export function Apercu({ r, className, fond, label }: { r: Rosace; className?: s
 /** Les quatre aperçus d'une dimension : la création du moment, avec chacune des quatre réponses. */
 function useQuatre(cle: keyof Signature) {
   const c = useCreation(), base = signatureDe(c), g = graineDe(c);
-  return useMemo(() => ([0, 1, 2, 3] as Choix[]).map(k => rosaceDe({ ...base, [cle]: k }, g)),
+  return useMemo(() => ([0, 1, 2, 3] as Choix[]).map(k => rosaceDe({ ...base, [cle]: k }, g, cle !== "palette" && indiennesDe(c))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cle, g, base.structure, base.trace, base.densite, base.echelle, base.palette]);
+    [cle, g, indiennesDe(c), base.structure, base.trace, base.densite, base.echelle, base.palette]);
 }
 
 /** Quatre réponses, comme un groupe de boutons radio : flèches pour passer, Entrée ou Espace pour choisir. */
@@ -105,7 +106,7 @@ export function useCommandesTrace(): ModePoint[] {
 
 /* ——— « Ma rosace » : l'aperçu permanent et discret, l'historique, la reprise ——— */
 export function MaRosace({ aller, guide }: { aller: (id: string) => void; guide: () => void }) {
-  const c = useCreation(), n = nbChoix(c), s = signatureDe(c), ro = useMemo(() => rosaceDe(s, graineDe(c)), [s.structure, s.trace, s.densite, s.echelle, s.palette, c.graine]); // eslint-disable-line react-hooks/exhaustive-deps
+  const c = useCreation(), n = nbChoix(c), s = signatureDe(c), ro = useMemo(() => rosaceDe(s, graineDe(c), indiennesDe(c)), [indiennesDe(c), s.structure, s.trace, s.densite, s.echelle, s.palette, c.graine]); // eslint-disable-line react-hooks/exhaustive-deps
   const [ouvert, setOuvert] = useState(false), [recommencer, setRecommencer] = useState(false);
   const bouton = useRef<HTMLButtonElement>(null), panneau = useRef<HTMLDivElement>(null), id = useId();
   const RENCONTRES = useRencontres();
@@ -125,7 +126,7 @@ export function MaRosace({ aller, guide }: { aller: (id: string) => void; guide:
         <ol>{c.historique.map((e, i) => <li key={i}><span>L’Orbe : {rencontreDe(RENCONTRES, e.cle).titre.toLowerCase()} ?</span><b>Vous : {reponseDe(e.cle, e.k)[0]}</b></li>)}</ol></details>}
       <div className="or-actions">
         {suivante ? <button type="button" className="or-btn" onClick={() => { fermer(); aller(suivante.id); }}>Reprendre : {suivante.titre.toLowerCase()}</button>
-          : <button type="button" className="or-btn" onClick={() => { fermer(); aller("ed-cadeau"); }}>Voir mon cadeau</button>}
+          : <button type="button" className="or-btn" onClick={() => { fermer(); aller(SITE_BRODERIE ? "ed-rosace" : "ed-cadeau"); }}>{SITE_BRODERIE ? "Voir ma rosace" : "Voir mon cadeau"}</button>}
         <button type="button" className="or-btn or-btn-clair" onClick={() => { fermer(); guide(); }}>Guide de l’atelier</button>
         {recommencer ? <button type="button" className="or-btn or-btn-clair" onClick={() => { creation.oublier(); fermer(); }}>Oui, tout effacer</button>
           : <button type="button" className="or-btn or-btn-clair" onClick={() => setRecommencer(true)}>Recommencer</button>}
@@ -144,7 +145,7 @@ export function MaRosace({ aller, guide }: { aller: (id: string) => void; guide:
 /* ——— Le cadeau : la rosace achevée, offerte, ouverte dans l'atelier ——— */
 export function Cadeau({ aller, appareils }: { aller: (id: string) => void; appareils?: ReactNode }) {
   const c = useCreation(), s = signatureDe(c), n = nbChoix(c), fini = complete(c), code = codeDeCreation(c);
-  const ro = useMemo(() => rosaceDe(s, graineDe(c)), [s.structure, s.trace, s.densite, s.echelle, s.palette, c.graine]); // eslint-disable-line react-hooks/exhaustive-deps
+  const ro = useMemo(() => rosaceDe(s, graineDe(c), indiennesDe(c)), [indiennesDe(c), s.structure, s.trace, s.densite, s.echelle, s.palette, c.graine]); // eslint-disable-line react-hooks/exhaustive-deps
   const grand = useRef<HTMLCanvasElement>(null);
   const RENCONTRES = useRencontres(), T = useContenus().cadeau;
   const [telecharge, setTelecharge] = useState("");

@@ -4,12 +4,13 @@
  * Deux étoffes sont de vraies pièces de musée (The Met, domaine public) ; les autres images sont des reconstitutions générées,
  * annoncées comme telles. Les faits sont sourcés en bas de la séquence.
  */
-import { useState, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { BookOpen, Compass, FileText, FileUp, Folder, Image as ImageIcon, Palette, PenLine, Search, Sparkles, FileJson } from "lucide-react";
 import type { ModePoint } from "../../lib/point/modes";
 import { FLOSS } from "../../lib/dmc";
 import Brode, { type Broderie } from "./Brode";
 import { adresse, useContenus } from "./contenus";
+import Slides from "./Slides";
 import { Riche, TitreEt } from "./Riche";
 
 export const CHAPITRES_HISTOIRE = [
@@ -41,7 +42,7 @@ function Fil({ idx, nom, texte }: { idx: number | null; nom: string; texte: Reac
   </div>;
 }
 
-export default function Histoire({ actions, Disque, entre = {}, objet }: { entre?: Record<string, ReactNode>; objet?: ReactNode; actions: ActionsHistoire; Disque: (p: { contexte: string; modes: ModePoint[]; etiquette: string; max?: number }) => ReactNode }) {
+export default function Histoire({ actions, Disque, entre = {}, objet, slides = false }: { slides?: boolean; entre?: Record<string, ReactNode>; objet?: ReactNode; actions: ActionsHistoire; Disque: (p: { contexte: string; modes: ModePoint[]; etiquette: string; max?: number }) => ReactNode }) {
   const C = useContenus().histoire;
   const [loupe, setLoupe] = useState(0);
   const [rouge, setRouge] = useState<number | null>(null), [bleu, setBleu] = useState<number | null>(null);
@@ -67,8 +68,8 @@ export default function Histoire({ actions, Disque, entre = {}, objet }: { entre
     { id: "guide", nom: "Guide", icone: <Compass aria-hidden="true" />, aide: "la visite de l’atelier avec le Point", groupe: "socle", ouvrir: actions.visite },
   ];
 
-  return <div className="hi">
-    <section id="hi-origine" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-origine-titre">
+  const tableaux = [
+    { ...CHAPITRES_HISTOIRE[0], contenu: (<section id="hi-origine" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-origine-titre">
       <div className="ed-plateau hi-plateau">
         <Brode src={adresse(C.origine.media.src)} cols={84} maxFils={16} loupeDemandee={loupe} alt={C.origine.media.alt} legende={C.origine.media.legende} cadrage={C.origine.media.cadrage} />
         <div className="hi-texte">
@@ -80,10 +81,8 @@ export default function Histoire({ actions, Disque, entre = {}, objet }: { entre
         </div>
         <div className="hi-disque"><Disque contexte="edition-histoire" modes={modes} etiquette="Le Point de Point Zéro : l’histoire, la loupe, le nuancier, l’atelier" max={1} /></div>
       </div>
-    </section>
-    {entre["hi-origine"]}
-
-    <section id="hi-indiennes" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-indiennes-titre">
+    </section>) },
+    { ...CHAPITRES_HISTOIRE[1], contenu: (<section id="hi-indiennes" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-indiennes-titre">
       <div className="ed-plateau hi-plateau hi-deux">
         <div className="hi-moitie hi-moitie-rouge">
           <Brode src={adresse(C.indiennes.rouge.media.src)} cols={84} maxFils={18} surFils={b => setRouge(dominant(b, "rouge"))} alt={C.indiennes.rouge.media.alt} legende={C.indiennes.rouge.media.legende} cadrage={C.indiennes.rouge.media.cadrage} />
@@ -100,10 +99,8 @@ export default function Histoire({ actions, Disque, entre = {}, objet }: { entre
           <p className="hi-corps"><Riche t={C.indiennes.corps} /></p>
         </div>
       </div>
-    </section>
-    {entre["hi-indiennes"]}
-
-    <section id="hi-mulhouse" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-mulhouse-titre">
+    </section>) },
+    { ...CHAPITRES_HISTOIRE[2], contenu: (<section id="hi-mulhouse" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-mulhouse-titre">
       <div className="ed-plateau hi-plateau">
         <Brode src={adresse(C.mulhouse.media.src)} cols={150} maxFils={16} alt={C.mulhouse.media.alt} legende={C.mulhouse.media.legende} cadrage={C.mulhouse.media.cadrage} />
         <div className="hi-texte">
@@ -114,10 +111,8 @@ export default function Histoire({ actions, Disque, entre = {}, objet }: { entre
         </div>
         <p className="hi-aparte" aria-hidden="true">{C.mulhouse.aparte[0]}<br />{C.mulhouse.aparte[1]}</p>
       </div>
-    </section>
-    {entre["hi-mulhouse"]}
-
-    <section id="hi-brodeuses" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-brodeuses-titre">
+    </section>) },
+    { ...CHAPITRES_HISTOIRE[3], contenu: (<section id="hi-brodeuses" className="ed-scene hi-scene hi-sombre" aria-labelledby="hi-brodeuses-titre">
       <div className="ed-plateau hi-plateau">
         <Brode src={adresse(C.brodeuses.media.src)} cols={120} maxFils={18} alt={C.brodeuses.media.alt} legende={C.brodeuses.media.legende} cadrage={C.brodeuses.media.cadrage} />
         <div className="hi-texte">
@@ -128,8 +123,10 @@ export default function Histoire({ actions, Disque, entre = {}, objet }: { entre
         </div>
         {objet}
       </div>
-    </section>
-    {entre["hi-brodeuses"]}
+    </section>) }
+  ];
+  return <div className="hi">
+    {slides ? <Slides id="ed-histoire" titre="L’histoire du fil" slides={tableaux} /> : tableaux.map(t => <Fragment key={t.id}>{t.contenu}{entre[t.id]}</Fragment>)}
     <details className="hi-sources">
       <summary>{C.sources.titre}</summary>
       <ul>

@@ -4,7 +4,9 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import Edition from "../components/edition/Edition";
+const site = vi.hoisted(() => ({ broderie: false }));
+vi.mock("../lib/site", () => ({ get SITE_BRODERIE() { return site.broderie; }, PROTOTYPES: false, GALERIE: false }));
+import Edition, { chapitresEdition } from "../components/edition/Edition";
 import { creation, codeDeCreation, PROVISOIRE, signatureDe } from "../components/edition/creation";
 import { progression, etapeDe } from "../components/edition/defilement";
 import { rosaceDe, visibilite } from "../components/edition/rosace";
@@ -45,7 +47,7 @@ beforeAll(() => {
 });
 afterAll(() => { globalThis.matchMedia = saved.matchMedia; HTMLCanvasElement.prototype.getContext = saved.getContext; });
 let root: Root | null = null, hote: HTMLElement | null = null;
-afterEach(async () => { await act(async () => root?.unmount()); root = null; hote?.remove(); hote = null; creation.oublier(); });
+afterEach(async () => { await act(async () => root?.unmount()); root = null; hote?.remove(); hote = null; creation.oublier(); site.broderie = false; });
 const cliquer = async (el: Element | null | undefined) => { expect(el).toBeTruthy(); await act(async () => { el!.dispatchEvent(new MouseEvent("click", { bubbles: true })); }); };
 const dans = (scene: string, id: string) => document.querySelector<HTMLButtonElement>(`#${scene} [data-mode="${id}"]`);
 
@@ -112,4 +114,71 @@ describe("Trois scènes, le même Point, de vraies actions", () => {
     expect(document.querySelector("#ed-cadeau .cd-recette code")!.textContent).toBe(codeDeCreation(creation.lire()));
     expect(JSON.parse(localStorage.getItem("pointzero:creation-visite:v1")!).choix.structure).toBe(3);
   });
+});
+
+
+describe("Accueil autonome : onboarding 5D", () => {
+  it("cinq questions dans le disque, aperçu personnel et réponses conservées", async () => {
+    site.broderie = true;
+    hote = document.createElement("div"); document.body.appendChild(hote); root = createRoot(hote);
+    await act(async () => { root!.render(<Edition actions={{ ouvrir: vi.fn(), importer: vi.fn(), visite: vi.fn() }} />); });
+    const section = document.querySelector("#ed-rencontres")!;
+    expect(section.querySelector(".ed-nuancier")).toBeTruthy();
+    expect(section.querySelector(".ed-fiche-personnelle canvas")).toBeTruthy();
+    expect(section.textContent).toContain("facultatif");
+    expect(creation.lire().choix).toEqual({});
+    await cliquer(section.querySelector('[data-mode="reponse-structure-1"]'));
+    expect(section.querySelector(".ed-fiche")!.textContent).toContain("1 choix sur 5");
+    await act(async () => { window.dispatchEvent(new CustomEvent("pointzero:rencontres-choisir", { detail: 1 })); });
+    expect(section.querySelector('[data-mode="reponse-trace-0"]')).toBeTruthy();
+    await act(async () => { window.dispatchEvent(new CustomEvent("pointzero:rencontres-choisir", { detail: 0 })); });
+    expect(section.querySelector('[data-mode="reponse-structure-1"]')!.getAttribute("aria-label")).toContain("actif");
+    for (let n = 1; n < 5; n++) {
+      await act(async () => { window.dispatchEvent(new CustomEvent("pointzero:rencontres-choisir", { detail: n })); });
+      await cliquer(section.querySelector('[data-mode^="reponse-"]'));
+    }
+    expect(section.querySelector(".ed-fiche")!.textContent).toContain("5 choix sur 5");
+    expect(section.querySelector(".ed-cta")!.textContent).toBe("Voir ma rosace");
+    expect(document.querySelector("#ed-cadeau")).toBeNull();
+    expect(document.querySelector(".hi")).toBeNull();
+    expect(chapitresEdition().some(c => c.id === "ed-studio")).toBe(true);
+  });
+});
+
+it("présente Ma rosace comme le nuancier : texte, disque et fiche réactive", async () => {
+  site.broderie = true;
+  hote = document.createElement("div"); document.body.appendChild(hote); root = createRoot(hote);
+  await act(async () => { root!.render(<Edition actions={{ ouvrir: vi.fn(), importer: vi.fn(), visite: vi.fn() }} />); });
+  const section = document.querySelector("#ed-rosace")!;
+  expect(section.classList.contains("ed-fils")).toBe(true);
+  expect(section.querySelector(".ed-plateau > .ed-texte")).toBeTruthy();
+  expect(section.querySelector(".ed-plateau > .ed-scene-disque.ed-nuancier")).toBeTruthy();
+  const fiche = section.querySelector(".ed-plateau > .ed-fiche")!;
+  expect(fiche.querySelector("canvas")).toBeTruthy();
+  expect(fiche.textContent).toContain("0 choix sur 5");
+  const code = () => fiche.querySelector(".ed-recette code")!.textContent;
+  const avant = code();
+  await cliquer(dans("ed-rosace", "structure"));
+  await cliquer(dans("ed-rosace", "structure-1"));
+  expect(fiche.textContent).toContain("1 choix sur 5");
+  expect(code()).not.toBe(avant);
+  expect(fiche.textContent).toContain("Anneaux");
+  expect(fiche.querySelector(".ed-cta")!.textContent).toBe("Ouvrir dans l’atelier");
+});
+
+
+it("le disque des usages ouvre les espaces existants sans créer d’ouvrage", async () => {
+  site.broderie = true;
+  const fonction = vi.fn(), ouvrir = vi.fn();
+  hote = document.createElement("div"); document.body.appendChild(hote); root = createRoot(hote);
+  await act(async () => { root!.render(<Edition actions={{ ouvrir, fonction, importer: vi.fn(), visite: vi.fn() }} />); });
+  const section = document.querySelector("#ed-studio")!;
+  for (const id of ["dessiner", "broder", "fils", "ouvrages", "exporter", "partager", "camera"]) {
+    await cliquer(section.querySelector(`[data-mode="usage-${id}"]`));
+    await cliquer(section.querySelector(".ed-cta"));
+    expect(fonction).toHaveBeenLastCalledWith(id);
+  }
+  await cliquer(section.querySelector('[data-mode="usage-pdf"]'));
+  expect(section.querySelector(".ed-fiche")!.textContent).toContain("corrections");
+  expect(ouvrir).not.toHaveBeenCalled();
 });

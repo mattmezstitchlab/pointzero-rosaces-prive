@@ -5,6 +5,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { FLOSS } from "../lib/dmc";
 import { codeDe, lireCode, lireRecetteOuvrage, type Signature } from "../lib/motif5d/code";
 import { cosTour, fractionOctant, hasard, melanger } from "../lib/motif5d/maths";
 import { empreinteCroix, formatParDefaut, generer, regenerer, retoucheRecette } from "../lib/motif5d/generer";
@@ -177,4 +178,34 @@ describe("Le Cadre et une rosace", () => {
     expect(p.recette.empreinte).toBe(generer({ ...recetteDe("5D-13133.g59.v0.1"), w: 67, h: 67 }).pattern.recette!.empreinte);
     act(() => root.unmount()); host.remove();
   });
+});
+
+
+it("la palette indiennes voyage dans le code, JSON et Cadre sans changer les anciennes recettes", () => {
+  const code = "5D-13222.g59.v0.1.indiennes";
+  const r = lireCode(code)!;
+  expect(r.indiennes).toBe(true);
+  expect(codeDe(r)).toBe(code);
+  const { pattern } = generer({ ...r, w: 61, h: 61 });
+  expect(pattern.palette.map(i => FLOSS[i].code).sort()).toEqual(["321", "823"]);
+  expect(pattern.recette!.code).toBe(code);
+  const relu = fromObject(toObject(pattern))!;
+  expect(relu.recette!.code).toBe(code);
+  const agrandi = regenerer(relu, 81, 81)!;
+  expect(agrandi.palette.map(i => FLOSS[i].code).sort()).toEqual(["321", "823"]);
+  expect(agrandi.recette!.code).toBe(code);
+});
+
+
+it("le compositeur conserve les deux fils à l’ouverture depuis le héros", async () => {
+  const host = document.createElement("div"); document.body.append(host);
+  const root = createRoot(host), onBroder = vi.fn();
+  const code = "5D-13222.g59.v0.1.indiennes";
+  await act(async () => root.render(<ComposerRosace depart={code} lecture onBroder={onBroder} onFermer={vi.fn()} />));
+  await act(async () => host.querySelector<HTMLButtonElement>(".cr-broder")!.click());
+  const [p, transmis] = onBroder.mock.calls[0];
+  expect(transmis).toBe(code);
+  expect(p.palette.map((i: number) => FLOSS[i].code).sort()).toEqual(["321", "823"]);
+  expect(p.recette.code).toBe(code);
+  await act(async () => root.unmount()); host.remove();
 });

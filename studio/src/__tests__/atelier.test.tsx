@@ -6,6 +6,8 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+const site = vi.hoisted(() => ({ broderie: false }));
+vi.mock("../lib/site", () => ({ get SITE_BRODERIE() { return site.broderie; }, GALERIE: false, PROTOTYPES: false }));
 import App from "../App";
 import { createPattern, ensurePalette } from "../lib/pattern";
 import { flossIndex } from "../lib/dmc";
@@ -69,6 +71,7 @@ async function brandMenu(item: string) {
 const dialog = (name: string) => container?.querySelector(`[role="dialog"][aria-label="${name}"]`);
 const button = (label: string) => container?.querySelector(`button[aria-label="${label}"]`);
 beforeEach(() => {
+  site.broderie = false;
   localStorage.clear();
   localStorage.setItem("pointzero:workspace","embroidery");
   localStorage.setItem("pointzero:visite-docks:v1","vue"); // les visites du Point ont leurs propres tests (orbeGuide.test.tsx)
@@ -81,6 +84,8 @@ afterEach(async () => {
   container?.remove();
   container = null;
   localStorage.clear();
+  site.broderie = false;
+  vi.unstubAllGlobals();
 });
 describe("POINTZERO : atelier unique sans assistant", () => {
   it("range le studio entre deux docks, la grille en plein écran", async () => {
@@ -394,4 +399,48 @@ describe("POINTZERO : atelier unique sans assistant", () => {
     expect(window.location.hash).toBe("");
     expect(nav()).toBeTruthy();
   });
+});
+
+
+it("garde les deux docks autonomes pendant l’utilisation des disques", async () => {
+  site.broderie = true;
+  vi.stubGlobal("innerWidth", 390);
+  // D'anciens réglages expérimentaux ne doivent plus supprimer les docks.
+  localStorage.setItem("pointzero:essai:navigation-0", "1");
+  await mount();
+  const global = () => container!.querySelector('nav[aria-label="Navigation Point Zéro"]');
+  const contexte = () => container!.querySelector('nav[aria-label="Actions de l’atelier"]');
+  expect(global()).toBeTruthy(); expect(contexte()).toBeTruthy();
+  const commande = (nom: string) => [...contexte()!.querySelectorAll("button")].find(b => b.textContent === nom);
+  expect([...contexte()!.querySelectorAll("button")].map(b => b.textContent)).toEqual(["Dessiner", "Broder", "Fils", "Affichage", "Loupe"]);
+  await click(commande("Broder"));
+  expect(container!.querySelector('.pzt [data-mode="b-mark"]')).toBeTruthy();
+  expect(container!.querySelector(".pzt-replie")).toBeNull();
+  expect(inspector()?.hasAttribute("hidden")).toBe(true);
+  expect(global()).toBeTruthy(); expect(contexte()).toBeTruthy();
+  await click(container!.querySelector('.pzt [data-mode="b-mark"]'));
+  expect(container!.querySelector('.pzt [data-mode="b-mark"]')?.getAttribute("aria-label")).toContain("actif");
+  await click(commande("Fils"));
+  expect(container!.querySelector('.pzt [data-mode="famille-rouges"]')).toBeTruthy();
+  await click(commande("Affichage"));
+  expect(container!.querySelector('.pzt [data-mode="symboles"]')).toBeTruthy();
+  await click(commande("Loupe")); expect(container!.querySelector(".pzs-loupe-dock")).toBeTruthy();
+  await click([...global()!.querySelectorAll("button")].find(b => b.textContent === "Studio"));
+  expect(container!.querySelector(".pzt")).toBeNull();
+  expect(contexte()).toBeTruthy(); expect(global()).toBeTruthy();
+});
+
+
+it("ouvre les vrais espaces depuis la découverte des fonctions", async () => {
+  site.broderie = true;
+  await mount(true);
+  await click(container!.querySelector('#ed-studio [data-mode="usage-broder"]'));
+  await click(container!.querySelector('#ed-studio .ed-cta'));
+  expect(container!.querySelector('.pzt [data-mode="b-mark"]')).toBeTruthy();
+  expect(container!.querySelector('nav[aria-label="Actions de l’atelier"]')).toBeTruthy();
+  await click([...container!.querySelectorAll<HTMLButtonElement>('.pz-site-docks button')].find(b => b.textContent === "Point Zéro"));
+  await click(container!.querySelector('#ed-studio [data-mode="usage-exporter"]'));
+  await click(container!.querySelector('#ed-studio .ed-cta'));
+  expect(container!.textContent).toContain("Exporter le patron");
+  expect(container!.querySelector('#ed-studio')).toBeNull();
 });

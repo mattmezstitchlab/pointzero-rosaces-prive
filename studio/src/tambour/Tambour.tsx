@@ -7,6 +7,8 @@
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Camera } from "lucide-react";
+import { GlobalDock, ContextDock } from "../components/SiteDocks";
+import { SITE_BRODERIE } from "../lib/site";
 import PointDuBloc from "../components/point/PointDuBloc";
 import { ouvrirConfort } from "../components/point/Point";
 import "../components/blocs/tambour";
@@ -222,10 +224,11 @@ export default function Tambour() {
 
   return <div className="tb" data-aime={theme}>
     <a href="#tb-confort" className="lp-evitement" onClick={e => { e.preventDefault(); ouvrirConfort(); }}>Aller au Confort</a>
-    <header className="tb-tete">
+    {SITE_BRODERIE && <GlobalDock accueil={() => window.location.assign(BASE)} studio={() => window.location.assign(BASE + "atelier")} importer={() => window.location.assign(BASE + "#hero-import")} ouvrages={() => window.location.assign(BASE + "atelier?bibliotheque=1")} />}
+    {!SITE_BRODERIE && <header className="tb-tete">
       <a className="tb-marque" href={BASE + "atelier"}><span className="aime-point" aria-hidden="true" />Point Zéro</a>
       <a className="tb-retour" href={BASE + "atelier"}>L’atelier</a>
-    </header>
+    </header>}
     <main className="tb-scene">
       <div className="tb-titre">
         {mode === "superposer" ? <><p className="tb-sur">Essai privé · Superposer un patron</p>
@@ -255,6 +258,12 @@ export default function Tambour() {
           centre={{ nom: etat === "active" ? "Fermer la caméra" : "Caméra", aide: "le centre du Point ouvre ou ferme la caméra", actif: etat === "active", icone: <Camera aria-hidden="true" />, ouvrir: basculerCamera }} />
       : <PointDuBloc<ContexteTambour> key="creer" type="tambour" nom="Tambour" selecteur=".tb-tambour" obstacles=".tb-etat, .tb-tete, .tb-titre" contexte={contexte}
           centre={{ nom: etat === "active" ? "Fermer la caméra" : "Caméra", aide: "le centre du Point ouvre ou ferme la caméra", actif: etat === "active", icone: <Camera aria-hidden="true" />, ouvrir: basculerCamera }} />}
+    {SITE_BRODERIE && <ContextDock label="Actions de la caméra">
+      <button type="button" aria-pressed={etat === "active"} onClick={basculerCamera}>Caméra</button>
+      <button type="button" aria-pressed={mode === "superposer"} onClick={() => changerMode("superposer")}>Sur ma toile</button>
+      <button type="button" aria-pressed={figee !== null} disabled={!aSource} onClick={figer}>{figee ? "Reprendre" : "Figer"}</button>
+      <a href={BASE + "atelier"}>Atelier</a>
+    </ContextDock>}
     <span className="sr-only" role="status" aria-live="polite">{annonce}</span>
   </div>;
 }
