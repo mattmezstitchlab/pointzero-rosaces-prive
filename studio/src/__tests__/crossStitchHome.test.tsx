@@ -151,3 +151,27 @@ it("retire Tout le studio et ses ancres uniquement sur le site Broderie", () => 
   expect(view.querySelector('[href="#ed-rencontres"]')).toBeTruthy();
   expect(view.querySelector('[aria-label="Importer un patron PDF multipage"]')).toBeTruthy();
 });
+
+
+it("place les quatre imports dans le héros sans section ni lien Cadeau", () => {
+  site.broderie = true;
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const { view, onImport } = mount();
+  expect(view.querySelector("#csh-import")).toBeNull();
+  expect(view.querySelector('[href="#csh-import"]')).toBeNull();
+  expect(view.querySelector("#ed-cadeau")).toBeNull();
+  expect(view.querySelector('[href="#ed-cadeau"]')).toBeNull();
+  expect(view.textContent).not.toMatch(/cadeau|offerte/i);
+  const imports = view.querySelectorAll<HTMLInputElement>(".ru #hero-import input[type=file]");
+  expect(imports).toHaveLength(4);
+  expect(view.querySelectorAll('input[type=file][aria-label]')).toHaveLength(4);
+  expect(view.querySelector(".ru")!.textContent).toContain("Importer mon patron PDF");
+  const fichiers = [new File(["image"], "photo.png", { type: "image/png" }), new File(["%PDF"], "patron.pdf", { type: "application/pdf" }), new File(["{}"], "ouvrage.json", { type: "application/json" }), new File(["<chart/>"], "ouvrage.oxs")];
+  imports.forEach((input, n) => {
+    Object.defineProperty(input, "files", { configurable: true, value: [fichiers[n]] });
+    act(() => input.dispatchEvent(new Event("change", { bubbles: true })));
+    expect(onImport).toHaveBeenNthCalledWith(n + 1, fichiers[n]);
+    expect(input.value).toBe("");
+  });
+  expect(view.querySelector('[href="#hero-import"]')).toBeTruthy();
+});

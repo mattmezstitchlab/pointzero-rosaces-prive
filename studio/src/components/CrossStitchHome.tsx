@@ -4,7 +4,7 @@ import UneFlorale from "./UneFlorale";
 import TraineePoints from "./TraineePoints";
 import "../design/aime.css";
 import "./CrossStitchHome.css";
-import { CHAPITRES_EDITION, EditionEnLigne } from "./edition/Edition";
+import { chapitresEdition, EditionEnLigne } from "./edition/Edition";
 
 /** L'édition (la nouvelle narration sous le héros) : en essai privé derrière ?edition, la page actuelle reste la même sans ce paramètre. */
 /* le site Point Zéro (broderie seule) : l’édition en chapitres est sa landing, sans paramètre */
@@ -31,6 +31,36 @@ function pick(onImport: (file: File) => void) {
     event.target.value = "";
     if (file) onImport(file);
   };
+}
+
+function Imports({ onImport, hero = false }: { onImport: (file: File) => void; hero?: boolean }) {
+  return <div className={hero ? "pzh-hero-import" : undefined}>
+        <div className="pzh-import">
+          <div className="pzh-ways">
+            <label className="pzh-way">
+              <span><strong>Une photo</strong><span>Convertie en couleurs DMC, puis ajustée avant de broder.</span></span>
+              <span aria-hidden="true">→</span>
+              <input type="file" accept="image/png,image/jpeg,image/webp" aria-label="Importer une photo pour la convertir en patron" onChange={pick(onImport)}/>
+            </label>
+            <label className="pzh-way">
+              <span><strong>{hero ? "Importer mon patron PDF" : "Le puzzle PDF"}</strong><span>Un patron en plusieurs pages : recomposez les pages sur le plateau magnétique, contrôlez les raccords et les symboles.</span></span>
+              <span aria-hidden="true">→</span>
+              <input type="file" accept=".pdf,application/pdf" aria-label="Importer un patron PDF multipage" onChange={pick(onImport)}/>
+            </label>
+            <label className="pzh-way">
+              <span><strong>Un projet existant</strong><span>Rouvrez une sauvegarde JSON ou un fichier OXS.</span></span>
+              <span aria-hidden="true">→</span>
+              <input type="file" accept=".json,.oxs,application/json" aria-label="Ouvrir un projet JSON ou OXS" onChange={pick(onImport)}/>
+            </label>
+          </div>
+          <label className="pzh-drop">
+            <span className="pzh-drop-plus" aria-hidden="true">+</span>
+            <strong>Choisir mon fichier</strong>
+            <span>PNG, JPEG, WebP, PDF, JSON ou OXS</span>
+            <input type="file" aria-label="Importer une image, un PDF ou un projet" accept="image/png,image/jpeg,image/webp,.pdf,.json,.oxs" onChange={pick(onImport)}/>
+          </label>
+        </div>
+  </div>;
 }
 
 const IMG = import.meta.env.BASE_URL + "images/landing/";
@@ -178,19 +208,24 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
       <a className="pzs-tool" href="#chapitres" onClick={go("chapitres")}>Le studio</a>
       <a className="pzs-tool" href={SITE_BRODERIE ? "#ed-rencontres" : edition ? "#ed-origine" : "#ch-point"} onClick={go(SITE_BRODERIE ? "ed-rencontres" : edition ? "ed-origine" : "ch-point")}>Le Point</a>
       {!SITE_BRODERIE && <a className="pzs-tool" href="#tout" onClick={go("tout")}>Tout le studio</a>}
-      <a className="pzs-tool" href="#csh-import" onClick={go("csh-import")}>Importer</a>
+      <a className="pzs-tool" href={SITE_BRODERIE ? "#hero-import" : "#csh-import"} onClick={go(SITE_BRODERIE ? "hero-import" : "csh-import")}>Importer</a>
     </TopDock>
 
     {/* l'index des chapitres, à gauche, comme une table des matières qui suit la lecture */}
     {!edition && <nav className={"ix" + (chapitre ? " ix-on" : "")} aria-label="Chapitres">
       <p className="ix-tete">Point Zéro<span>Édition point de croix</span></p>
-      <ol>{(SITE_BRODERIE ? CHAPITRES_EDITION : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)} aria-current={chapitre === c.id ? "true" : undefined}><span className="ix-nom">{c.titre}</span><span className="ix-points" aria-hidden="true" /><span className="ix-num">{c.num}</span></a></li>)}</ol>
+      <ol>{(SITE_BRODERIE ? chapitresEdition() : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)} aria-current={chapitre === c.id ? "true" : undefined}><span className="ix-nom">{c.titre}</span><span className="ix-points" aria-hidden="true" /><span className="ix-num">{c.num}</span></a></li>)}</ol>
     </nav>}
 
     <main id="csh-main">
       <UneFlorale titre="Point Zéro">
         <p className="mm-sous">Du tableau à la dernière croix.</p>
-        <ol className="mm-sommaire">{(edition ? CHAPITRES_EDITION : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.titre}</a><span>{c.num}</span></li>)}</ol>
+        {SITE_BRODERIE && <div id="hero-import" className="pzh-hero-entree" tabIndex={-1}>
+          <h2 className="sr-only">Importer mon patron</h2>
+          <Imports onImport={onImport} hero />
+          <p className="pzh-hero-note">Le PDF reste sur votre appareil. Selon le document, un calage peut être nécessaire.</p>
+        </div>}
+        <ol className="mm-sommaire">{(edition ? chapitresEdition() : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.titre}</a><span>{c.num}</span></li>)}</ol>
         <div className="mm-actions">
           <button className="pzh-btn pzh-btn-clair" onClick={() => onOpen("create")}>Créer mon patron</button>
           <button className="pzh-btn mm-btn-point" onClick={visite}><span className="pzh-dot" aria-hidden="true" />Faire la visite avec Le Point</button>
@@ -212,7 +247,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
         <p className="pzh-fine">Bientôt : les SAL à plusieurs, et les commentaires posés sur la grille.</p>
       </section>}
 
-      <section className="pzh-section" id="csh-import" aria-labelledby="csh-import-title">
+      {!SITE_BRODERIE && <section className="pzh-section" id="csh-import" aria-labelledby="csh-import-title">
         <div className="pzh-intro">
           <div>
             <p className="pzh-kicker">Partez de ce que vous aimez</p>
@@ -220,33 +255,9 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
           </div>
           <p>Une photo, un patron, un projet à retrouver.</p>
         </div>
-        <div className="pzh-import">
-          <div className="pzh-ways">
-            <label className="pzh-way">
-              <span><strong>Une photo</strong><span>Convertie en couleurs DMC, puis ajustée avant de broder.</span></span>
-              <span aria-hidden="true">→</span>
-              <input type="file" accept="image/png,image/jpeg,image/webp" aria-label="Importer une photo pour la convertir en patron" onChange={pick(onImport)}/>
-            </label>
-            <label className="pzh-way">
-              <span><strong>Le puzzle PDF</strong><span>Un patron en plusieurs pages : recomposez les pages sur le plateau magnétique, contrôlez les raccords et les symboles.</span></span>
-              <span aria-hidden="true">→</span>
-              <input type="file" accept=".pdf,application/pdf" aria-label="Importer un patron PDF multipage" onChange={pick(onImport)}/>
-            </label>
-            <label className="pzh-way">
-              <span><strong>Un projet existant</strong><span>Rouvrez une sauvegarde JSON ou un fichier OXS.</span></span>
-              <span aria-hidden="true">→</span>
-              <input type="file" accept=".json,.oxs,application/json" aria-label="Ouvrir un projet JSON ou OXS" onChange={pick(onImport)}/>
-            </label>
-          </div>
-          <label className="pzh-drop">
-            <span className="pzh-drop-plus" aria-hidden="true">+</span>
-            <strong>Choisir mon fichier</strong>
-            <span>PNG, JPEG, WebP, PDF, JSON ou OXS</span>
-            <input type="file" aria-label="Importer une image, un PDF ou un projet" accept="image/png,image/jpeg,image/webp,.pdf,.json,.oxs" onChange={pick(onImport)}/>
-          </label>
-        </div>
+        <Imports onImport={onImport} />
         <p className="pzh-fine">Vérifiez les détails et les couleurs avant de broder. L’import PDF dépend du document ; un calage peut être nécessaire. Respectez les droits de l’auteur.</p>
-      </section>
+      </section>}
 
       <section className="pzh-section" id="commencer" aria-labelledby="pzh-resume-title">
         <div className="pzh-resume">
@@ -283,7 +294,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
         <div>
           <h2>Découvrir</h2>
           <ul>
-            {(SITE_BRODERIE ? CHAPITRES_EDITION : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.num}. {c.titre}</a></li>)}
+            {(SITE_BRODERIE ? chapitresEdition() : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.num}. {c.titre}</a></li>)}
             {!SITE_BRODERIE && <li><a href="#tout" onClick={go("tout")}>Tout le studio</a></li>}
           </ul>
         </div>
@@ -291,7 +302,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
           <h2>Aide</h2>
           <ul>
             <li><button type="button" onClick={visite}>Faire la visite avec Le Point</button></li>
-            <li><a href="#csh-import" onClick={go("csh-import")}>Importer un patron</a></li>
+            <li><a href={SITE_BRODERIE ? "#hero-import" : "#csh-import"} onClick={go(SITE_BRODERIE ? "hero-import" : "csh-import")}>Importer un patron</a></li>
             <li><a href="#commencer" onClick={go("commencer")}>Sauvegarder mon ouvrage</a></li>
           </ul>
         </div>

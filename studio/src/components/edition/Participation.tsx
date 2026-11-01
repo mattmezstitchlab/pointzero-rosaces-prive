@@ -4,6 +4,7 @@
  * Chaque réponse est un geste explicite ; le défilement ne choisit jamais. Chaque aperçu est calculé par le vrai moteur 5D,
  * à la taille du compositeur de l'atelier : la même recette redonne le même motif ici et dans l'atelier.
  */
+import { SITE_BRODERIE } from "../../lib/site";
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { CLES, DIMENSIONS, type Choix, type Signature } from "../../lib/motif5d/code";
 import { FLOSS } from "../../lib/dmc";
@@ -125,7 +126,7 @@ export function MaRosace({ aller, guide }: { aller: (id: string) => void; guide:
         <ol>{c.historique.map((e, i) => <li key={i}><span>L’Orbe : {rencontreDe(RENCONTRES, e.cle).titre.toLowerCase()} ?</span><b>Vous : {reponseDe(e.cle, e.k)[0]}</b></li>)}</ol></details>}
       <div className="or-actions">
         {suivante ? <button type="button" className="or-btn" onClick={() => { fermer(); aller(suivante.id); }}>Reprendre : {suivante.titre.toLowerCase()}</button>
-          : <button type="button" className="or-btn" onClick={() => { fermer(); aller("ed-cadeau"); }}>Voir mon cadeau</button>}
+          : <button type="button" className="or-btn" onClick={() => { fermer(); aller(SITE_BRODERIE ? "ed-rosace" : "ed-cadeau"); }}>{SITE_BRODERIE ? "Voir ma rosace" : "Voir mon cadeau"}</button>}
         <button type="button" className="or-btn or-btn-clair" onClick={() => { fermer(); guide(); }}>Guide de l’atelier</button>
         {recommencer ? <button type="button" className="or-btn or-btn-clair" onClick={() => { creation.oublier(); fermer(); }}>Oui, tout effacer</button>
           : <button type="button" className="or-btn or-btn-clair" onClick={() => setRecommencer(true)}>Recommencer</button>}

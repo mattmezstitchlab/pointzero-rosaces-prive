@@ -1,3 +1,4 @@
+import { SITE_BRODERIE } from "./lib/site";
 import StudioDocks, { lireNav0, type BlocDemande, type DockPath } from "./components/StudioDocks";
 import { VISIBILITY, visibilityOf, writeVisibility } from "./lib/visibility";
 import { readInterfaceLevel, INTERFACE_LEVEL_KEY, type InterfaceLevel } from "./lib/interfaceLevel";
@@ -555,7 +556,7 @@ export default function App() {
   }, []);
   const offerteVue = useRef(false);
   useEffect(() => {
-    if (offerteVue.current) return; offerteVue.current = true;
+    if (SITE_BRODERIE || offerteVue.current) return; offerteVue.current = true;
     let code: string | null = null;
     try { code = new URLSearchParams(window.location.search).get("offerte"); } catch { return; }
     if (!code) return;

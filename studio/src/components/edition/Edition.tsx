@@ -33,6 +33,7 @@ export const CHAPITRES_EDITION = [
   { id: "ed-rosace", num: "06", titre: "Créez maintenant" },
   { id: "ed-cadeau", num: "07", titre: "Le cadeau" },
 ] as const;
+export const chapitresEdition = () => CHAPITRES_EDITION.filter(c => !SITE_BRODERIE || c.id !== "ed-cadeau");
 
 interface Actions {
   /** ouvrir l'atelier : un nouveau motif, la bibliothèque, broder */
@@ -256,11 +257,11 @@ function Corps({ actions }: { actions: Actions }) {
     <NuageFils />
     {!SITE_BRODERIE && <RencontreOrbe cle="palette" variante="echeveaux" />}
     <RosaceNait />
-    <Cadeau aller={aller} appareils={<div className="cd-appareils">
+    {!SITE_BRODERIE && <Cadeau aller={aller} appareils={<div className="cd-appareils">
       <Appareil type="ordinateur" src={adresse(A.ordinateur.src)} alt={A.ordinateur.alt} />
       <Appareil type="iphone" src={adresse(A.iphone.src)} alt={A.iphone.alt} className="cd-iphone" />
       <p className="cd-appareils-legende">{A.legende}</p>
-    </div>} />
+    </div>} />}
     <MaRosace aller={aller} guide={actions.visite} />
     {fichier.champ}
   </div>;
