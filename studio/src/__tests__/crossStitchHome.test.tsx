@@ -164,9 +164,14 @@ it("place les quatre imports dans le héros sans section ni lien Cadeau", () => 
   expect(view.textContent).not.toMatch(/cadeau|offerte/i);
   const imports = view.querySelectorAll<HTMLInputElement>(".ru #hero-import input[type=file]");
   expect(imports).toHaveLength(4);
+  expect(view.querySelectorAll(".ru .pzh-import-pill.pzh-btn")).toHaveLength(4);
+  expect(view.querySelector(".ru .pzh-import-pill.pzh-btn-clair input")?.getAttribute("accept")).toBe(".pdf,application/pdf");
+  expect(view.querySelectorAll(".ru .pzh-import-pill.mm-btn-point")).toHaveLength(3);
+  expect(view.querySelector(".ru .pzh-way")).toBeNull();
+  expect(view.querySelector(".ru .pzh-drop")).toBeNull();
   expect(view.querySelectorAll('input[type=file][aria-label]')).toHaveLength(4);
   expect(view.querySelector(".ru")!.textContent).toContain("Importer mon patron PDF");
-  const fichiers = [new File(["image"], "photo.png", { type: "image/png" }), new File(["%PDF"], "patron.pdf", { type: "application/pdf" }), new File(["{}"], "ouvrage.json", { type: "application/json" }), new File(["<chart/>"], "ouvrage.oxs")];
+  const fichiers = [new File(["%PDF"], "patron.pdf", { type: "application/pdf" }), new File(["image"], "photo.png", { type: "image/png" }), new File(["{}"], "ouvrage.json", { type: "application/json" }), new File(["<chart/>"], "ouvrage.oxs")];
   imports.forEach((input, n) => {
     Object.defineProperty(input, "files", { configurable: true, value: [fichiers[n]] });
     act(() => input.dispatchEvent(new Event("change", { bubbles: true })));

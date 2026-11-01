@@ -34,7 +34,25 @@ function pick(onImport: (file: File) => void) {
 }
 
 function Imports({ onImport, hero = false }: { onImport: (file: File) => void; hero?: boolean }) {
-  return <div className={hero ? "pzh-hero-import" : undefined}>
+  if (hero) return <div className="pzh-hero-import" role="group" aria-label="Importer dans Point Zéro">
+    <label className="pzh-btn pzh-btn-clair pzh-import-pill">
+      <span>Importer mon patron PDF</span>
+      <input type="file" accept=".pdf,application/pdf" aria-label="Importer un patron PDF multipage" onChange={pick(onImport)} />
+    </label>
+    <label className="pzh-btn mm-btn-point pzh-import-pill">
+      <span>Importer une photo</span>
+      <input type="file" accept="image/png,image/jpeg,image/webp" aria-label="Importer une photo pour la convertir en patron" onChange={pick(onImport)} />
+    </label>
+    <label className="pzh-btn mm-btn-point pzh-import-pill">
+      <span>Ouvrir mon projet</span>
+      <input type="file" accept=".json,.oxs,application/json" aria-label="Ouvrir un projet JSON ou OXS" onChange={pick(onImport)} />
+    </label>
+    <label className="pzh-btn mm-btn-point pzh-import-pill">
+      <span>Choisir mon fichier</span>
+      <input type="file" accept="image/png,image/jpeg,image/webp,.pdf,.json,.oxs" aria-label="Importer une image, un PDF ou un projet" onChange={pick(onImport)} />
+    </label>
+  </div>;
+  return <div>
         <div className="pzh-import">
           <div className="pzh-ways">
             <label className="pzh-way">
@@ -43,7 +61,7 @@ function Imports({ onImport, hero = false }: { onImport: (file: File) => void; h
               <input type="file" accept="image/png,image/jpeg,image/webp" aria-label="Importer une photo pour la convertir en patron" onChange={pick(onImport)}/>
             </label>
             <label className="pzh-way">
-              <span><strong>{hero ? "Importer mon patron PDF" : "Le puzzle PDF"}</strong><span>Un patron en plusieurs pages : recomposez les pages sur le plateau magnétique, contrôlez les raccords et les symboles.</span></span>
+              <span><strong>Le puzzle PDF</strong><span>Un patron en plusieurs pages : recomposez les pages sur le plateau magnétique, contrôlez les raccords et les symboles.</span></span>
               <span aria-hidden="true">→</span>
               <input type="file" accept=".pdf,application/pdf" aria-label="Importer un patron PDF multipage" onChange={pick(onImport)}/>
             </label>
@@ -223,7 +241,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
         {SITE_BRODERIE && <div id="hero-import" className="pzh-hero-entree" tabIndex={-1}>
           <h2 className="sr-only">Importer mon patron</h2>
           <Imports onImport={onImport} hero />
-          <p className="pzh-hero-note">Le PDF reste sur votre appareil. Selon le document, un calage peut être nécessaire.</p>
+          <p className="pzh-hero-note">PDF, photo, JSON ou OXS · Vos fichiers restent sur votre appareil.<br />Un calage du PDF peut être nécessaire.</p>
         </div>}
         <ol className="mm-sommaire">{(edition ? chapitresEdition() : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.titre}</a><span>{c.num}</span></li>)}</ol>
         <div className="mm-actions">
