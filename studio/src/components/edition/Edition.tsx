@@ -130,7 +130,7 @@ function RosaceNait() {
   return <section ref={scene} id="ed-rosace" className="ed-scene ed-rosace" aria-labelledby="ed-rosace-titre" data-etape={etape}>
     <div className="ed-plateau">
       <div className="ed-texte">
-        <p className="ed-num">{T.kicker}</p>
+        <p className="ed-num">{SITE_BRODERIE ? "03 · Ma rosace" : T.kicker}</p>
         <h2 id="ed-rosace-titre" tabIndex={-1}>{nbChoix(c) ? T.titreApres : T.titreAvant}</h2>
         <ol className="ed-phrases ed-phrases-5">{ETAPES_ROSACE.map((t, k) => <li key={t} aria-current={k === etape ? "step" : undefined}>{t}</li>)}</ol>
         <p className="ed-recette"><b>{nom ?? (nbChoix(c) ? "Ma rosace" : "Aperçu")}</b> <code>{code}</code> · {rosace.fils} fils DMC · {rosace.w} × {rosace.h} points{nbChoix(c) < 5 && <> · <i>{5 - nbChoix(c)} choix encore provisoires</i></>}</p>
@@ -206,7 +206,7 @@ function NuageFils() {
   return <section ref={scene} id="ed-fils" className="ed-scene ed-fils" aria-labelledby="ed-fils-titre" data-etape={etape}>
     <div className="ed-plateau">
       <div className="ed-texte">
-        <p className="ed-num">{T.kicker}</p>
+        <p className="ed-num">{SITE_BRODERIE ? "02 · Nuancier DMC" : T.kicker}</p>
         <h2 id="ed-fils-titre" tabIndex={-1}>{T.titre}</h2>
         <p className="ed-chapeau">{T.chapeau}</p>
         <ol className="ed-phrases">{etapes.map((t, k) => <li key={t} aria-current={k === etape ? "step" : undefined}>{t}</li>)}</ol>
