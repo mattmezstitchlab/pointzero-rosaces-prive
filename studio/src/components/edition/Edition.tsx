@@ -107,7 +107,7 @@ function RosaceNait() {
     const cote = cv.clientWidth || 600, dpr = Math.min(2, window.devicePixelRatio || 1);
     if (cv.width !== Math.round(cote * dpr)) { cv.width = Math.round(cote * dpr); cv.height = Math.round(cote * dpr); }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    dessinerRosace(ctx, rosace, cote, pRef.current);
+    dessinerRosace(ctx, rosace, cote, SITE_BRODERIE ? 1 : pRef.current);
   };
   useEffect(() => scene.current ? suivreScene(scene.current, p => { pRef.current = p; dessiner.current(); setEtape(e => { const n = etapeDe(p, SEUILS_ROSACE); return n === e ? e : n; }); }) : undefined, []);
   useEffect(() => { dessiner.current(); }, [rosace]);
@@ -127,6 +127,34 @@ function RosaceNait() {
     { id: "studio", nom: "Dans l’atelier", icone: <ExternalLink aria-hidden="true" />, aide: "regarder cette rosace dans le compositeur de l’atelier", groupe: "creation",
       ouvrir: () => { window.location.assign(import.meta.env.BASE_URL + "atelier?rosace=" + encodeURIComponent(code)); } },
   ];
+  if (SITE_BRODERIE) return <section ref={scene} id="ed-rosace" className="ed-scene ed-fils ed-rosace-reference" aria-labelledby="ed-rosace-titre" data-etape={etape}>
+    <div className="ed-plateau">
+      <div className="ed-texte">
+        <p className="ed-num">03 · Ma rosace</p>
+        <h2 id="ed-rosace-titre" tabIndex={-1}>Votre rosace,<br />à votre main.</h2>
+        <p className="ed-chapeau">Choisissez une forme, un tracé ou une palette dans le disque. L’aperçu et la fiche suivent vos choix.</p>
+        <ol className="ed-phrases">{DIMENSIONS.map(d => <li key={d.cle} aria-current={c.choix[d.cle] !== undefined ? "step" : undefined}>{d.nom}</li>)}</ol>
+      </div>
+      <div className="ed-scene-disque ed-nuancier">
+        <Disque max={1.1} contexte="edition-rosace" modes={modes} etiquette="Le Point du compositeur : revenir sur chaque choix de votre rosace" />
+      </div>
+      <aside className="ed-fiche ed-fiche-rosace" tabIndex={-1} aria-label="Votre rosace et sa recette">
+        <p className="ed-fiche-code">{nom ?? (nbChoix(c) ? "Ma rosace" : "Aperçu")}</p>
+        <p className="ed-fiche-nom">{nbChoix(c)} choix sur 5{nbChoix(c) < 5 ? " · choix restants provisoires" : " · recette complète"}</p>
+        <figure className="ed-apercu-rosace">
+          <canvas ref={toile} role="img" aria-label={`Votre rosace : ${DIMENSIONS.map(d => d.reponses[sig[d.cle]][0].toLowerCase()).join(", ")}. ${rosace.fils} fils DMC.`} />
+          <figcaption>{T.legende}</figcaption>
+        </figure>
+        <dl className="ed-fiche-valeurs">
+          <div><dt>Format</dt><dd>{rosace.w} × {rosace.h} points</dd></div>
+          <div><dt>Fils</dt><dd>{rosace.fils} références DMC</dd></div>
+          {DIMENSIONS.map(d => <div key={d.cle}><dt>{d.nom}</dt><dd>{d.reponses[sig[d.cle]][0]}{c.choix[d.cle] === undefined ? " (provisoire)" : ""}</dd></div>)}
+        </dl>
+        <details className="ed-recette-details"><summary>Code de la recette</summary><p className="ed-recette"><code>{code}</code></p></details>
+        <button type="button" className="ed-cta" onClick={() => window.location.assign(import.meta.env.BASE_URL + "atelier?rosace=" + encodeURIComponent(code))}>Ouvrir dans l’atelier</button>
+      </aside>
+    </div>
+  </section>;
   return <section ref={scene} id="ed-rosace" className="ed-scene ed-rosace" aria-labelledby="ed-rosace-titre" data-etape={etape}>
     <div className="ed-plateau">
       <div className="ed-texte">

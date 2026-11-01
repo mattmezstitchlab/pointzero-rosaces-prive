@@ -169,7 +169,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
     const suivre = () => {
       const ligne = innerHeight * .45;
       let prochain = "accueil";
-      for (const id of ["ed-rencontres", "ed-fils", "ed-rosace", "commencer"]) { const e = document.getElementById(id); if (e && e.getBoundingClientRect().top <= ligne && e.getBoundingClientRect().bottom > ligne) prochain = id; }
+      for (const id of ["ed-rencontres", "ed-fils", "ed-rosace"]) { const e = document.getElementById(id); if (e && e.getBoundingClientRect().top <= ligne && e.getBoundingClientRect().bottom > ligne) prochain = id; }
       setContexte(prochain);
     };
     window.addEventListener("pointzero:rencontres-etat", etat);
@@ -180,7 +180,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
   const changerRencontre = (n: number) => window.dispatchEvent(new CustomEvent("pointzero:rencontres-choisir", { detail: n }));
   const importer = () => document.getElementById("pzh-import-unique")?.click();
   const sections = SITE_BRODERIE
-    ? [["ed-rencontres", "Composer"], ["ed-fils", "Nuancier"], ["ed-rosace", "Ma rosace"], ["commencer", "Reprendre"]] as const
+    ? [["ed-rencontres", "Composer"], ["ed-fils", "Nuancier"], ["ed-rosace", "Ma rosace"]] as const
     : SECTIONS;
   useParallaxe();
 
@@ -193,7 +193,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
       const line = window.innerHeight * 0.4;
       let found: string | null = null;
       const marks: [string, string | null][] = SITE_BRODERIE
-        ? [["ed-rencontres", "ed-rencontres"], ["ed-fils", "ed-fils"], ["ed-rosace", "ed-rosace"], ["commencer", "commencer"]]
+        ? [["ed-rencontres", "ed-rencontres"], ["ed-fils", "ed-fils"], ["ed-rosace", "ed-rosace"]]
         : [["chapitres", "chapitres"], ["ch-point", "ch-point"], ["ch-nuancier", "chapitres"], ["tout", "tout"], ["csh-import", null], ["commencer", "commencer"]];
       for (const [id, key] of marks) {
         const el = document.getElementById(id);
@@ -255,6 +255,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
           <h2 className="sr-only">Importer mon patron</h2>
           <div className="mm-actions">
             <Imports onImport={onImport} hero />
+            <button type="button" className="pzh-btn mm-btn-point" onClick={onStudio ?? (() => onOpen("stitch"))} title={"Reprendre « " + projectName + " »"}>Reprendre</button>
             <button className="pzh-btn mm-btn-point" onClick={visite}><span className="pzh-dot" aria-hidden="true" />Faire la visite avec Le Point</button>
           </div>
           <p className="pzh-hero-note">PDF, photo, JSON ou OXS · Vos fichiers restent sur votre appareil.<br />Un calage du PDF peut être nécessaire.</p>
@@ -293,7 +294,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
         <p className="pzh-fine">Vérifiez les détails et les couleurs avant de broder. L’import PDF dépend du document ; un calage peut être nécessaire. Respectez les droits de l’auteur.</p>
       </section>}
 
-      <section className="pzh-section" id="commencer" aria-labelledby="pzh-resume-title">
+      {!SITE_BRODERIE && <section className="pzh-section" id="commencer" aria-labelledby="pzh-resume-title">
         <div className="pzh-resume">
           <div>
             <p className="pzh-kicker">Projet actif sur cet appareil</p>
@@ -310,7 +311,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
           <h3 id="csh-safety-title">Votre ouvrage mérite une vraie sauvegarde.</h3>
           <p>Le stockage du navigateur n’est pas une sauvegarde permanente : son effacement supprime les projets locaux. Dans le studio, téléchargez régulièrement votre projet JSON depuis Exporter. Les couleurs à l’écran sont indicatives et les quantités de fil estimées.</p>
         </aside>
-      </section>
+      </section>}
     </main>
 
     <footer className="pzh-foot">
@@ -337,7 +338,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
           <ul>
             <li><button type="button" onClick={visite}>Faire la visite avec Le Point</button></li>
             <li>{SITE_BRODERIE ? <button type="button" onClick={importer}>Importer</button> : <a href="#csh-import" onClick={go("csh-import")}>Importer un patron</a>}</li>
-            <li><a href="#commencer" onClick={go("commencer")}>{SITE_BRODERIE ? "Sauvegarde : ce qu’il faut savoir" : "Sauvegarder mon ouvrage"}</a></li>
+            <li>{SITE_BRODERIE ? <details className="pzh-sauvegarde-aide"><summary>Sauvegarde : ce qu’il faut savoir</summary><p>Vos ouvrages restent sur cet appareil. Effacer les données du navigateur peut les supprimer. Téléchargez régulièrement votre projet JSON depuis l’atelier pour le conserver.</p></details> : <a href="#commencer" onClick={go("commencer")}>Sauvegarder mon ouvrage</a>}</li>
           </ul>
         </div>
       </nav>

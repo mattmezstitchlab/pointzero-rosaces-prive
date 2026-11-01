@@ -17,7 +17,7 @@ afterEach(() => {
   site.broderie = false;
   vi.restoreAllMocks();
 });
-function mount(extra: { onOuvrages?: () => void; onShare?: () => void; onVisite?: () => void } = {}) {
+function mount(extra: { onOuvrages?: () => void; onShare?: () => void; onVisite?: () => void; onStudio?: () => void } = {}) {
   const onOpen = vi.fn(), onImport = vi.fn();
   host = document.createElement("div");
   document.body.append(host);
@@ -230,4 +230,20 @@ it("relie le dock du nuancier à la recherche et à la fiche du fil", () => {
   act(() => resultat!.click());
   expect(view.querySelector(".ed-fiche-code")!.textContent).toBe("DMC 310");
   expect(view.querySelector(".pz-recherche-fils")).toBeNull();
+});
+
+
+it("déplace Reprendre dans le héros sans liens vers une section supprimée", () => {
+  site.broderie = true;
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const onStudio = vi.fn();
+  const { view, onOpen } = mount({ onStudio });
+  expect(view.querySelector("#commencer")).toBeNull();
+  expect(view.querySelector('[href="#commencer"]')).toBeNull();
+  const reprendre = [...view.querySelectorAll<HTMLButtonElement>(".ru button")].find(b => b.textContent === "Reprendre");
+  expect(reprendre).toBeTruthy();
+  act(() => reprendre!.click());
+  expect(onStudio).toHaveBeenCalledOnce();
+  expect(onOpen).not.toHaveBeenCalled();
+  expect(view.querySelector(".pzh-sauvegarde-aide")!.textContent).toContain("JSON");
 });

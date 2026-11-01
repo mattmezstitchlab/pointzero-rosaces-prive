@@ -152,3 +152,25 @@ describe("Accueil autonome : rencontres sans historique", () => {
     expect(saut).toHaveBeenCalled();
   });
 });
+
+
+it("présente Ma rosace comme le nuancier : texte, disque et fiche réactive", async () => {
+  site.broderie = true;
+  hote = document.createElement("div"); document.body.appendChild(hote); root = createRoot(hote);
+  await act(async () => { root!.render(<Edition actions={{ ouvrir: vi.fn(), importer: vi.fn(), visite: vi.fn() }} />); });
+  const section = document.querySelector("#ed-rosace")!;
+  expect(section.classList.contains("ed-fils")).toBe(true);
+  expect(section.querySelector(".ed-plateau > .ed-texte")).toBeTruthy();
+  expect(section.querySelector(".ed-plateau > .ed-scene-disque.ed-nuancier")).toBeTruthy();
+  const fiche = section.querySelector(".ed-plateau > .ed-fiche")!;
+  expect(fiche.querySelector("canvas")).toBeTruthy();
+  expect(fiche.textContent).toContain("0 choix sur 5");
+  const code = () => fiche.querySelector(".ed-recette code")!.textContent;
+  const avant = code();
+  await cliquer(dans("ed-rosace", "structure"));
+  await cliquer(dans("ed-rosace", "structure-1"));
+  expect(fiche.textContent).toContain("1 choix sur 5");
+  expect(code()).not.toBe(avant);
+  expect(fiche.textContent).toContain("Anneaux");
+  expect(fiche.querySelector(".ed-cta")!.textContent).toBe("Ouvrir dans l’atelier");
+});

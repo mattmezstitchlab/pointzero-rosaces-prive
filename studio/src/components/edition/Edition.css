@@ -93,3 +93,16 @@ html[data-pz-motion="reduce"] .ed-grandit .lp-anneau > .lp-secteur { opacity: 1;
 
 /* dans le cadre du Bureau éditorial : la section choisie est cernée, chaque section se montre au survol */
 .ed [data-bureau-choisi] { outline: 3px solid #e8b86a; outline-offset: -3px; }
+
+/* Ma rosace reprend la composition du nuancier : texte, disque et fiche claire. */
+.ed-rosace-reference .ed-fiche-code { font-size: clamp(25px, 2.6vw, 34px); overflow-wrap: anywhere; }
+.ed-apercu-rosace { margin: 18px 0; }
+.ed-apercu-rosace canvas { display: block; width: 100%; aspect-ratio: 1; border-radius: 8px; background: var(--ed-papier); }
+.ed-apercu-rosace figcaption { margin-top: 8px; font-size: 11px; color: var(--ed-gris); line-height: 1.4; }
+.ed-rosace-reference .ed-recette { margin: 8px 0 !important; }
+.ed-rosace-reference .ed-recette code { color: var(--ed-encre); overflow-wrap: anywhere; }
+.ed-recette-details { margin-top: 16px; font-size: 12px; }
+.ed-recette-details summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+.ed-fiche-rosace .ed-cta { min-height: 44px; padding: 12px 18px; font-size: 15px; width: 100%; box-sizing: border-box; }
+.pzh-sauvegarde-aide { max-width: 32rem; font-size: 14px; }
+.pzh-sauvegarde-aide summary { min-height: 44px; cursor: pointer; }
