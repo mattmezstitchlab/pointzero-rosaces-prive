@@ -1,6 +1,6 @@
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {readFileSync,writeFileSync,mkdirSync,copyFileSync,readdirSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdirSync,copyFileSync,readdirSync,existsSync,statSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
@@ -27,6 +27,10 @@ function audioPrive():Plugin {
    if(process.env.LUMIERE_AUDIO_PRIVE!=='1')return;
    const dir=path.resolve(options.dir??path.join(root,'dist'),'lumiere-prive');mkdirSync(dir,{recursive:true});
    for(const f of readdirSync(path.join(root,'prive-audio')).filter(f=>/\.m4a$/.test(f)))copyFileSync(path.join(root,'prive-audio',f),path.join(dir,f));
+   /* UPTOWN brodé : les données du clip (studio/prive-clip/<clip>/), sous la même condition */
+   const clips=path.join(root,'prive-clip');if(!existsSync(clips))return;
+   for(const c of readdirSync(clips).filter(c=>statSync(path.join(clips,c)).isDirectory())){const d=path.resolve(options.dir??path.join(root,'dist'),'clip-prive',c);mkdirSync(d,{recursive:true});
+    for(const f of readdirSync(path.join(clips,c)).filter(f=>/\.(json|bin\.gz)$/.test(f)))copyFileSync(path.join(clips,c,f),path.join(d,f));}
   }
  };
 }
