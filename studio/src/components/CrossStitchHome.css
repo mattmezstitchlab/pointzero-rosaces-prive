@@ -358,3 +358,5 @@ html[data-pz-motion="reduce"] .pzh-hero-stage [data-hero-slide]:not([hidden]) { 
  .pzh-rosace-vivante::after { background: linear-gradient(#f2eee5e8, #f2eee535 50%, #f2eee5e8); }
  .pzh-rosace-vivante .mm-actions { margin-top: 0; }
 }
+/* Le fond reste à l’échelle de l’écran, même quand les commandes mobiles défilent. */
+.pzh-rosace-fond canvas { position: sticky; top: 0; height: 100svh; }
