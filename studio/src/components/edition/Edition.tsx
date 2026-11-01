@@ -206,7 +206,7 @@ function Rencontres5D({ heroEntree }: { heroEntree?: ReactNode }) {
     </div>
     <div className="pzh-guide-rosace">
       <div className="pzh-guide-question" role="status" aria-live="polite"><Orbe taille={32} /><div><p>Rencontre {active + 1} sur 5 · {r.titre}</p><h2 tabIndex={-1}>{dim.question}</h2></div></div>
-      <div className="ed-scene-disque" data-rencontre={r.cle}><Disque contexte={`rencontre-5d-${r.cle}`} modes={modes} etiquette={`Réponses : ${dim.question}`} max={.82} /></div>
+      <div className="ed-scene-disque" data-rencontre={r.cle}><Disque contexte={`rencontre-5d-${r.cle}`} modes={modes} etiquette={`Réponses : ${dim.question}`} max={1.1} /></div>
       <p className="pzh-guide-reponse" role="status">{c.choix[r.cle] === undefined ? "Choisissez dans le disque. Explorez librement, sans questionnaire obligatoire." : `${dim.reponses[c.choix[r.cle]!][0]} · votre rosace évolue en direct.`}</p>
       <button type="button" className="pzh-btn pzh-btn-clair" onClick={() => window.location.assign(import.meta.env.BASE_URL + "atelier?rosace=" + encodeURIComponent(codeDeCreation(c)))}>Broder ma rosace</button>
       <div className="sr-only">{rencontres.map(x => <span id={x.id} key={x.id} />)}</div>
@@ -414,7 +414,7 @@ function Corps({ actions, heroSlide, heroEntree }: { actions: Actions; heroSlide
       "hi-mulhouse": <RencontreDisque />,
       "hi-brodeuses": <RencontreOrbe cle="echelle" variante="loupes" />,
     }} />}
-    {slide(heroEntree ? "accueil" : "ed-fils", "Nuancier DMC", <NuageFils immersif={!!heroEntree} />)}
+    {slide(heroEntree ? "accueil" : "ed-fils", "Nuancier DMC", <NuageFils />)}
     {!SITE_BRODERIE && <RencontreOrbe cle="palette" variante="echeveaux" />}
     {slide("ed-rosace", "Ma rosace", <RosaceNait />)}
     {SITE_BRODERIE && slide("ed-studio", "Dans le studio", <StudioDecouverte actions={actions} />)}

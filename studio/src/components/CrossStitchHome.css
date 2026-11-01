@@ -396,3 +396,21 @@ html[data-pz-motion="reduce"] .pzh-hero-stage [data-hero-slide]:not([hidden]) { 
 .pz-photo-recherche input { min-height: 44px; width: 100%; border: 1px solid #888; border-radius: 8px; background: #fff; color: #111; padding: 8px; }
 .pz-photo-resultats { list-style: none; padding: 0; max-height: 140px; overflow: auto; }
 .pz-photo-resultats button { min-height: 44px; border: 0; background: transparent; color: #111; font-size: 12px; }
+
+/* Présentation simplifiée : uniquement le disque actif, au centre de la photo. */
+.cross-stitch-home[data-disques="centres"] .pzh-hero-stage {
+ background: url('/images/histoire/met-palampore-2010-337.webp') center 40% / cover no-repeat;
+ overflow: hidden;
+}
+[data-disques="centres"] :is(.ed, .ed-fils, .ed-scene, .pzh-rosace-vivante) { background: transparent; }
+[data-disques="centres"] :is(.ed-texte, .ed-fiche, .pzh-rosace-fond, .pzh-rosace-accueil, .pzh-guide-question, .pzh-guide-reponse, .pzh-guide-rosace > .pzh-btn, .pzh-foot, .or-ma) { display: none !important; }
+[data-disques="centres"] .pzh-rosace-vivante::after { display: none; }
+[data-disques="centres"] :is(.ed-plateau, .pzh-rosace-vivante) { display: grid; grid-template-columns: minmax(0, 1fr) !important; place-items: center; height: 100svh; min-height: 0; padding: 100px 70px 150px; gap: 0; }
+[data-disques="centres"] .pzh-guide-rosace { display: contents; }
+[data-disques="centres"] .ed-scene { height: 100svh; min-height: 0; }
+[data-disques="centres"] .ed-scene-disque { width: min(100%, 580px); padding: 0; }
+[data-disques="centres"] .ed-nuage { display: none; }
+[data-disques="centres"] .ed-disque { color: #fff; }
+@media(max-width: 820px) {
+ [data-disques="centres"] :is(.ed-plateau, .pzh-rosace-vivante) { padding: 100px 55px 150px 16px; }
+}

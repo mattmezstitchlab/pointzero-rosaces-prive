@@ -249,7 +249,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
     else defiler();
   };
 
-  return <div className="cross-stitch-home" data-site={SITE_BRODERIE ? "broderie" : undefined} data-contexte={SITE_BRODERIE ? contexte : undefined}>
+  return <div className="cross-stitch-home" data-site={SITE_BRODERIE ? "broderie" : undefined} data-disques={SITE_BRODERIE ? "centres" : undefined} data-contexte={SITE_BRODERIE ? contexte : undefined}>
     <a className="csh-skip" href="#csh-main">Aller au contenu</a>
     <TraineePoints />
 
@@ -270,7 +270,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
     </nav>}
 
     <div ref={stage} className={SITE_BRODERIE ? "pzh-hero-stage" : undefined} onWheel={e => {
-      if (!SITE_BRODERIE || Math.abs(e.deltaY) < 25 || (e.target as Element).closest('input, select, [role="menu"], .ed-fiche, .pz-photo-fiche')) return;
+      if (!SITE_BRODERIE || Math.abs(e.deltaY) < 25 || (e.target as Element).closest('input, select, .ed-fiche, .pz-photo-fiche')) return;
       const el = e.currentTarget, bas = el.scrollTop + el.clientHeight >= el.scrollHeight - 3;
       if ((e.deltaY > 0 && bas) || (e.deltaY < 0 && el.scrollTop <= 0)) {
         const maintenant = Date.now(); if (maintenant - dernierDefilement.current < 900) return;
@@ -285,6 +285,9 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
         const t = e.touches[0]; toucher.current = { x: t.clientX, y: t.clientY };
       }} onTouchEnd={e => {
         const p = toucher.current; toucher.current = null; const t = e.changedTouches[0];
+        if (p && SITE_BRODERIE && Math.abs(t.clientY - p.y) > 70 && Math.abs(t.clientY - p.y) > Math.abs(t.clientX - p.x) * 1.5) {
+          choisirSlide(HERO_SLIDES[Math.max(0, Math.min(HERO_SLIDES.length - 1, indexSlide + (t.clientY < p.y ? 1 : -1)))][0]); return;
+        }
         if (p && Math.abs(t.clientX - p.x) > 80 && Math.abs(t.clientX - p.x) > Math.abs(t.clientY - p.y) * 1.5) choisirSlide(HERO_SLIDES[Math.max(0, Math.min(HERO_SLIDES.length - 1, indexSlide + (t.clientX < p.x ? 1 : -1)))][0]);
       }} onTouchCancel={() => { toucher.current = null; }}>
       {!SITE_BRODERIE && <UneFlorale titre="Point Zéro">

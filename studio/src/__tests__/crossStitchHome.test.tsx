@@ -221,21 +221,17 @@ it("pilote les Rencontres depuis le dock contextuel, sans navigation dans le hé
 });
 
 
-it("le premier écran ouvre le disque DMC au clic et garde sa fiche", () => {
+it("le premier écran présente directement le grand disque DMC et conserve le fil choisi", () => {
   site.broderie = true;
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   const { view } = mount();
   expect(view.querySelector(".pz-photo-couronne")).toBeNull();
-  act(() => view.querySelector<HTMLButtonElement>(".ed-brode-vue")!.click());
-  expect(view.querySelector(".pz-photo-couronne")).toBeTruthy();
+  expect(view.querySelector('#ed-fils [role="menu"]')).toBeTruthy();
   act(() => view.querySelector<HTMLButtonElement>('#ed-fils [data-mode="famille-bleus"]')!.click());
   const nuance = view.querySelector<HTMLButtonElement>('#ed-fils [data-mode^="dmc-"]')!;
   act(() => nuance.click());
   expect(view.querySelector("#ed-fils .ed-fiche-code")!.textContent).toBe("DMC " + nuance.dataset.mode!.slice(4));
-  const recherche = view.querySelector<HTMLInputElement>(".pz-photo-recherche input")!;
-  act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(recherche, "310"); recherche.dispatchEvent(new Event("input", { bubbles: true })); });
-  act(() => view.querySelector<HTMLButtonElement>(".pz-photo-resultats button")!.click());
-  expect(view.querySelector("#ed-fils .ed-fiche-code")!.textContent).toBe("DMC 310");
+
 });
 
 
@@ -271,7 +267,6 @@ it("réunit les quatre sections dans le héros sans perdre choix, fil ni accès 
   act(() => view.querySelector<HTMLButtonElement>('[data-mode="reponse-structure-1"]')!.click());
   choisir("accueil");
   expect(visibles()).toEqual(["accueil"]);
-  act(() => view.querySelector<HTMLButtonElement>(".ed-brode-vue")!.click());
   act(() => view.querySelector<HTMLButtonElement>('#ed-fils [data-mode="famille-bleus"]')!.click());
   const fil = view.querySelector<HTMLButtonElement>('#ed-fils [data-mode^="dmc-"]')!;
   act(() => fil.click());
