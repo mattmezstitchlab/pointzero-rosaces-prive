@@ -106,3 +106,10 @@ html[data-pz-motion="reduce"] .ed-grandit .lp-anneau > .lp-secteur { opacity: 1;
 .ed-fiche-rosace .ed-cta { min-height: 44px; padding: 12px 18px; font-size: 15px; width: 100%; box-sizing: border-box; }
 .pzh-sauvegarde-aide { max-width: 32rem; font-size: 14px; }
 .pzh-sauvegarde-aide summary { min-height: 44px; cursor: pointer; }
+@media (min-width: 821px) {
+  .ed-rosace-reference .ed-fiche-rosace { max-height: calc(100svh - 200px); overflow-y: auto; box-sizing: border-box; }
+  .ed-rosace-reference .ed-apercu-rosace { max-width: 200px; margin: 16px auto; }
+  .ed-rosace-reference .ed-texte h2 { font-size: clamp(36px, 3.6vw, 60px); }
+  .ed-rosace-reference .ed-chapeau { font-size: 16px; }
+  .ed-rosace-reference .ed-plateau { padding-bottom: 100px; }
+}
