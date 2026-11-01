@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import "./Slides.css";
+import { SITE_BRODERIE } from "../../lib/site";
 
 export interface Slide { id: string; titre: string; contenu: ReactNode }
 /** Les ancres historiques ouvrent aussi leur diapositive, sans perdre les choix déjà faits. */
@@ -11,6 +12,7 @@ export default function Slides({ id, titre, slides }: { id: string; titre: strin
   const [active, setActive] = useState(0);
   const hote = useRef<HTMLElement>(null);
   const debut = useRef<{ x: number; y: number } | null>(null);
+  const external = SITE_BRODERIE && id === "ed-rencontres";
   const ids = slides.map(s => s.id).join(",");
   useEffect(() => {
     const ouvrir = (cible: string) => {
@@ -29,10 +31,19 @@ export default function Slides({ id, titre, slides }: { id: string; titre: strin
     const frame = requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
     return () => cancelAnimationFrame(frame);
   }, [active]);
+  useEffect(() => {
+    if (!external) return;
+    const publier = () => window.dispatchEvent(new CustomEvent("pointzero:rencontres-etat", { detail: { active, titres: slides.map(s => s.titre) } }));
+    const changer = (e: Event) => { const n = Number((e as CustomEvent<number>).detail); if (Number.isInteger(n)) setActive(Math.max(0, Math.min(slides.length - 1, n))); };
+    publier();
+    window.addEventListener("pointzero:rencontres-demande", publier);
+    window.addEventListener("pointzero:rencontres-choisir", changer);
+    return () => { window.removeEventListener("pointzero:rencontres-demande", publier); window.removeEventListener("pointzero:rencontres-choisir", changer); };
+  }, [external, active, ids]);
   const choisir = (n: number) => {
     // Une commande située dans la diapositive ne doit pas garder le focus une fois masquée.
     if (hote.current?.querySelector('[data-slide]:not([hidden])')?.contains(document.activeElement)) {
-      hote.current.querySelector<HTMLButtonElement>(".ed-slides-suivant")?.focus();
+      (external ? document.querySelector<HTMLSelectElement>("#dock-rencontre") : hote.current.querySelector<HTMLButtonElement>(".ed-slides-suivant"))?.focus();
     }
     setActive(Math.max(0, Math.min(slides.length - 1, n)));
   };
@@ -40,13 +51,13 @@ export default function Slides({ id, titre, slides }: { id: string; titre: strin
     <header className="ed-slides-tete">
       <h2>{titre}</h2>
       <p role="status" aria-live="polite" aria-atomic="true">{active + 1} / {slides.length} · {slides[active].titre}</p>
-      <nav aria-label={`Diapositives : ${titre}`}>
+      {!external && <><nav aria-label={`Diapositives : ${titre}`}>
         <button type="button" disabled={active === 0} onClick={() => choisir(active - 1)} aria-label={`${titre} : diapositive précédente`}>← Précédent</button>
         <button type="button" className="ed-slides-suivant" disabled={active === slides.length - 1} onClick={() => choisir(active + 1)} aria-label={`${titre} : diapositive suivante`}>Suivant →</button>
       </nav>
       <div className="ed-slides-onglets" role="group" aria-label={`Choisir une diapositive : ${titre}`}>
         {slides.map((s, n) => <button type="button" key={s.id} aria-pressed={n === active} aria-controls={`${id}-slide-${n}`} onClick={() => choisir(n)}>{n + 1} · {s.titre}</button>)}
-      </div>
+      </div></>}
     </header>
     <div className="ed-slides-contenu" onTouchStart={e => {
       debut.current = null;

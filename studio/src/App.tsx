@@ -583,6 +583,12 @@ export default function App() {
   };
   const contextSection: "prepare" | "edit" | "follow" | "settings" =
     rightSection === "properties" || rightSection === "motifs" ? "edit" : rightSection;
+  useEffect(() => {
+    if (SITE_BRODERIE && new URLSearchParams(window.location.search).has("bibliotheque")) {
+      setBlocDemande({ bloc: "inviter", n: 1 });
+      const url = new URL(window.location.href); url.searchParams.delete("bibliotheque"); window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    }
+  }, []);
   const enterStitchStudio = (entry: StitchEntry) => {
     if (entry === "library") { setBlocDemande(n => ({ bloc: "inviter", n: (n?.n ?? 0) + 1 })); switchStudio("embroidery"); return; }
     switchStudio("embroidery");
@@ -594,7 +600,7 @@ export default function App() {
         onShare={() => { switchStudio("embroidery"); setPanel("share"); }}
         onImport={chosen => { switchStudio("embroidery"); importAnyFile(chosen); }}
         onVisite={() => { try { localStorage.removeItem(VISITE_CLE); } catch { /* la visite s'ouvrira quand même */ } setPanel(null); setDockPath(null); setShowWelcome(false); setVisite(true); switchStudio("embroidery"); }}/>
-    : <div data-interface-level={interfaceLevel} className={`pz-atelier pz-embroidery-studio fixed inset-0 h-[100dvh] w-full overflow-hidden bg-[#f3f3f1] ${prefs.largeText ? "large-text" : ""} ${prefs.highContrast ? "high-contrast" : ""}`}>
+    : <div data-site={SITE_BRODERIE ? "broderie" : undefined} data-interface-level={interfaceLevel} className={`pz-atelier pz-embroidery-studio fixed inset-0 h-[100dvh] w-full overflow-hidden bg-[#f3f3f1] ${prefs.largeText ? "large-text" : ""} ${prefs.highContrast ? "high-contrast" : ""}`}>
     <input
       ref={imageInputRef}
       type="file"
@@ -644,8 +650,13 @@ export default function App() {
       </div>}
     {composer && <ComposerRosace depart={composer.depart} lecture={composer.lecture} onFermer={() => { setComposer(null); retirerParametreRosace(); }}
       onBroder={(p) => { void useImportedPattern(p).then(ok => { if (ok) { setComposer(null); retirerParametreRosace(); } }); }} />}
-    {!pdfFile && !promptOpen && !compositionInput && !file && !autoImage && <StudioDocks
-      sansPoint={!!composer}
+    {(SITE_BRODERIE || (!pdfFile && !promptOpen && !compositionInput && !file && !autoImage)) && <StudioDocks
+      preparation={SITE_BRODERIE && (!!pdfFile || promptOpen || !!compositionInput || !!file || !!autoImage)}
+      quitterPreparation={() => {
+        if ((pdfFile || promptOpen || compositionInput || file || autoImage) && !window.confirm("Quitter cette préparation ? Le fichier original et vos ouvrages enregistrés sont conservés.")) return false;
+        setPdfFile(null); setPromptOpen(false); setCompositionInput(null); setFile(null); setAutoImage(null); return true;
+      }}
+      sansPoint={!!composer || !!pdfFile || promptOpen || !!compositionInput || !!file || !!autoImage}
       grille={grille} onGrille={basculerGrille} onImporter={genre => { const el = actionImportRef.current; if (!el) return; el.accept = genre === "image" ? "image/png,image/jpeg,image/webp" : genre === "pdf" ? ".pdf,application/pdf" : genre === "projet" ? ".json,.oxs" : "image/png,image/jpeg,image/webp,.pdf,.json,.oxs"; el.click(); }} onComposer={() => setComposer({})}
       patternName={P.name} saving={saving} workspace={workspace}
       onWorkspace={mode => { chooseWorkspace(mode); setActiveCategory(mode === "stitch" ? "stitch" : "compose"); setShowWelcome(false); }}

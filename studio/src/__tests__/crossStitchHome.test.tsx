@@ -175,14 +175,59 @@ it("unifie les imports et rend chaque destination explicite sans perdre les form
     expect(input.value).toBe("");
   });
   const clic = vi.spyOn(input, "click");
-  const dock = view.querySelector('nav[aria-label="Navigation point de croix"]')!;
+  const dock = view.querySelector('nav[aria-label="Navigation Point Zéro"]')!;
   act(() => [...dock.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Importer")!.click());
   expect(clic).toHaveBeenCalledOnce();
-  act(() => [...dock.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Ouvrir le studio")!.click());
+  act(() => [...dock.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Studio")!.click());
   expect(onOpen).toHaveBeenLastCalledWith("stitch");
-  act(() => dock.querySelector<HTMLButtonElement>('[aria-label="Mes ouvrages"]')!.click());
+  act(() => [...dock.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Mes ouvrages")!.click());
   expect(onOuvrages).toHaveBeenCalledOnce();
   expect(view.querySelector(".ru")!.textContent).not.toContain("Créer mon patron");
   expect(view.querySelector('[href="#ed-fils"]')).toBeTruthy();
+  expect(view.querySelector(".ru .mm-sommaire")).toBeNull();
+  expect(view.querySelector(".tp-traine")).toBeTruthy();
+  expect(view.querySelector('nav[aria-label="Actions de la page"]')).toBeTruthy();
   for (const lien of view.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')) expect(view.querySelector(lien.getAttribute("href")!)).toBeTruthy();
+});
+
+
+it("pilote les Rencontres depuis le dock contextuel, sans navigation dans le héros", async () => {
+  site.broderie = true;
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const { view } = mount();
+  const section = view.querySelector<HTMLElement>("#ed-rencontres")!;
+  vi.spyOn(section, "getBoundingClientRect").mockReturnValue({ top: 0, bottom: 1000 } as DOMRect);
+  act(() => window.dispatchEvent(new Event("scroll")));
+  expect(view.querySelector(".ru .mm-sommaire")).toBeNull();
+  expect(section.querySelector(".ed-slides-onglets")).toBeNull();
+  const dock = view.querySelector('nav[aria-label="Actions de la page"]')!;
+  act(() => [...dock.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Suivant")!.click());
+  expect(section.querySelector('[data-slide]:not([hidden]) #or-lignes')).toBeTruthy();
+  const choix = dock.querySelector<HTMLSelectElement>("select")!;
+  act(() => { choix.value = "4"; choix.dispatchEvent(new Event("change", { bubbles: true })); });
+  expect(section.querySelector('[data-slide]:not([hidden]) #or-plein')).toBeTruthy();
+  act(() => [...dock.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Précédent")!.click());
+  expect(section.querySelector('[data-slide]:not([hidden]) #or-couleurs')).toBeTruthy();
+});
+
+
+it("relie le dock du nuancier à la recherche et à la fiche du fil", () => {
+  site.broderie = true;
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const { view } = mount();
+  const section = view.querySelector<HTMLElement>("#ed-fils")!;
+  vi.spyOn(section, "getBoundingClientRect").mockReturnValue({ top: 0, bottom: 1000 } as DOMRect);
+  act(() => window.dispatchEvent(new Event("scroll")));
+  act(() => view.querySelector<HTMLButtonElement>('[data-nuancier="chercher"]')!.click());
+  const champ = view.querySelector<HTMLInputElement>("#nuancier-dock-recherche")!;
+  expect(champ).toBeTruthy();
+  act(() => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(champ, "310");
+    champ.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  const resultat = [...view.querySelectorAll<HTMLButtonElement>(".pz-recherche-fils li button")].find(b => b.textContent?.startsWith("DMC 310 ·"));
+  expect(resultat).toBeTruthy();
+  act(() => resultat!.click());
+  expect(view.querySelector(".ed-fiche-code")!.textContent).toBe("DMC 310");
+  expect(view.querySelector(".pz-recherche-fils")).toBeNull();
 });

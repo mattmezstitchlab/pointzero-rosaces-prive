@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { GlobalDock, ContextDock } from "./SiteDocks";
 import OuvragesBloc from "./OuvragesBloc";
 import { ToolIcon } from "./ToolIcons";
 import { ArrowLeft, CircleHelp, Compass, Folder, Grid3x3, LayoutGrid, Maximize, Menu, Palette, Pencil, Redo2, Search, Shapes, Share2, Sparkles, Spool, Square, Undo2, X } from "lucide-react";
@@ -18,7 +19,7 @@ import PointDuBloc from "./point/PointDuBloc";
 import "./blocs/broderie";
 import type { ContexteBroderie } from "./blocs/broderie";
 import { commandesDuBloc, ecrireEssaiBloc, lireEssaiBloc } from "../lib/point/registre";
-import { GALERIE } from "../lib/site";
+import { GALERIE, SITE_BRODERIE } from "../lib/site";
 import TambourAtelier, { ecrireCadreTambour, lireCadreTambour } from "./TambourAtelier";
 import { aVoir, Indicateurs, trier, type Indicateur } from "../lib/point/indicateurs";
 import { suggestion } from "./blocs/guideBroderie";
@@ -53,6 +54,8 @@ export interface DockActions {
 interface Props {
   /** un autre contexte (le compositeur) a la main sur le Point : le dock ne le rend pas, un seul Point à l'écran */
   sansPoint?: boolean;
+  preparation?: boolean;
+  quitterPreparation?: () => boolean;
   patternName: string;
   saving: string;
   workspace: "create" | "stitch";
@@ -187,14 +190,14 @@ export default function StudioDocks(p: Props) {
   const [loupe, setLoupe] = useState(false);
   const [aideOuvrages, setAideOuvrages] = useState(false);
   /* essai : les outils sur le bloc (le Point posé sur le Cadre) au lieu du dock du bas ; réversible depuis le menu */
-  const [essaiBloc, setEssaiBloc] = useState(lireEssaiBloc);
+  const [essaiBloc, setEssaiBloc] = useState(() => !SITE_BRODERIE && lireEssaiBloc());
   /* essai : le Cadre-Tambour (le dock du bas accroché sous le format ; le tambour, cercle d'outils posé sur l'ouvrage) */
-  const [cadreTambour, setCadreTambour] = useState(() => (lireCadreTambour() || lireNav0()) && !lireEssaiBloc());
+  const [cadreTambour, setCadreTambour] = useState(() => SITE_BRODERIE || (lireCadreTambour() || lireNav0()) && !lireEssaiBloc());
   /* en .0, le disque est la navigation : il est ouvert dès l'arrivée */
-  const [tambourOuvert, setTambourOuvert] = useState(() => lireNav0() && !lireEssaiBloc());
+  const [tambourOuvert, setTambourOuvert] = useState(() => !SITE_BRODERIE && lireNav0() && !lireEssaiBloc());
   /* essai « Navigation intégrale .0 » : le dock du haut s'efface, le disque devient la navigation (retour possible par Réglages) */
-  const [nav0, setNav0] = useState(lireNav0);
-  const changerNav0 = (v: boolean) => { setNav0(v); try { localStorage.setItem(NAV0_CLE, v ? "1" : "0"); } catch { /* rien */ }
+  const [nav0, setNav0] = useState(() => !SITE_BRODERIE && lireNav0());
+  const changerNav0 = (v: boolean) => { if (SITE_BRODERIE) return; setNav0(v); try { localStorage.setItem(NAV0_CLE, v ? "1" : "0"); } catch { /* rien */ }
     if (v) { ecrireCadreTambour(true); setCadreTambour(true); ecrireEssaiBloc(false); setEssaiBloc(false); } setBloc(null); };
   useLayoutEffect(() => { document.documentElement.classList.toggle("pz-nav0", nav0 && cadreTambour); return () => document.documentElement.classList.remove("pz-nav0"); }, [nav0, cadreTambour]);
   const tambourBouton = useRef<HTMLButtonElement>(null);
@@ -210,7 +213,7 @@ export default function StudioDocks(p: Props) {
   useEffect(() => indicateurs.abonner(setListeIndic), [indicateurs]);
   const [filChoisi, setFilChoisi] = useState(false);
   const [suggestions, setSuggestions] = useState(() => { try { return localStorage.getItem("pointzero:disque:suggestions") !== "0"; } catch { return true; } });
-  useAccroche(navBas, cadreTambour && !essaiBloc);
+  useAccroche(navBas, !SITE_BRODERIE && cadreTambour && !essaiBloc);
   const [q, setQ] = useState("");
   const [genre, setGenre] = useState<Genre>("tout");
   const [moi, setMoi] = useState<{ name?: string; email?: string; image?: string } | null>(null);
@@ -449,10 +452,19 @@ export default function StudioDocks(p: Props) {
     element: <OuvragesBloc courant={p.ouvrages.courant} dossier={bureauDossier} onDossier={setBureauDossier} onListe={setBureauListe}
       ouvrir={id => { setBureauPlein(false); setVueDisque("atelier"); p.ouvrages!.ouvrir(id); }} importer={f => { setBureauPlein(false); setVueDisque("atelier"); p.ouvrages!.importer(f); }} />,
   } : undefined;
-  const retracterTambour = () => { setTambourOuvert(false); requestAnimationFrame(() => tambourBouton.current?.focus()); };
+  const [familleDisque, setFamilleDisque] = useState<string | null>(null);
+  const ouvrirDisque = (id: string) => { if (p.preparation) return; setFamilleDisque(id); setTambourOuvert(true); setBloc(null); if (id === "broder" || id === "points") p.onWorkspace(id === "broder" ? "stitch" : "create"); };
+  const commandesSite = () => {
+    const surMaToile = () => { window.location.href = import.meta.env.BASE_URL + "tambour?mode=superposer" + (p.pattern?.id ? "&ouvrage=" + encodeURIComponent(p.pattern.id) : ""); };
+    const familles = commandesDuBloc<ContexteBroderie>("broderie", { ...contexteBroderie, dockClassique: undefined, surMaToile });
+    const famille = familles.find(m => m.id === familleDisque);
+    return [...(famille?.enfants?.() ?? familles), { id: "actions-ouvrage", nom: "Autres outils", aide: "toutes les familles, export et suivi", groupe: "socle" as const, ouvrir: () => setFamilleDisque(null) }];
+  };
+  const retracterTambour = () => { setTambourOuvert(false); requestAnimationFrame(() => { if (SITE_BRODERIE) document.querySelector<HTMLButtonElement>('[data-famille="' + familleDisque + '"]')?.focus(); else tambourBouton.current?.focus(); }); };
 
   return <>
-    <header className="pzs-head" aria-label="En-tête du studio">
+    {SITE_BRODERIE && <GlobalDock accueil={() => { if (!p.preparation || p.quitterPreparation?.() !== false) p.actions.home(); }} studio={() => { if (p.preparation && p.quitterPreparation?.() === false) return; setBloc(null); setTambourOuvert(false); }} importer={() => { if (!p.preparation) p.onImporter?.(); }} ouvrages={() => { setTambourOuvert(false); ouvrir("inviter"); }} visite={p.actions.visite} preferences={p.actions.settings} preparation={p.preparation} />}
+    <header className={"pzs-head" + (SITE_BRODERIE ? " pz-site-panels" : "")} aria-label="En-tête du studio">
       <button type="button" className="lp-evitement" onClick={() => { setLoupe(false); ouvrirConfort(); }}>Réglages de confort</button>
       {bloc && <div className="pzs-voile" aria-hidden="true" onClick={fermer} />}
       <nav className={"pzs-top" + (bloc ? " pzs-ouvert" : "")} aria-label="Dock des outils du studio de broderie" onKeyDown={onKey}>
@@ -565,8 +577,16 @@ export default function StudioDocks(p: Props) {
     </header>
 
     {loupe && p.pattern && <div className="pzs-loupe-dock"><Loupe pattern={p.pattern} /><button type="button" className="pzs-loupe-fermer" aria-label="Fermer la loupe" onClick={() => setLoupe(false)}><X size={16} aria-hidden="true" /></button></div>}
+    {SITE_BRODERIE && <ContextDock label="Actions de l’atelier">
+      {p.preparation ? <><span>Préparation de l’ouvrage</span><button type="button" onClick={p.quitterPreparation}>Retour à l’atelier</button></> : <>
+      <button type="button" data-famille="points" aria-pressed={tambourOuvert && familleDisque === "points"} onClick={() => ouvrirDisque("points")}>Dessiner</button>
+      <button type="button" data-famille="broder" aria-pressed={tambourOuvert && familleDisque === "broder"} onClick={() => ouvrirDisque("broder")}>Broder</button>
+      <button type="button" data-famille="fils" aria-pressed={tambourOuvert && familleDisque === "fils"} onClick={() => ouvrirDisque("fils")}>Fils</button>
+      <button type="button" data-famille="affichage" aria-pressed={tambourOuvert && familleDisque === "affichage"} onClick={() => ouvrirDisque("affichage")}>Affichage</button>
+      <button type="button" aria-pressed={loupe} onClick={() => setLoupe(v => !v)}>Loupe</button>
+    </>}</ContextDock>}
     {essaiBloc ? (p.sansPoint ? null : <PointDuBloc<ContexteBroderie> type="broderie" nom={p.patternName} part={prog} etiquette={total ? "patron brodé à " + Math.round(prog * 100) + " %" : undefined} contexte={contexteBroderie} />) : <>
-    <nav className={"pzs-bottom" + (cadreTambour ? " pzs-accroche" : "")} aria-label="Se repérer dans le studio" data-defile ref={el => { rangBas.current = el; navBas.current = el; }} onKeyDown={e => { if (e.key === "Escape" && loupe) { e.preventDefault(); setLoupe(false); return; } if (e.key === "Escape" && modes) { e.preventDefault(); setModes(false); cercleRef.current?.focus(); } }}>
+    {!SITE_BRODERIE && <nav className={"pzs-bottom" + (cadreTambour ? " pzs-accroche" : "")} aria-label="Se repérer dans le studio" data-defile ref={el => { rangBas.current = el; navBas.current = el; }} onKeyDown={e => { if (e.key === "Escape" && loupe) { e.preventDefault(); setLoupe(false); return; } if (e.key === "Escape" && modes) { e.preventDefault(); setModes(false); cercleRef.current?.focus(); } }}>
       {/* Le Point, contrôleur universel : Confort (toujours premier), Loupe, Guide, puis le métier (Broderie : Repères, Fils, Progression) */}
       {p.sansPoint ? null : <Point contexte="broderie" refBouton={cercleRef} part={prog} teinte={teinte}
         etiquette={"Dock en mode " + (MODES.find(m => m[0] === modeBas)?.[1] ?? "") + (total ? ", patron brodé à " + Math.round(prog * 100) + " %" : "")}
@@ -600,8 +620,8 @@ export default function StudioDocks(p: Props) {
       <button type="button" data-guide="tout-voir" className="pzs-btm pzs-light pzs-vue" onClick={p.zoom.fit}><Maximize aria-hidden="true" /><span className="pzs-lib">Tout voir</span></button>
       <button type="button" data-guide="loupe" className="pzs-btm pzs-loupe-btn" aria-pressed={loupe} aria-label="Loupe : la grille agrandie sous le pointeur" title="Loupe" onClick={() => setLoupe(v => !v)}><Search size={17} aria-hidden="true" /><span className="pzs-loupe-txt">Loupe</span></button>
         </>}
-    </nav>
-    {cadreTambour && tambourOuvert && !p.sansPoint && <TambourAtelier racine={nav0 ? (vueDisque === "bureau" ? racineBureau() : racine0()) : undefined} centreContenu={bureauCentre} indicateurs={indicateurs} ouvrage={p.pattern?.id} contexte={contexteBroderie} retracter={retracterTambour} suivi={active && active.cells > 0 && p.pattern && p.couleur != null ? { code: active.code, hex: active.hex, cells: active.cells, done: active.done, motif: p.pattern!, couleur: p.couleur!, depuis, montrer: suggestions && (p.workspace === "stitch" || conseil?.commande === "broder") } : undefined} part={prog} etiquette={total ? "patron brodé à " + Math.round(prog * 100) + " %" : undefined} />}
+    </nav>}
+    {cadreTambour && tambourOuvert && !p.sansPoint && <TambourAtelier key={SITE_BRODERIE ? familleDisque ?? "toutes" : "classique"} racine={SITE_BRODERIE ? commandesSite() : nav0 ? (vueDisque === "bureau" ? racineBureau() : racine0()) : undefined} centreContenu={bureauCentre} indicateurs={indicateurs} ouvrage={p.pattern?.id} contexte={contexteBroderie} retracter={retracterTambour} suivi={active && active.cells > 0 && p.pattern && p.couleur != null ? { code: active.code, hex: active.hex, cells: active.cells, done: active.done, motif: p.pattern!, couleur: p.couleur!, depuis, montrer: suggestions && (p.workspace === "stitch" || conseil?.commande === "broder") } : undefined} part={prog} etiquette={total ? "patron brodé à " + Math.round(prog * 100) + " %" : undefined} />}
     </>}
   </>;
 }

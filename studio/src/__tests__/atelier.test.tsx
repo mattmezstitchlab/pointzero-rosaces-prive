@@ -6,6 +6,8 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+const site = vi.hoisted(() => ({ broderie: false }));
+vi.mock("../lib/site", () => ({ get SITE_BRODERIE() { return site.broderie; }, GALERIE: false, PROTOTYPES: false }));
 import App from "../App";
 import { createPattern, ensurePalette } from "../lib/pattern";
 import { flossIndex } from "../lib/dmc";
@@ -69,6 +71,7 @@ async function brandMenu(item: string) {
 const dialog = (name: string) => container?.querySelector(`[role="dialog"][aria-label="${name}"]`);
 const button = (label: string) => container?.querySelector(`button[aria-label="${label}"]`);
 beforeEach(() => {
+  site.broderie = false;
   localStorage.clear();
   localStorage.setItem("pointzero:workspace","embroidery");
   localStorage.setItem("pointzero:visite-docks:v1","vue"); // les visites du Point ont leurs propres tests (orbeGuide.test.tsx)
@@ -81,6 +84,7 @@ afterEach(async () => {
   container?.remove();
   container = null;
   localStorage.clear();
+  site.broderie = false;
 });
 describe("POINTZERO : atelier unique sans assistant", () => {
   it("range le studio entre deux docks, la grille en plein écran", async () => {
@@ -394,4 +398,30 @@ describe("POINTZERO : atelier unique sans assistant", () => {
     expect(window.location.hash).toBe("");
     expect(nav()).toBeTruthy();
   });
+});
+
+
+it("garde les deux docks autonomes pendant l’utilisation des disques", async () => {
+  site.broderie = true;
+  // D'anciens réglages expérimentaux ne doivent plus supprimer les docks.
+  localStorage.setItem("pointzero:essai:navigation-0", "1");
+  await mount();
+  const global = () => container!.querySelector('nav[aria-label="Navigation Point Zéro"]');
+  const contexte = () => container!.querySelector('nav[aria-label="Actions de l’atelier"]');
+  expect(global()).toBeTruthy(); expect(contexte()).toBeTruthy();
+  const commande = (nom: string) => [...contexte()!.querySelectorAll("button")].find(b => b.textContent === nom);
+  expect([...contexte()!.querySelectorAll("button")].map(b => b.textContent)).toEqual(["Dessiner", "Broder", "Fils", "Affichage", "Loupe"]);
+  await click(commande("Broder"));
+  expect(container!.querySelector('.pzt [data-mode="b-mark"]')).toBeTruthy();
+  expect(global()).toBeTruthy(); expect(contexte()).toBeTruthy();
+  await click(container!.querySelector('.pzt [data-mode="b-mark"]'));
+  expect(container!.querySelector('.pzt [data-mode="b-mark"]')?.getAttribute("aria-label")).toContain("actif");
+  await click(commande("Fils"));
+  expect(container!.querySelector('.pzt [data-mode="famille-rouges"]')).toBeTruthy();
+  await click(commande("Affichage"));
+  expect(container!.querySelector('.pzt [data-mode="symboles"]')).toBeTruthy();
+  await click(commande("Loupe")); expect(container!.querySelector(".pzs-loupe-dock")).toBeTruthy();
+  await click([...global()!.querySelectorAll("button")].find(b => b.textContent === "Studio"));
+  expect(container!.querySelector(".pzt")).toBeNull();
+  expect(contexte()).toBeTruthy(); expect(global()).toBeTruthy();
 });

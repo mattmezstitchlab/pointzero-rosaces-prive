@@ -174,6 +174,20 @@ function Echeveau({ hex }: { hex: string }) {
   </svg>;
 }
 function NuageFils() {
+  const [rechercheDock, setRechercheDock] = useState(false);
+  const [texteDock, setTexteDock] = useState("");
+  const champDock = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!SITE_BRODERIE) return;
+    const commande = (e: Event) => {
+      const action = (e as CustomEvent<string>).detail;
+      if (action === "chercher") { setRechercheDock(true); requestAnimationFrame(() => champDock.current?.focus()); }
+      if (action === "familles") document.querySelector<HTMLElement>('#ed-fils [data-mode^="famille-"]')?.focus();
+      if (action === "fiche") document.querySelector<HTMLElement>('#ed-fils .ed-fiche')?.focus();
+    };
+    window.addEventListener("pointzero:nuancier-dock", commande);
+    return () => window.removeEventListener("pointzero:nuancier-dock", commande);
+  }, []);
   const scene = useRef<HTMLElement>(null), nuage = useRef<HTMLCanvasElement>(null), pRef = useRef(mouvementReduit() ? 1 : 0);
   const [fil, setFil] = useState(() => Math.max(0, FLOSS.findIndex(f => f.code === "321")));
   const [etape, setEtape] = useState(0);
@@ -209,12 +223,18 @@ function NuageFils() {
         <p className="ed-num">{SITE_BRODERIE ? "02 · Nuancier DMC" : T.kicker}</p>
         <h2 id="ed-fils-titre" tabIndex={-1}>{T.titre}</h2>
         <p className="ed-chapeau">{T.chapeau}</p>
+        {SITE_BRODERIE && rechercheDock && <div className="pz-recherche-fils">
+          <label htmlFor="nuancier-dock-recherche">Rechercher un fil DMC</label>
+          <input id="nuancier-dock-recherche" ref={champDock} type="search" value={texteDock} onChange={e => setTexteDock(e.target.value)} placeholder="Référence ou nom du fil" />
+          <button type="button" onClick={() => { setRechercheDock(false); document.querySelector<HTMLElement>('[data-nuancier="chercher"]')?.focus(); }}>Fermer la recherche</button>
+          <ul>{texteDock.trim() && FLOSS.map((f, i) => ({ f, i })).filter(({ f }) => (f.code + " " + f.name).toLowerCase().includes(texteDock.trim().toLowerCase())).slice(0, 20).map(({ f, i }) => <li key={f.code}><button type="button" onClick={() => { setFil(i); setRechercheDock(false); document.querySelector<HTMLElement>('#ed-fils .ed-fiche')?.focus(); }}>DMC {f.code} · {f.name}</button></li>)}</ul>
+        </div>}
         <ol className="ed-phrases">{etapes.map((t, k) => <li key={t} aria-current={k === etape ? "step" : undefined}>{t}</li>)}</ol>
       </div>
       <div className="ed-scene-disque ed-nuancier">
         <Disque max={1.1} contexte="edition-fils" modes={modes} etiquette="Le Point en nuancier : familles de couleurs, puis nuances DMC"><canvas ref={nuage} className="ed-nuage" aria-hidden="true" /></Disque>
       </div>
-      <aside className="ed-fiche" aria-live="polite" aria-label="Le fil choisi">
+      <aside className="ed-fiche" tabIndex={-1} aria-live="polite" aria-label="Le fil choisi">
         <span className="ed-pastille" style={{ background: F.hex }} aria-hidden="true" />
         <p className="ed-fiche-code">DMC {F.code}</p>
         <p className="ed-fiche-nom">{F.name}</p>
