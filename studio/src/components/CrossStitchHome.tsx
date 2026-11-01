@@ -11,6 +11,7 @@ import { chapitresEdition, EditionEnLigne, type FonctionStudio } from "./edition
 /* le site Point Zéro (broderie seule) : l’édition en chapitres est sa landing, sans paramètre */
 import { revelerSlide } from "./edition/Slides";
 import { SITE_BRODERIE } from "../lib/site";
+const HERO_SLIDES = [["accueil", "Accueil"], ["ed-rencontres", "Rencontres"], ["ed-fils", "Nuancier DMC"], ["ed-rosace", "Ma rosace"], ["ed-studio", "Dans le studio"]] as const;
 const estEdition = () => { if (SITE_BRODERIE) return true; try { return new URLSearchParams(window.location.search).has("edition"); } catch { return false; } };
 
 export type StitchEntry = "create" | "library" | "prepare" | "stitch";
@@ -167,17 +168,34 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
   useEffect(() => {
     if (!SITE_BRODERIE) return;
     const etat = (e: Event) => setRencontre((e as CustomEvent<typeof rencontre>).detail);
-    const suivre = () => {
-      const ligne = innerHeight * .45;
-      let prochain = "accueil";
-      for (const id of ["ed-rencontres", "ed-fils", "ed-rosace", "ed-studio"]) { const e = document.getElementById(id); if (e && e.getBoundingClientRect().top <= ligne && e.getBoundingClientRect().bottom > ligne) prochain = id; }
-      setContexte(prochain);
+    const ouvrir = (id: string) => {
+      const cible = document.getElementById(id);
+      const parent = cible?.closest<HTMLElement>("[data-hero-slide]")?.dataset.heroSlide;
+      const slide = HERO_SLIDES.find(([cle]) => cle === id || cle === parent)?.[0];
+      if (slide) setContexte(slide);
     };
+    const evenement = (e: Event) => ouvrir((e as CustomEvent<string>).detail);
+    const ancre = () => ouvrir(window.location.hash.slice(1));
     window.addEventListener("pointzero:rencontres-etat", etat);
     window.dispatchEvent(new Event("pointzero:rencontres-demande"));
-    window.addEventListener("scroll", suivre, { passive: true }); suivre();
-    return () => { window.removeEventListener("pointzero:rencontres-etat", etat); window.removeEventListener("scroll", suivre); };
+    window.addEventListener("pointzero:ouvrir-slide", evenement);
+    window.addEventListener("hashchange", ancre); ancre();
+    return () => { window.removeEventListener("pointzero:rencontres-etat", etat); window.removeEventListener("pointzero:ouvrir-slide", evenement); window.removeEventListener("hashchange", ancre); };
   }, []);
+  const stage = useRef<HTMLDivElement>(null);
+  const toucher = useRef<{ x: number; y: number } | null>(null);
+  const indexSlide = HERO_SLIDES.findIndex(([id]) => id === contexte);
+  const choisirSlide = (id: string) => revelerSlide(id);
+  useEffect(() => {
+    if (!SITE_BRODERIE) return;
+    if (stage.current) stage.current.scrollTop = 0;
+    const frame = requestAnimationFrame(() => {
+      window.dispatchEvent(new Event("resize"));
+      // Ne pas laisser le focus dans une diapositive devenue invisible.
+      if (document.activeElement?.closest("[hidden]")) document.getElementById("dock-section")?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [contexte]);
   const changerRencontre = (n: number) => window.dispatchEvent(new CustomEvent("pointzero:rencontres-choisir", { detail: n }));
   const importer = () => document.getElementById("pzh-import-unique")?.click();
   const sections = SITE_BRODERIE
@@ -187,7 +205,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
 
   // Repère : la section visible est mise en évidence dans le dock du bas.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || SITE_BRODERIE) return;
     let frame = 0;
     const compute = () => {
       frame = 0;
@@ -225,7 +243,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
       window.history?.replaceState?.(null, "", window.location.pathname + window.location.search);
       (el.querySelector<HTMLElement>("h2") ?? el).focus?.({ preventScroll: true });
     };
-    if (SITE_BRODERIE) { revelerSlide(id); requestAnimationFrame(defiler); }
+    if (SITE_BRODERIE) { revelerSlide(id); }
     else defiler();
   };
 
@@ -233,7 +251,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
     <a className="csh-skip" href="#csh-main">Aller au contenu</a>
     <TraineePoints />
 
-    {SITE_BRODERIE && <GlobalDock accueil={() => window.scrollTo({ top: 0, behavior: "auto" })} studio={onStudio ?? (() => onOpen("stitch"))} importer={importer} ouvrages={enter} visite={visite} />}
+    {SITE_BRODERIE && <GlobalDock accueil={() => choisirSlide("accueil")} studio={onStudio ?? (() => onOpen("stitch"))} importer={importer} ouvrages={enter} visite={visite} />}
     {!SITE_BRODERIE && <TopDock label="Navigation point de croix" idBloc="pzh-menu"
       menu={[...(SITE_BRODERIE ? [{ label: "Importer", faire: importer }] : []), { label: "Mes ouvrages", faire: SITE_BRODERIE ? enter : () => onOpen("library") }, { label: "Ouvrir le studio", faire: () => onOpen("stitch") }, { label: "Faire la visite avec Le Point", faire: visite }]}
       droite={<button type="button" className="pzs-tool pzs-noir pzh-entrer" onClick={enter} aria-label={SITE_BRODERIE ? "Mes ouvrages" : "Entrer dans Point Zéro"}>{SITE_BRODERIE ? "Mes ouvrages" : <><span aria-hidden="true">+</span> Entrer</>}</button>}>
@@ -249,7 +267,17 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
       <ol>{(SITE_BRODERIE ? chapitresEdition() : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)} aria-current={chapitre === c.id ? "true" : undefined}><span className="ix-nom">{c.titre}</span><span className="ix-points" aria-hidden="true" /><span className="ix-num">{c.num}</span></a></li>)}</ol>
     </nav>}
 
-    <main id="csh-main">
+    <div ref={stage} className={SITE_BRODERIE ? "pzh-hero-stage" : undefined}>
+    <main id="csh-main" aria-roledescription={SITE_BRODERIE ? "carrousel" : undefined} aria-label={SITE_BRODERIE ? "Découvrir Point Zéro" : undefined}
+      onTouchStart={e => {
+        toucher.current = null;
+        if (!SITE_BRODERIE || (e.target as Element).closest('button, input, textarea, select, a, label, canvas, [role="menu"], [role="slider"], [role="application"]')) return;
+        const t = e.touches[0]; toucher.current = { x: t.clientX, y: t.clientY };
+      }} onTouchEnd={e => {
+        const p = toucher.current; toucher.current = null; const t = e.changedTouches[0];
+        if (p && Math.abs(t.clientX - p.x) > 80 && Math.abs(t.clientX - p.x) > Math.abs(t.clientY - p.y) * 1.5) choisirSlide(HERO_SLIDES[Math.max(0, Math.min(4, indexSlide + (t.clientX < p.x ? 1 : -1)))][0]);
+      }} onTouchCancel={() => { toucher.current = null; }}>
+      <div data-hero-slide={SITE_BRODERIE ? "accueil" : undefined} hidden={SITE_BRODERIE && contexte !== "accueil"} role={SITE_BRODERIE ? "group" : undefined} aria-roledescription={SITE_BRODERIE ? "diapositive" : undefined} aria-label={SITE_BRODERIE ? "1 sur 5 : Accueil" : undefined}>
       <UneFlorale titre="Point Zéro">
         <p className="mm-sous">Du tableau à la dernière croix.</p>
         {SITE_BRODERIE && <div id="hero-import" className="pzh-hero-entree" tabIndex={-1}>
@@ -267,9 +295,10 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
           <button className="pzh-btn mm-btn-point" onClick={visite}><span className="pzh-dot" aria-hidden="true" />Faire la visite avec Le Point</button>
         </div>}
       </UneFlorale>
+      </div>
 
       {edition
-        ? <div id="chapitres"><EditionEnLigne actions={{ fonction: onFeature, ouvrir: e => onOpen(e), importer: onImport, visite }} /></div>
+        ? <div id="chapitres"><EditionEnLigne heroSlide={SITE_BRODERIE ? contexte : undefined} actions={{ fonction: onFeature, ouvrir: e => onOpen(e), importer: onImport, visite }} /></div>
         : <div id="chapitres" className="chapitres">
         {CHAPITRES.map((c, n) => <ChapitreVue key={c.id} c={c} n={n} onVoir={setChapitre} />)}
       </div>}
@@ -315,7 +344,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
       </section>}
     </main>
 
-    <footer className="pzh-foot">
+    <footer className="pzh-foot" hidden={SITE_BRODERIE && contexte !== "ed-studio"}>
       <p className="pzh-foot-brand"><span className="pzh-x" aria-hidden="true">×</span> Point Zéro</p>
       <nav aria-label="Plan du site Point Zéro" className="pzh-foot-cols">
         <div>
@@ -346,8 +375,16 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
       <div className="pzh-dots" aria-hidden="true" />
       <p className="pzh-foot-line">Un studio AIME<sup>®</sup> · Point de croix</p>
     </footer>
+    </div>
 
     {SITE_BRODERIE && <ContextDock label="Actions de la page">
+      <div className="pzh-slide-navigation">
+        <button type="button" aria-label="Section précédente" disabled={indexSlide === 0} onClick={() => choisirSlide(HERO_SLIDES[indexSlide - 1][0])}>←</button>
+        <label className="sr-only" htmlFor="dock-section">Section du héros</label>
+        <select id="dock-section" value={contexte} onChange={e => choisirSlide(e.target.value)}>{HERO_SLIDES.map(([id, titre], n) => <option key={id} value={id}>{n + 1}/5 · {titre}</option>)}</select>
+        <button type="button" aria-label="Section suivante" disabled={indexSlide === 4} onClick={() => choisirSlide(HERO_SLIDES[indexSlide + 1][0])}>→</button>
+      </div>
+      <div className="pzh-slide-actions">
       {contexte === "ed-rencontres" ? <>
         <button type="button" disabled={rencontre.active === 0} onClick={() => changerRencontre(rencontre.active - 1)}>Précédent</button>
         <label className="sr-only" htmlFor="dock-rencontre">Rencontre</label>
@@ -358,7 +395,8 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
         <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("pointzero:nuancier-dock", { detail: "familles" }))}>Familles</button>
         <button type="button" data-nuancier="chercher" onClick={() => window.dispatchEvent(new CustomEvent("pointzero:nuancier-dock", { detail: "chercher" }))}>Rechercher</button>
         <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("pointzero:nuancier-dock", { detail: "fiche" }))}>Fil choisi</button>
-      </> : <>{sections.map(([id, label]) => <a key={id} href={"#" + id} onClick={go(id)} aria-current={contexte === id ? "location" : undefined}>{label === "Composer" ? "Découvrir" : label}</a>)}</>}
+      </> : null}
+      </div>
     </ContextDock>}
     {!SITE_BRODERIE && <nav className="pzh-bottom" aria-label="Sections de la page">
       <button type="button" className="pzh-bottom-orb" aria-label="Le Point : faire la visite du studio" title="Le Point : faire la visite" onClick={visite} />

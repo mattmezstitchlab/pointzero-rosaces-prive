@@ -344,36 +344,37 @@ function NuageFils() {
 }
 
 /** L'édition en ligne : la version publiée (ou l'aperçu d'une version, pour l'administration), sinon les textes d'origine. */
-export function EditionEnLigne({ actions }: { actions: Actions }) {
+export function EditionEnLigne({ actions, heroSlide }: { actions: Actions; heroSlide?: string }) {
   const { contenus, apercu, refus, bureau } = useContenusPublies();
   useSelectionBureau(bureau);
   return <>
     {(apercu || refus) && <p className="ed-apercu" role="status">{apercu
       ? <>Aperçu de la version {apercu.id} : elle n’est pas publiée.{apercu.ecarts ? ` ${apercu.ecarts} champ(s) refusé(s) par la validation montrent le texte d’origine.` : ""}</>
       : refus}</p>}
-    <Edition actions={actions} contenus={contenus} />
+    <Edition actions={actions} contenus={contenus} heroSlide={heroSlide} />
   </>;
 }
 
 /** L'édition. contenus : la version publiée, déjà validée (validerContenus) ; sans elle, les textes d'origine. */
-export default function Edition({ actions, contenus = ORIGINE }: { actions: Actions; contenus?: Contenus }) {
-  return <ContexteContenus.Provider value={contenus}><Corps actions={actions} /></ContexteContenus.Provider>;
+export default function Edition({ actions, contenus = ORIGINE, heroSlide }: { actions: Actions; contenus?: Contenus; heroSlide?: string }) {
+  return <ContexteContenus.Provider value={contenus}><Corps actions={actions} heroSlide={heroSlide} /></ContexteContenus.Provider>;
 }
 
-function Corps({ actions }: { actions: Actions }) {
+function Corps({ actions, heroSlide }: { actions: Actions; heroSlide?: string }) {
+  const slide = (id: string, titre: string, contenu: ReactNode) => heroSlide === undefined ? contenu : <div data-hero-slide={id} hidden={heroSlide !== id} role="group" aria-roledescription="diapositive" aria-label={titre}>{contenu}</div>;
   const fichier = useFichier(actions.importer), A = useContenus().appareils;
   return <div className="ed" data-edition="c">
-    {SITE_BRODERIE && <Rencontres5D />}
+    {SITE_BRODERIE && slide("ed-rencontres", "2 sur 5 : Rencontres", <Rencontres5D />)}
     {!SITE_BRODERIE && <Histoire slides={false} Disque={Disque} actions={{ ouvrir: actions.ouvrir, visite: actions.visite, choisirFichier: fichier.choisir, aller }}
       objet={<div className="hi-objet"><Appareil type="ipad" src={adresse(A.ipad.src)} alt={A.ipad.alt} /></div>} entre={{
       "hi-indiennes": <RencontreOrbe cle="structure" variante="cartes" />,
       "hi-mulhouse": <RencontreDisque />,
       "hi-brodeuses": <RencontreOrbe cle="echelle" variante="loupes" />,
     }} />}
-    <NuageFils />
+    {slide("ed-fils", "3 sur 5 : Nuancier DMC", <NuageFils />)}
     {!SITE_BRODERIE && <RencontreOrbe cle="palette" variante="echeveaux" />}
-    <RosaceNait />
-    {SITE_BRODERIE && <StudioDecouverte actions={actions} />}
+    {slide("ed-rosace", "4 sur 5 : Ma rosace", <RosaceNait />)}
+    {SITE_BRODERIE && slide("ed-studio", "5 sur 5 : Dans le studio", <StudioDecouverte actions={actions} />)}
     {!SITE_BRODERIE && <Cadeau aller={aller} appareils={<div className="cd-appareils">
       <Appareil type="ordinateur" src={adresse(A.ordinateur.src)} alt={A.ordinateur.alt} />
       <Appareil type="iphone" src={adresse(A.iphone.src)} alt={A.iphone.alt} className="cd-iphone" />

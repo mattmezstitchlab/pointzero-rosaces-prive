@@ -196,14 +196,13 @@ it("pilote les Rencontres depuis le dock contextuel, sans navigation dans le hé
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   const { view } = mount();
   const section = view.querySelector<HTMLElement>("#ed-rencontres")!;
-  vi.spyOn(section, "getBoundingClientRect").mockReturnValue({ top: 0, bottom: 1000 } as DOMRect);
-  act(() => window.dispatchEvent(new Event("scroll")));
+  act(() => window.dispatchEvent(new CustomEvent("pointzero:ouvrir-slide", { detail: section.id })));
   expect(view.querySelector(".ru .mm-sommaire")).toBeNull();
   expect(section.querySelector(".ed-slides-onglets")).toBeNull();
   const dock = view.querySelector('nav[aria-label="Actions de la page"]')!;
   act(() => [...dock.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Suivant")!.click());
   expect(section.querySelector('[data-mode="reponse-trace-0"]')).toBeTruthy();
-  const choix = dock.querySelector<HTMLSelectElement>("select")!;
+  const choix = dock.querySelector<HTMLSelectElement>("#dock-rencontre")!;
   act(() => { choix.value = "4"; choix.dispatchEvent(new Event("change", { bubbles: true })); });
   expect(section.querySelector('[data-mode="reponse-densite-0"]')).toBeTruthy();
   act(() => [...dock.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Précédent")!.click());
@@ -216,8 +215,7 @@ it("relie le dock du nuancier à la recherche et à la fiche du fil", () => {
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   const { view } = mount();
   const section = view.querySelector<HTMLElement>("#ed-fils")!;
-  vi.spyOn(section, "getBoundingClientRect").mockReturnValue({ top: 0, bottom: 1000 } as DOMRect);
-  act(() => window.dispatchEvent(new Event("scroll")));
+  act(() => window.dispatchEvent(new CustomEvent("pointzero:ouvrir-slide", { detail: section.id })));
   act(() => view.querySelector<HTMLButtonElement>('[data-nuancier="chercher"]')!.click());
   const champ = view.querySelector<HTMLInputElement>("#nuancier-dock-recherche")!;
   expect(champ).toBeTruthy();
@@ -246,4 +244,41 @@ it("déplace Reprendre dans le héros sans liens vers une section supprimée", (
   expect(onStudio).toHaveBeenCalledOnce();
   expect(onOpen).not.toHaveBeenCalled();
   expect(view.querySelector(".pzh-sauvegarde-aide")!.textContent).toContain("JSON");
+});
+
+
+it("réunit les cinq sections dans le héros sans perdre choix, fil ni accès à l’import", () => {
+  site.broderie = true;
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  const { view } = mount();
+  const choisir = (id: string) => act(() => {
+    const select = view.querySelector<HTMLSelectElement>("#dock-section")!;
+    select.value = id; select.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  const visibles = () => [...view.querySelectorAll<HTMLElement>("[data-hero-slide]")].filter(el => !el.hidden).map(el => el.dataset.heroSlide);
+  expect(visibles()).toEqual(["accueil"]);
+  expect(view.querySelectorAll("[data-hero-slide]")).toHaveLength(5);
+  choisir("ed-rencontres");
+  expect(visibles()).toEqual(["ed-rencontres"]);
+  act(() => view.querySelector<HTMLButtonElement>('[data-mode="reponse-structure-1"]')!.click());
+  choisir("ed-fils");
+  expect(visibles()).toEqual(["ed-fils"]);
+  act(() => view.querySelector<HTMLButtonElement>('#ed-fils [data-mode="famille-bleus"]')!.click());
+  const fil = view.querySelector<HTMLButtonElement>('#ed-fils [data-mode^="dmc-"]')!;
+  act(() => fil.click());
+  const code = view.querySelector("#ed-fils .ed-fiche-code")!.textContent;
+  choisir("ed-rosace"); choisir("ed-studio");
+  expect(visibles()).toEqual(["ed-studio"]);
+  choisir("ed-fils"); expect(view.querySelector("#ed-fils .ed-fiche-code")!.textContent).toBe(code);
+  choisir("ed-rencontres");
+  expect(view.querySelector('[data-mode="reponse-structure-1"]')!.getAttribute("aria-label")).toContain("actif");
+  act(() => window.dispatchEvent(new CustomEvent("pointzero:ouvrir-slide", { detail: "ed-rosace" })));
+  expect(visibles()).toEqual(["ed-rosace"]);
+  const importer = vi.spyOn(view.querySelector<HTMLInputElement>("#pzh-import-unique")!, "click");
+  const haut = view.querySelector('nav[aria-label="Navigation Point Zéro"]')!;
+  act(() => [...haut.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Importer")!.click());
+  expect(importer).toHaveBeenCalledOnce();
+  act(() => [...haut.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Point Zéro")!.click());
+  expect(visibles()).toEqual(["accueil"]);
+  expect(view.querySelector(".tp-traine")).toBeTruthy();
 });
