@@ -117,29 +117,25 @@ describe("Trois scènes, le même Point, de vraies actions", () => {
 });
 
 
-describe("Accueil autonome : deux sections en diapositives", () => {
-  it("regroupe les cinq rencontres et les quatre chapitres sans perdre les choix", async () => {
+describe("Accueil autonome : rencontres sans historique", () => {
+  it("conserve les cinq rencontres sans historique et sans perdre les choix", async () => {
     site.broderie = true;
     hote = document.createElement("div"); document.body.appendChild(hote); root = createRoot(hote);
     await act(async () => { root!.render(<Edition actions={{ ouvrir: vi.fn(), importer: vi.fn(), visite: vi.fn() }} />); });
     const rencontres = document.getElementById("ed-rencontres")!;
-    const histoire = document.getElementById("ed-histoire")!;
+    expect(document.getElementById("ed-histoire")).toBeNull();
+    expect(document.querySelector(".hi")).toBeNull();
     expect(rencontres.querySelectorAll("[data-slide]")).toHaveLength(5);
-    expect(histoire.querySelectorAll("[data-slide]")).toHaveLength(4);
     expect(document.querySelectorAll("[data-rencontre]")).toHaveLength(5);
     expect(rencontres.querySelectorAll("[data-slide]:not([hidden])")).toHaveLength(1);
-    expect(histoire.querySelectorAll("[data-slide]:not([hidden])")).toHaveLength(1);
     await cliquer(document.querySelector('[data-reponse="structure-3"]'));
     await cliquer(rencontres.querySelector(".ed-slides-suivant"));
     expect(rencontres.querySelector('[data-slide]:not([hidden]) #or-lignes')).toBeTruthy();
     await cliquer(rencontres.querySelector('[aria-label$="diapositive précédente"]'));
     expect(document.querySelector('[data-reponse="structure-3"]')!.getAttribute("aria-checked")).toBe("true");
-    await act(async () => { window.dispatchEvent(new CustomEvent("pointzero:ouvrir-slide", { detail: "hi-mulhouse" })); });
-    expect(histoire.querySelector('[data-slide]:not([hidden]) #hi-mulhouse')).toBeTruthy();
-    expect(histoire.querySelectorAll("[data-slide]:not([hidden])")).toHaveLength(1);
     await cliquer([...rencontres.querySelectorAll(".ed-slides-onglets button")][4]);
     expect(rencontres.querySelector('[data-slide]:not([hidden]) #or-plein')).toBeTruthy();
-    expect(document.querySelectorAll(".hi-sources a")).toHaveLength(5);
+    expect(document.querySelectorAll(".hi-sources a")).toHaveLength(0);
     expect(document.querySelector("#ed-cadeau")).toBeNull();
     expect(chapitresEdition().some(c => c.id === "ed-cadeau")).toBe(false);
     expect(document.querySelector('[href*="offerte"]')).toBeNull();

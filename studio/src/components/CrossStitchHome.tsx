@@ -36,20 +36,8 @@ function pick(onImport: (file: File) => void) {
 function Imports({ onImport, hero = false }: { onImport: (file: File) => void; hero?: boolean }) {
   if (hero) return <div className="pzh-hero-import" role="group" aria-label="Importer dans Point Zéro">
     <label className="pzh-btn pzh-btn-clair pzh-import-pill">
-      <span>Importer mon patron PDF</span>
-      <input type="file" accept=".pdf,application/pdf" aria-label="Importer un patron PDF multipage" onChange={pick(onImport)} />
-    </label>
-    <label className="pzh-btn mm-btn-point pzh-import-pill">
-      <span>Importer une photo</span>
-      <input type="file" accept="image/png,image/jpeg,image/webp" aria-label="Importer une photo pour la convertir en patron" onChange={pick(onImport)} />
-    </label>
-    <label className="pzh-btn mm-btn-point pzh-import-pill">
-      <span>Ouvrir mon projet</span>
-      <input type="file" accept=".json,.oxs,application/json" aria-label="Ouvrir un projet JSON ou OXS" onChange={pick(onImport)} />
-    </label>
-    <label className="pzh-btn mm-btn-point pzh-import-pill">
-      <span>Choisir mon fichier</span>
-      <input type="file" accept="image/png,image/jpeg,image/webp,.pdf,.json,.oxs" aria-label="Importer une image, un PDF ou un projet" onChange={pick(onImport)} />
+      <span>Importer</span>
+      <input id="pzh-import-unique" type="file" accept=".pdf,application/pdf,image/png,image/jpeg,image/webp,.json,application/json,.oxs" aria-label="Importer un PDF, une photo ou un projet" onChange={pick(onImport)} />
     </label>
   </div>;
   return <div>
@@ -113,7 +101,6 @@ const TOUT: [string, string][] = [
 ];
 
 const SECTIONS = [["chapitres", "Le studio"], ["ch-point", "Le Point"], ["tout", "Tout le studio"], ["commencer", "Commencer"]] as const;
-type SectionId = typeof SECTIONS[number][0];
 
 /** Un chapitre : un grand fond peint (la toile de roses, floutée et teintée), une phrase, l'écran réel ; tout bouge un peu au défilement. */
 function ChapitreVue({ c, n, onVoir }: { c: Chapitre; n: number; onVoir: (id: string) => void }) {
@@ -167,11 +154,15 @@ function useParallaxe() {
 
 /** Un écran d'accueil seulement : l'ouvrir ne crée aucun patron et ne réécrit aucun projet. */
 export default function CrossStitchHome({ projectName, onOpen, onImport, onShare, onOuvrages, onVisite }: Props) {
-  const [current, setCurrent] = useState<SectionId | null>(null);
+  const [current, setCurrent] = useState<string | null>(null);
   const [chapitre, setChapitre] = useState<string | null>(null);
   const enter = () => (onOuvrages ? onOuvrages() : onOpen("library"));
   const visite = () => (onVisite ? onVisite() : onOpen("create"));
   const [edition] = useState(estEdition);
+  const importer = () => document.getElementById("pzh-import-unique")?.click();
+  const sections = SITE_BRODERIE
+    ? [["ed-rencontres", "Composer"], ["ed-fils", "Nuancier"], ["ed-rosace", "Ma rosace"], ["commencer", "Reprendre"]] as const
+    : SECTIONS;
   useParallaxe();
 
   // Repère : la section visible est mise en évidence dans le dock du bas.
@@ -181,8 +172,10 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
     const compute = () => {
       frame = 0;
       const line = window.innerHeight * 0.4;
-      let found: SectionId | null = null;
-      const marks: [string, SectionId | null][] = [["chapitres", "chapitres"], ["ch-point", "ch-point"], ["ch-nuancier", "chapitres"], ["tout", "tout"], ["csh-import", null], ["commencer", "commencer"]];
+      let found: string | null = null;
+      const marks: [string, string | null][] = SITE_BRODERIE
+        ? [["ed-rencontres", "ed-rencontres"], ["ed-fils", "ed-fils"], ["ed-rosace", "ed-rosace"], ["commencer", "commencer"]]
+        : [["chapitres", "chapitres"], ["ch-point", "ch-point"], ["ch-nuancier", "chapitres"], ["tout", "tout"], ["csh-import", null], ["commencer", "commencer"]];
       for (const [id, key] of marks) {
         const el = document.getElementById(id);
         if (el && el.getBoundingClientRect().top <= line) found = key;
@@ -221,12 +214,12 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
     <TraineePoints />
 
     <TopDock label="Navigation point de croix" idBloc="pzh-menu"
-      menu={[{ label: "Mes ouvrages", faire: () => onOpen("library") }, { label: "Ouvrir le studio", faire: () => onOpen("stitch") }, { label: "Faire la visite avec Le Point", faire: visite }]}
-      droite={<button type="button" className="pzs-tool pzs-noir pzh-entrer" onClick={enter} aria-label="Entrer dans Point Zéro"><span aria-hidden="true">+</span> Entrer</button>}>
-      <a className="pzs-tool" href="#chapitres" onClick={go("chapitres")}>Le studio</a>
-      <a className="pzs-tool" href={SITE_BRODERIE ? "#ed-rencontres" : edition ? "#ed-origine" : "#ch-point"} onClick={go(SITE_BRODERIE ? "ed-rencontres" : edition ? "ed-origine" : "ch-point")}>Le Point</a>
+      menu={[...(SITE_BRODERIE ? [{ label: "Importer", faire: importer }] : []), { label: "Mes ouvrages", faire: SITE_BRODERIE ? enter : () => onOpen("library") }, { label: "Ouvrir le studio", faire: () => onOpen("stitch") }, { label: "Faire la visite avec Le Point", faire: visite }]}
+      droite={<button type="button" className="pzs-tool pzs-noir pzh-entrer" onClick={enter} aria-label={SITE_BRODERIE ? "Mes ouvrages" : "Entrer dans Point Zéro"}>{SITE_BRODERIE ? "Mes ouvrages" : <><span aria-hidden="true">+</span> Entrer</>}</button>}>
+      {SITE_BRODERIE ? <button type="button" className="pzs-tool" onClick={() => onOpen("stitch")}>Ouvrir le studio</button> : <a className="pzs-tool" href="#chapitres" onClick={go("chapitres")}>Le studio</a>}
+      <a className="pzs-tool" href={SITE_BRODERIE ? "#ed-fils" : edition ? "#ed-origine" : "#ch-point"} onClick={go(SITE_BRODERIE ? "ed-fils" : edition ? "ed-origine" : "ch-point")}>{SITE_BRODERIE ? "Nuancier" : "Le Point"}</a>
       {!SITE_BRODERIE && <a className="pzs-tool" href="#tout" onClick={go("tout")}>Tout le studio</a>}
-      <a className="pzs-tool" href={SITE_BRODERIE ? "#hero-import" : "#csh-import"} onClick={go(SITE_BRODERIE ? "hero-import" : "csh-import")}>Importer</a>
+      {SITE_BRODERIE ? <button type="button" className="pzs-tool" onClick={importer}>Importer</button> : <a className="pzs-tool" href="#csh-import" onClick={go("csh-import")}>Importer</a>}
     </TopDock>
 
     {/* l'index des chapitres, à gauche, comme une table des matières qui suit la lecture */}
@@ -240,14 +233,17 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
         <p className="mm-sous">Du tableau à la dernière croix.</p>
         {SITE_BRODERIE && <div id="hero-import" className="pzh-hero-entree" tabIndex={-1}>
           <h2 className="sr-only">Importer mon patron</h2>
-          <Imports onImport={onImport} hero />
+          <div className="mm-actions">
+            <Imports onImport={onImport} hero />
+            <button className="pzh-btn mm-btn-point" onClick={visite}><span className="pzh-dot" aria-hidden="true" />Faire la visite avec Le Point</button>
+          </div>
           <p className="pzh-hero-note">PDF, photo, JSON ou OXS · Vos fichiers restent sur votre appareil.<br />Un calage du PDF peut être nécessaire.</p>
         </div>}
         <ol className="mm-sommaire">{(edition ? chapitresEdition() : CHAPITRES).map(c => <li key={c.id}><a href={"#" + c.id} onClick={go(c.id)}>{c.titre}</a><span>{c.num}</span></li>)}</ol>
-        <div className="mm-actions">
+        {!SITE_BRODERIE && <div className="mm-actions">
           <button className="pzh-btn pzh-btn-clair" onClick={() => onOpen("create")}>Créer mon patron</button>
           <button className="pzh-btn mm-btn-point" onClick={visite}><span className="pzh-dot" aria-hidden="true" />Faire la visite avec Le Point</button>
-        </div>
+        </div>}
       </UneFlorale>
 
       {edition
@@ -320,8 +316,8 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
           <h2>Aide</h2>
           <ul>
             <li><button type="button" onClick={visite}>Faire la visite avec Le Point</button></li>
-            <li><a href={SITE_BRODERIE ? "#hero-import" : "#csh-import"} onClick={go(SITE_BRODERIE ? "hero-import" : "csh-import")}>Importer un patron</a></li>
-            <li><a href="#commencer" onClick={go("commencer")}>Sauvegarder mon ouvrage</a></li>
+            <li>{SITE_BRODERIE ? <button type="button" onClick={importer}>Importer</button> : <a href="#csh-import" onClick={go("csh-import")}>Importer un patron</a>}</li>
+            <li><a href="#commencer" onClick={go("commencer")}>{SITE_BRODERIE ? "Sauvegarde : ce qu’il faut savoir" : "Sauvegarder mon ouvrage"}</a></li>
           </ul>
         </div>
       </nav>
@@ -331,7 +327,7 @@ export default function CrossStitchHome({ projectName, onOpen, onImport, onShare
 
     <nav className="pzh-bottom" aria-label="Sections de la page">
       <button type="button" className="pzh-bottom-orb" aria-label="Le Point : faire la visite du studio" title="Le Point : faire la visite" onClick={visite} />
-      {SECTIONS.filter(([id]) => !SITE_BRODERIE || id !== "tout").map(([id0, label]) => [edition && id0 === "ch-point" ? (SITE_BRODERIE ? "ed-rencontres" : "ed-origine") : id0, label] as const).map(([id, label]) => <a key={id} href={"#" + id} onClick={go(id)} aria-current={current === id ? "location" : undefined} className={current === id ? "is-on" : undefined}>{label}</a>)}
+      {sections.map(([id0, label]) => [edition && id0 === "ch-point" ? (SITE_BRODERIE ? "ed-rencontres" : "ed-origine") : id0, label] as const).map(([id, label]) => <a key={id} href={"#" + id} onClick={go(id)} aria-current={current === id ? "location" : undefined} className={current === id ? "is-on" : undefined}>{label}</a>)}
     </nav>
   </div>;
 }

@@ -33,7 +33,11 @@ export const CHAPITRES_EDITION = [
   { id: "ed-rosace", num: "06", titre: "Créez maintenant" },
   { id: "ed-cadeau", num: "07", titre: "Le cadeau" },
 ] as const;
-export const chapitresEdition = () => CHAPITRES_EDITION.filter(c => !SITE_BRODERIE || c.id !== "ed-cadeau");
+export const chapitresEdition = () => SITE_BRODERIE ? [
+  { id: "ed-rencontres", num: "01", titre: "Composer une rosace" },
+  { id: "ed-fils", num: "02", titre: "Nuancier DMC" },
+  { id: "ed-rosace", num: "03", titre: "Ma rosace" },
+] : CHAPITRES_EDITION;
 
 interface Actions {
   /** ouvrir l'atelier : un nouveau motif, la bibliothèque, broder */
@@ -248,12 +252,12 @@ function Corps({ actions }: { actions: Actions }) {
   const choix = [<RencontreOrbe cle="structure" variante="cartes" />, <RencontreDisque />, <RencontreOrbe cle="echelle" variante="loupes" />, <RencontreOrbe cle="palette" variante="echeveaux" />, <RencontreOrbe cle="densite" variante="curseur" />];
   return <div className="ed" data-edition="c">
     {SITE_BRODERIE && <Slides id="ed-rencontres" titre="Les cinq rencontres" slides={rencontres.map((r, i) => ({ id: r.id, titre: r.titre, contenu: choix[i] }))} />}
-    <Histoire slides={SITE_BRODERIE} Disque={Disque} actions={{ ouvrir: actions.ouvrir, visite: actions.visite, choisirFichier: fichier.choisir, aller }}
+    {!SITE_BRODERIE && <Histoire slides={false} Disque={Disque} actions={{ ouvrir: actions.ouvrir, visite: actions.visite, choisirFichier: fichier.choisir, aller }}
       objet={<div className="hi-objet"><Appareil type="ipad" src={adresse(A.ipad.src)} alt={A.ipad.alt} /></div>} entre={{
       "hi-indiennes": <RencontreOrbe cle="structure" variante="cartes" />,
       "hi-mulhouse": <RencontreDisque />,
       "hi-brodeuses": <RencontreOrbe cle="echelle" variante="loupes" />,
-    }} />
+    }} />}
     <NuageFils />
     {!SITE_BRODERIE && <RencontreOrbe cle="palette" variante="echeveaux" />}
     <RosaceNait />

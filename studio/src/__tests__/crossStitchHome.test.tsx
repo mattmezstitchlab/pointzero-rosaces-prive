@@ -147,36 +147,42 @@ it("retire Tout le studio et ses ancres uniquement sur le site Broderie", () => 
   expect(view.querySelector("#tout")).toBeNull();
   expect(view.querySelector('[href="#tout"]')).toBeNull();
   expect(view.querySelector("#ed-rencontres")).toBeTruthy();
-  expect(view.querySelector("#ed-histoire")).toBeTruthy();
+  expect(view.querySelector("#ed-histoire")).toBeNull();
   expect(view.querySelector('[href="#ed-rencontres"]')).toBeTruthy();
-  expect(view.querySelector('[aria-label="Importer un patron PDF multipage"]')).toBeTruthy();
+  expect(view.querySelector('[aria-label="Importer un PDF, une photo ou un projet"]')).toBeTruthy();
 });
 
 
-it("place les quatre imports dans le héros sans section ni lien Cadeau", () => {
+it("unifie les imports et rend chaque destination explicite sans perdre les formats", () => {
   site.broderie = true;
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
-  const { view, onImport } = mount();
+  const onOuvrages = vi.fn();
+  const { view, onImport, onOpen } = mount({ onOuvrages });
   expect(view.querySelector("#csh-import")).toBeNull();
-  expect(view.querySelector('[href="#csh-import"]')).toBeNull();
+  expect(view.querySelector("#ed-histoire")).toBeNull();
+  expect(view.querySelector('[href^="#hi-"]')).toBeNull();
   expect(view.querySelector("#ed-cadeau")).toBeNull();
-  expect(view.querySelector('[href="#ed-cadeau"]')).toBeNull();
-  expect(view.textContent).not.toMatch(/cadeau|offerte/i);
   const imports = view.querySelectorAll<HTMLInputElement>(".ru #hero-import input[type=file]");
-  expect(imports).toHaveLength(4);
-  expect(view.querySelectorAll(".ru .pzh-import-pill.pzh-btn")).toHaveLength(4);
-  expect(view.querySelector(".ru .pzh-import-pill.pzh-btn-clair input")?.getAttribute("accept")).toBe(".pdf,application/pdf");
-  expect(view.querySelectorAll(".ru .pzh-import-pill.mm-btn-point")).toHaveLength(3);
-  expect(view.querySelector(".ru .pzh-way")).toBeNull();
-  expect(view.querySelector(".ru .pzh-drop")).toBeNull();
-  expect(view.querySelectorAll('input[type=file][aria-label]')).toHaveLength(4);
-  expect(view.querySelector(".ru")!.textContent).toContain("Importer mon patron PDF");
+  expect(imports).toHaveLength(1);
+  expect(view.querySelectorAll(".ru .pzh-import-pill")).toHaveLength(1);
+  const input = imports[0];
+  for (const ext of [".pdf", "image/png", "image/jpeg", "image/webp", ".json", ".oxs"]) expect(input.accept).toContain(ext);
   const fichiers = [new File(["%PDF"], "patron.pdf", { type: "application/pdf" }), new File(["image"], "photo.png", { type: "image/png" }), new File(["{}"], "ouvrage.json", { type: "application/json" }), new File(["<chart/>"], "ouvrage.oxs")];
-  imports.forEach((input, n) => {
-    Object.defineProperty(input, "files", { configurable: true, value: [fichiers[n]] });
+  fichiers.forEach((file, n) => {
+    Object.defineProperty(input, "files", { configurable: true, value: [file] });
     act(() => input.dispatchEvent(new Event("change", { bubbles: true })));
-    expect(onImport).toHaveBeenNthCalledWith(n + 1, fichiers[n]);
+    expect(onImport).toHaveBeenNthCalledWith(n + 1, file);
     expect(input.value).toBe("");
   });
-  expect(view.querySelector('[href="#hero-import"]')).toBeTruthy();
+  const clic = vi.spyOn(input, "click");
+  const dock = view.querySelector('nav[aria-label="Navigation point de croix"]')!;
+  act(() => [...dock.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Importer")!.click());
+  expect(clic).toHaveBeenCalledOnce();
+  act(() => [...dock.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Ouvrir le studio")!.click());
+  expect(onOpen).toHaveBeenLastCalledWith("stitch");
+  act(() => dock.querySelector<HTMLButtonElement>('[aria-label="Mes ouvrages"]')!.click());
+  expect(onOuvrages).toHaveBeenCalledOnce();
+  expect(view.querySelector(".ru")!.textContent).not.toContain("Créer mon patron");
+  expect(view.querySelector('[href="#ed-fils"]')).toBeTruthy();
+  for (const lien of view.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')) expect(view.querySelector(lien.getAttribute("href")!)).toBeTruthy();
 });
